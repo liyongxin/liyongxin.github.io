@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Earlene]]></title>
-  <link href="http://liyongxin.github.io/atom.xml" rel="self"/>
+  <title><![CDATA[Category: dir1 | Earlene]]></title>
+  <link href="http://liyongxin.github.io/blog/categories/dir1/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
   <updated>2018-04-17T14:13:24+08:00</updated>
   <id>http://liyongxin.github.io/</id>
