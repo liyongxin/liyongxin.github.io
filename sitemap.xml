@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>http://liyongxin.github.io/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/</loc>
+<lastmod>2018-05-09T16:33:42+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2018/05/07/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/</loc>
+<lastmod>2018-05-07T18:59:28+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/</loc>
+<lastmod>2018-04-24T00:00:00+08:00</lastmod>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/2018/04/15/hhahah/</loc>
 <lastmod>2018-04-15T20:05:57+08:00</lastmod>
 </url>
@@ -17,6 +29,12 @@
 <loc>http://liyongxin.github.io/blog/categories/</loc>
 </url>
 <url>
-<loc>http://liyongxin.github.io/blog/categories/dir1/</loc>
+<loc>http://liyongxin.github.io/blog/categories/dir1-test/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/alauda/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/greenplum/</loc>
 </url>
 </urlset>

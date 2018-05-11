@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: greenplum | Earlene]]></title>
+  <link href="http://liyongxin.github.io/blog/categories/greenplum/atom.xml" rel="self"/>
+  <link href="http://liyongxin.github.io/"/>
+  <updated>2018-05-11T14:09:59+08:00</updated>
+  <id>http://liyongxin.github.io/</id>
+  <author>
+    <name><![CDATA[yxli@alauda.io]]></name>
+    <email><![CDATA[yxli@alauda.io]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[CentOS使用GreenPlum定时加载HDFS数据文件]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/05/07/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/"/>
+    <updated>2018-05-07T18:59:28+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/05/07/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian</id>
+    <content type="html"><![CDATA[<p>最近有个场景，数据会定时写入hdfs，需要GP从hdfs中将数据载入。网上关于gp连接hdfs的介绍不是很多，实现的过程中走了很多弯路。
+整个过程大概分为4步：</p>
+
+<ul>
+<li><strong>安装JDK</strong> ：java必备；</li>
+<li><strong>安装必要的PHD软件包</strong> ：安装phd中必要的组件，让GPDB主机作为Hadoop的client；</li>
+<li><strong>设置GPDB</strong> ：配置gpconfig；</li>
+<li><strong>定时任务</strong> ：利用cron任务实现定时加载数据文件；</li>
+</ul>
+
+
+<h3>安装JDK</h3>
+
+<p>推荐版本是1.7.x，注意需要在所有节点进行安装，安装完成后添加以下内容到<code>gpadmin</code>用户对应的<code>.bashrc</code>文件中
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">export</span> <span class="no">JAVA_HOME</span><span class="o">=</span><span class="sr">/opt/</span><span class="n">jdk1</span><span class="o">.</span><span class="mi">7</span><span class="o">.</span><span class="mo">0_45</span></code></pre></div></p>
+
+<p>如果还会提示找不到<code>Error: JAVA_HOME is not set and could not be found.</code>尝试将上述命令添加到<code>/etc/environment中</code>.
+编辑<code>/etc/profile</code>文件，添加如下内容：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/opt/jdk1.7.0_45
+<span class="nb">export </span><span class="nv">CLASSPATH</span><span class="o">=</span>.:<span class="nv">$JAVA_HOME</span>/jre/lib/rt.jar:<span class="nv">$JAVA_HOME</span>/lib/dt.jar:<span class="nv">$JAVA_HOME</span>/lib/tools.jar
+<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$JAVA_HOME</span>/bin</code></pre></div>
+最后执行如下命令验证安装是否成功：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /etc/profile
+java -version</code></pre></div></p>
+
+<h3>安装必要的PHD软件包</h3>
+
+<p>默认安装完GP后，无法直接ipc连接远程hdfs，官方推荐安装phd的一些软件，当然拷贝一份hadoop的包到本地也可以，目的都是让GPDB中的主机作为hadoop的客户端，能进行hdfs的访问。
+所有的软件均可在phd的安装包中获得，我下载的是PHD-2.0.1.0-148版本，整个安装包大概805MB，以下rpm是需要顺序安装的：
+<code>go
+rpm -ivh bigtop-jsvc-1.0.15_gphd_3_0_1_0-148.x86_64.rpm
+rpm -ivh bigtop-utils-0.4.0_gphd_3_0_1_0-148.noarch.rpm
+rpm -ivh zookeeper-3.4.5_gphd_3_0_1_0-148.noarch.rpm
+yum -y install nc
+rpm -ivh hadoop-2.2.0_gphd_3_0_1_0-148.x86_64.rpm
+rpm -ivh hadoop-yarn-2.2.0_gphd_3_0_1_0-148.x86_64.rpm
+rpm -ivh hadoop-mapreduce-2.2.0_gphd_3_0_1_0-148.x86_64.rpm
+rpm -ivh hadoop-hdfs-2.2.0_gphd_3_0_1_0-148.x86_64.rpm
+</code>
+安装gphd的时候需要nc，所以先yum安装一下。</p>
+
+<blockquote><p><strong>注意：</strong>官方说所有的segment节点需要安装这些软件，实际过程中整个GPDB中的机器都需要安装才可以运行，否则会提示无法加载class的错误。</p></blockquote>
+
+<h3>设置GPDB</h3>
+
+<p>在gp中使用gpadmin用户进行设置以下两个配置项，具体的值需要根据官方的资料进行匹配
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpconfig -c gp_hadoop_home -v <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>lsquo<span class="p">;</span>/usr/lib/gphd<span class="p">&amp;</span>rsquo<span class="p">;&amp;</span>rdquo<span class="p">;</span>
+gpconfig -c gp_hadoop_target_version -v <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>lsquo<span class="p">;</span>gphd-2.0<span class="p">&amp;</span>rsquo<span class="p">;&amp;</span>rdquo<span class="p">;</span></code></pre></div>
+其他hadoop版本以及target对应的值可参考下图：</p>
+
+<table>
+   <tr>
+      <td>Hadoop Distribution</td>
+      <td>Version</td>
+      <td>gp_hadoop_target_version</td>
+   </tr>
+   <tr>
+      <td>Pivotal HD</td>
+      <td>Pivotal HD 2.0Pivotal HD 1.01</td>
+      <td>gphd-2.0</td>
+   </tr>
+   <tr>
+      <td>Greenplum HD</td>
+      <td>Greenplum HD 1.2</td>
+      <td>gphd-1.2</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>Greenplum HD 1.1</td>
+      <td>gphd-1.1 (default)</td>
+   </tr>
+   <tr>
+      <td>Cloudera</td>
+      <td>CDH 5.2, 5.3</td>
+      <td>cdh5</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>CDH 5.0, 5.1</td>
+      <td>cdh4.1</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>CDH 4.12 - CDH 4.7</td>
+      <td>cdh4.1</td>
+   </tr>
+   <tr>
+      <td>Hortonworks Data Platform</td>
+      <td>HDP 2.1, 2.2</td>
+      <td>hdp2</td>
+   </tr>
+   <tr>
+      <td>MapR3</td>
+      <td>MapR 4.x</td>
+      <td>gpmr-1.2</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>MapR 1.x, 2.x, 3.x</td>
+      <td>gpmr-1.0</td>
+   </tr>
+   <tr>
+      <td></td>
+   </tr>
+</table>
+
+]]></content>
+  </entry>
+  
+</feed>

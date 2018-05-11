@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: alauda | Earlene]]></title>
+  <link href="http://liyongxin.github.io/blog/categories/alauda/atom.xml" rel="self"/>
+  <link href="http://liyongxin.github.io/"/>
+  <updated>2018-05-11T14:09:59+08:00</updated>
+  <id>http://liyongxin.github.io/</id>
+  <author>
+    <name><![CDATA[yxli@alauda.io]]></name>
+    <email><![CDATA[yxli@alauda.io]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[qs 升级组件流程]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/"/>
+    <updated>2018-04-24T00:00:00+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng</id>
+    <content type="html"><![CDATA[<p><strong>马克飞象</strong>是一款专为印象笔记（Evernote）打造的Markdown编辑器，通过精心的设计与技术实现，配合印象笔记强大的存储和同步功能，带来前所未有的书写体验。特点概述：</p>
+
+<ul>
+<li><strong>功能丰富</strong> ：支持高亮代码块、<em>LaTeX</em> 公式、流程图，本地图片以及附件上传，甚至截图粘贴，工作学习好帮手；</li>
+<li><strong>得心应手</strong> ：简洁高效的编辑器，提供<a href="http://maxiang.info/client_zh">桌面客户端</a>以及<a href="https://chrome.google.com/webstore/detail/kidnkfckhbdkfgbicccmdggmpgogehop">离线Chrome App</a>，支持移动端 Web；</li>
+<li><strong>深度整合</strong> ：支持选择笔记本和添加标签，支持从印象笔记跳转编辑，轻松管理。</li>
+</ul>
+
+
+<h2>Markdown简介</h2>
+
+<blockquote><p>Markdown 是一种轻量级标记语言，它允许人们使用易读易写的纯文本格式编写文档，然后转换成格式丰富的HTML页面。    —— <a href="https://zh.wikipedia.org/wiki/Markdown">维基百科</a></p></blockquote>
+
+<p>正如您在阅读的这份文档，它使用简单的符号标识不同的标题，将某些文字标记为<strong>粗体</strong>或者<em>斜体</em>，创建一个<a href="http://www.example.com">链接</a>或一个脚注<sup id="fnref:1"><a href="#fn:1" rel="footnote">1</a></sup>。下面列举了几个高级功能，更多语法请按<code>Cmd + /</code>查看帮助。</p>
+
+<h3>代码块</h3>
+
+<pre><code class="python linenos:false">@requires_authorization
+def somefunc(param1='', param2=0):
+    '''A docstring'''
+    if param1 &gt; param2: # interesting
+        print 'Greater'
+    return (param2 - param1 + 1) or None
+class SomeClass:
+    pass
+&gt;&gt;&gt; message = '''interpreter
+... prompt'''
+</code></pre>
+
+<pre><code class="ruby">curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
+</code></pre>
+
+<p><div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer&quot;</span><span class="o">&gt;</span><span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">pyenv</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">&lt;</span><span class="sr">/a&gt; | bash</span></code></pre></div>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="p">&amp;</span>ldquo<span class="p">;</span>~/.pyenv/bin:<span class="nv">$PATH</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="nb">eval</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="k">$(</span>pyenv init -<span class="k">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="nb">eval</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="k">$(</span>pyenv virtualenv-init -<span class="k">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span></code></pre></div>
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="vi">@requires_authorization</span>
+<span class="k">def</span> <span class="nf">somefunc</span><span class="p">(</span><span class="n">param1</span><span class="o">=&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;,</span> <span class="n">param2</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">A</span> <span class="n">docstring</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
+    <span class="k">if</span> <span class="n">param1</span> <span class="o">&gt;</span> <span class="ss">param2</span><span class="p">:</span> <span class="c1"># interesting</span>
+        <span class="nb">print</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="no">Greater</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">param2</span> <span class="o">-</span> <span class="n">param1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="no">None</span>
+<span class="k">class</span> <span class="nc">SomeClass</span><span class="p">:</span>
+    <span class="n">pass</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+
+<span class="sr">&lt;blockquote&gt;&lt;blockquote&gt;&lt;blockquote&gt;&lt;p&gt;message = &amp;lsquo;&amp;rsquo;&amp;lsquo;interpreter</span>
+<span class="sr">&amp;hellip; prompt&amp;rsquo;&amp;lsquo;&amp;rsquo;</span></code></pre></div></p>
+
+<h3>LaTeX 公式</h3></blockquote></blockquote></blockquote>
+
+<p>可以创建行内公式，例如 $\Gamma(n) = (n-1)!\quad\forall n\in\mathbb N$。或者块级公式：</p>
+
+<p>$$  x = \dfrac{-b \pm \sqrt{b<sup>2</sup> - 4ac}}{2a} $$</p>
+
+<h3>表格</h3>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> Item      </th>
+<th style="text-align:right;">    Value </th>
+<th style="text-align:center;"> Qty  </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> Computer  </td>
+<td style="text-align:right;"> 1600 USD </td>
+<td style="text-align:center;">  5   </td>
+</tr>
+<tr>
+<td style="text-align:left;"> Phone     </td>
+<td style="text-align:right;">   12 USD </td>
+<td style="text-align:center;">  12  </td>
+</tr>
+<tr>
+<td style="text-align:left;"> Pipe      </td>
+<td style="text-align:right;">    1 USD </td>
+<td style="text-align:center;"> 234  </td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>复选框</h3>
+
+<p>使用 <code>- [ ]</code> 和 <code>- [x]</code> 语法可以创建复选框，实现 todo-list 等功能。例如：</p>
+
+<ul>
+<li>[x] 已完成事项</li>
+<li>[ ] 待办事项1</li>
+<li>[ ] 待办事项2</li>
+</ul>
+
+
+<blockquote><p><strong>注意：</strong>目前支持尚不完全，在印象笔记中勾选复选框是无效、不能同步的，所以必须在<strong>马克飞象</strong>中修改 Markdown 原文才可生效。下个版本将会全面支持。</p></blockquote>
+
+<h2>印象笔记相关</h2>
+
+<h3>笔记本和标签</h3>
+
+<p><strong>马克飞象</strong>增加了<code>@(笔记本)[标签A|标签B]</code>语法, 以选择笔记本和添加标签。 <strong>绑定账号后</strong>， 输入<code>(</code>自动会出现笔记本列表，请从中选择。</p>
+
+<h3>笔记标题</h3>
+
+<p><strong>马克飞象</strong>会自动使用文档内出现的第一个标题作为笔记标题。例如本文，就是第一行的 <code>欢迎使用马克飞象</code>。</p>
+
+<h3>快捷编辑</h3>
+
+<p>保存在印象笔记中的笔记，右上角会有一个红色的编辑按钮，点击后会回到<strong>马克飞象</strong>中打开并编辑该笔记。</p>
+
+<blockquote><p><strong>注意：</strong>目前用户在印象笔记中单方面做的任何修改，马克飞象是无法自动感知和更新的。所以请务必回到马克飞象编辑。</p></blockquote>
+
+<h3>数据同步</h3>
+
+<p><strong>马克飞象</strong>通过<strong>将Markdown原文以隐藏内容保存在笔记中</strong>的精妙设计，实现了对Markdown的存储和再次编辑。既解决了其他产品只是单向导出HTML的单薄，又规避了服务端存储Markdown带来的隐私安全问题。这样，服务端仅作为对印象笔记 API调用和数据转换之用。</p>
+
+<blockquote><p><strong>隐私声明：用户所有的笔记数据，均保存在印象笔记中。马克飞象不存储用户的任何笔记数据。</strong></p></blockquote>
+
+<h3>离线存储</h3>
+
+<p><strong>马克飞象</strong>使用浏览器离线存储将内容实时保存在本地，不必担心网络断掉或浏览器崩溃。为了节省空间和避免冲突，已同步至印象笔记并且不再修改的笔记将删除部分本地缓存，不过依然可以随时通过<code>文档管理</code>打开。</p>
+
+<blockquote><p><strong>注意：</strong>虽然浏览器存储大部分时候都比较可靠，但印象笔记作为专业云存储，更值得信赖。以防万一，<strong>请务必经常及时同步到印象笔记</strong>。</p></blockquote>
+
+<h2>编辑器相关</h2>
+
+<h3>设置</h3>
+
+<p>右侧系统菜单（快捷键<code>Cmd + M</code>）的<code>设置</code>中，提供了界面字体、字号、自定义CSS、vim/emacs 键盘模式等高级选项。</p>
+
+<h3>快捷键</h3>
+
+<p>帮助    <code>Cmd + /</code>
+同步文档    <code>Cmd + S</code>
+创建文档    <code>Cmd + Opt + N</code>
+最大化编辑器    <code>Cmd + Enter</code>
+预览文档 <code>Cmd + Opt + Enter</code>
+文档管理    <code>Cmd + O</code>
+系统菜单    <code>Cmd + M</code></p>
+
+<p>加粗    <code>Cmd + B</code>
+插入图片    <code>Cmd + G</code>
+插入链接    <code>Cmd + L</code>
+提升标题    <code>Cmd + H</code></p>
+
+<h2>关于收费</h2>
+
+<p><strong>马克飞象</strong>为新用户提供 10 天的试用期，试用期过后需要<a href="maxiang.info/vip.html">续费</a>才能继续使用。未购买或者未及时续费，将不能同步新的笔记。之前保存过的笔记依然可以编辑。</p>
+
+<h2>反馈与建议</h2>
+
+<ul>
+<li>微博：<a href="http://weibo.com/u/2788354117">@马克飞象</a>，<a href="http://weibo.com/ggock" title="开发者个人账号">@GGock</a></li>
+<li>邮箱：<a href="&#109;&#x61;&#x69;&#108;&#116;&#111;&#x3a;&#x68;&#117;&#x73;&#116;&#x67;&#x6f;&#99;&#x6b;&#x40;&#103;&#109;&#97;&#x69;&#108;&#x2e;&#99;&#x6f;&#x6d;">&#x68;&#x75;&#115;&#116;&#x67;&#111;&#99;&#107;&#64;&#x67;&#109;&#97;&#105;&#x6c;&#46;&#x63;&#111;&#109;</a></li>
+</ul>
+
+
+<hr />
+
+<p>感谢阅读这份帮助文档。请点击右上角，绑定印象笔记账号，开启全新的记录与分享体验吧。</p>
+
+<p>HTML，但是不支持某些标签和属性，例如id，这就导致<code>脚注</code>和<code>TOC</code>无法正常点击。</p>
+<div class="footnotes">
+<hr/>
+<ol>
+<li id="fn:1">
+<p>这是一个示例脚注。请查阅 <a href="https://github.com/fletcher/MultiMarkdown/wiki/MultiMarkdown-Syntax-Guide#footnotes">MultiMarkdown 文档</a> 关于脚注的说明。 <strong>限制：</strong> 印象笔记的笔记内容使用 [ENML][5] 格式，基于 HTML，但是不支持某些标签和属性，例如id，这就导致<code>脚注</code>和<code>TOC</code>无法正常点击。<a href="#fnref:1" rev="footnote">&#8617;</a></p></li>
+</ol>
+</div>
+
+]]></content>
+  </entry>
+  
+</feed>
