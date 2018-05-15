@@ -9,8 +9,7 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="常用命令随手记 统计系统各类连接数 netstat -n | awk &#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39; 结果类似如下格式： ESTABLISHED 23
-TIME_WAIT 707 greenplum &hellip;">
+	<meta name="description" content="GreenPlum脚本化安装 greenplum GreenPlum安装 GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下： 安装前准备 网络规划 Greenplum数据库系统常见的拓扑图如上图所示， &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -118,27 +117,15 @@ TIME_WAIT 707 greenplum &hellip;">
   
 
 
-<time datetime="2018-05-09T16:33:42+08:00" data-updated="true" itemprop="datePublished"></time></div>
+<time datetime="2018-05-15T20:02:51+08:00" data-updated="true" itemprop="datePublished"></time></div>
 		<div class="tags">
 
 </div>
 		
 	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/" itemprop="url">常用命令随手记</a></h1>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" itemprop="url">GreenPlum脚本化安装</a></h1>
 	<div class="entry-content" itemprop="articleBody">
-		<ul>
-<li>统计系统各类连接数</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">netstat</span> <span class="o">-</span><span class="n">n</span> <span class="o">|</span> <span class="n">awk</span> <span class="s">&#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39;</span></code></pre></div>
-
-
-<p>结果类似如下格式：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">ESTABLISHED 23
-TIME_WAIT 707</code></pre></div>
-
+		
 
 		
 		
@@ -161,7 +148,7 @@ TIME_WAIT 707</code></pre></div>
   
 
 
-<time datetime="2018-05-07T18:59:28+08:00" data-updated="true" itemprop="datePublished"></time></div>
+<time datetime="2018-05-14T20:24:55+08:00" data-updated="true" itemprop="datePublished"></time></div>
 		<div class="tags">
 
 
@@ -171,7 +158,116 @@ TIME_WAIT 707</code></pre></div>
 </div>
 		
 	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/07/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/" itemprop="url">CentOS使用GreenPlum定时加载HDFS数据文件</a></h1>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/05/14/greenpluman-zhuang/" itemprop="url">GreenPlum安装</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下：</p>
+
+<h3>安装前准备</h3>
+
+<h4>网络规划</h4>
+
+<p>Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。Master主机和Segment主机之间会组成一个内部网络（LAN）。
+为了充分发挥Greenplum数据库并行处理的性能，对网络带宽要求较高。服务器会配置多个网卡，内部网需要配置多个网段的IP。需要对外连接的服务器需配置外部IP。
+建议在Greenplum数据库系统安装之前，把网络配置规划好。
+<img src="/images/network.png" alt="" /></p>
+
+<h4>存储空间规划</h4>
+
+<p>首先，需要评估目标数据库数据所需要的空间容量。建议了解客户搭建Greenplum数据库的具体应用。举例：估计数据库所需空间为U，数据库需要启用Mirror，磁盘阵列总可用空间为D（Raid之后）。空间规划服务和如下公式：
+<code>2 * U + U / 3 = D * 70%</code>
+磁盘空间D平均分配到各个Segment服务器上。
+Master需要相应的空间。使用服务器内置硬盘的计算方式类似。</p>
+
+<h4>数据库实例规划</h4>
+
+<p>规划每个Segment服务器上建立的数据库实例的数量（instance数量），通常建议每2个CPU内核（core）对应一个数据库实例。
+如 ：<code>2*4</code>核CPU的服务器，可配置4个实例。</p>
+
+
+		
+		<a href="/blog/2018/05/14/greenpluman-zhuang/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-05-09T16:33:42+08:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/" itemprop="url">常用命令随手记</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<ul>
+<li>统计系统各类连接数</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">netstat</span> <span class="o">-</span><span class="n">n</span> <span class="o">|</span> <span class="n">awk</span> <span class="s">&#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39;</span></code></pre></div>
+
+
+<p>结果类似如下格式：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">ESTABLISHED 23
+TIME_WAIT 707</code></pre></div>
+
+
+<ul>
+<li>ab命令简单压力测试</li>
+</ul>
+
+
+<p>ab -n 50000000 -c 10 <a href="http://127.0.0.1:8080/">http://127.0.0.1:8080/</a>
+- grep 正则或的写法
+grep -E &ldquo;\&lt;(root|gao|uer1)>&rdquo; /etc/passwd</p>
+
+		
+		
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-05-03T14:08:00+08:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/" itemprop="url">CentOS使用GreenPlum定时加载HDFS数据文件</a></h1>
 	<div class="entry-content" itemprop="articleBody">
 		<p>最近有个场景，数据会定时写入hdfs，需要GP从hdfs中将数据载入。网上关于gp连接hdfs的介绍不是很多，实现的过程中走了很多弯路。
 整个过程大概分为4步：</p>
@@ -241,67 +337,11 @@ java -version</code></pre></div>
 gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39;&quot;</span></code></pre></div>
 
 
-<p>其他hadoop版本以及target对应的值可参考下图：</p>
 
-<table>
-   <tr>
-      <td>Hadoop Distribution</td>
-      <td>Version</td>
-      <td>gp_hadoop_target_version</td>
-   </tr>
-   <tr>
-      <td>Pivotal HD</td>
-      <td>Pivotal HD 2.0Pivotal HD 1.01</td>
-      <td>gphd-2.0</td>
-   </tr>
-   <tr>
-      <td>Greenplum HD</td>
-      <td>Greenplum HD 1.2</td>
-      <td>gphd-1.2</td>
-   </tr>
-   <tr>
-      <td></td>
-      <td>Greenplum HD 1.1</td>
-      <td>gphd-1.1 (default)</td>
-   </tr>
-   <tr>
-      <td>Cloudera</td>
-      <td>CDH 5.2, 5.3</td>
-      <td>cdh5</td>
-   </tr>
-   <tr>
-      <td></td>
-      <td>CDH 5.0, 5.1</td>
-      <td>cdh4.1</td>
-   </tr>
-   <tr>
-      <td></td>
-      <td>CDH 4.12 - CDH 4.7</td>
-      <td>cdh4.1</td>
-   </tr>
-   <tr>
-      <td>Hortonworks Data Platform</td>
-      <td>HDP 2.1, 2.2</td>
-      <td>hdp2</td>
-   </tr>
-   <tr>
-      <td>MapR3</td>
-      <td>MapR 4.x</td>
-      <td>gpmr-1.2</td>
-   </tr>
-   <tr>
-      <td></td>
-      <td>MapR 1.x, 2.x, 3.x</td>
-      <td>gpmr-1.0</td>
-   </tr>
-   <tr>
-      <td></td>
-   </tr>
-</table>
 
 
 		
-		
+		<a href="/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>
@@ -385,186 +425,9 @@ gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39
 
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;~/.pyenv/bin:$PATH&quot;</span>
-<span class="nb">eval</span> <span class="s2">&quot;$(pyenv init -)&quot;</span>
-<span class="nb">eval</span> <span class="s2">&quot;$(pyenv virtualenv-init -)&quot;</span></code></pre></div>
-
-
-
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="vi">@requires_authorization</span>
-<span class="k">def</span> <span class="nf">somefunc</span><span class="p">(</span><span class="n">param1</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">param2</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="s1">&#39;&#39;&#39;A docstring&#39;&#39;&#39;</span>
-    <span class="k">if</span> <span class="n">param1</span> <span class="o">&gt;</span> <span class="ss">param2</span><span class="p">:</span> <span class="c1"># interesting</span>
-        <span class="nb">print</span> <span class="s1">&#39;Greater&#39;</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">param2</span> <span class="o">-</span> <span class="n">param1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="no">None</span>
-<span class="k">class</span> <span class="nc">SomeClass</span><span class="p">:</span>
-    <span class="n">pass</span>
-<span class="o">&gt;&gt;&gt;</span> <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;interpreter</span>
-<span class="s1">... prompt&#39;&#39;&#39;</span></code></pre></div>
-
-
-<h3>LaTeX 公式</h3>
-
-<p>可以创建行内公式，例如 $\Gamma(n) = (n-1)!\quad\forall n\in\mathbb N$。或者块级公式：</p>
-
-<p>$$  x = \dfrac{-b \pm \sqrt{b<sup>2</sup> - 4ac}}{2a} $$</p>
-
-<h3>表格</h3>
-
-<table>
-<thead>
-<tr>
-<th style="text-align:left;"> Item      </th>
-<th style="text-align:right;">    Value </th>
-<th style="text-align:center;"> Qty  </th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;"> Computer  </td>
-<td style="text-align:right;"> 1600 USD </td>
-<td style="text-align:center;">  5   </td>
-</tr>
-<tr>
-<td style="text-align:left;"> Phone     </td>
-<td style="text-align:right;">   12 USD </td>
-<td style="text-align:center;">  12  </td>
-</tr>
-<tr>
-<td style="text-align:left;"> Pipe      </td>
-<td style="text-align:right;">    1 USD </td>
-<td style="text-align:center;"> 234  </td>
-</tr>
-</tbody>
-</table>
-
-
-<h3>复选框</h3>
-
-<p>使用 <code>- [ ]</code> 和 <code>- [x]</code> 语法可以创建复选框，实现 todo-list 等功能。例如：</p>
-
-<ul>
-<li>[x] 已完成事项</li>
-<li>[ ] 待办事项1</li>
-<li>[ ] 待办事项2</li>
-</ul>
-
-
-<blockquote><p><strong>注意：</strong>目前支持尚不完全，在印象笔记中勾选复选框是无效、不能同步的，所以必须在<strong>马克飞象</strong>中修改 Markdown 原文才可生效。下个版本将会全面支持。</p></blockquote>
-
-<h2>印象笔记相关</h2>
-
-<h3>笔记本和标签</h3>
-
-<p><strong>马克飞象</strong>增加了<code>@(笔记本)[标签A|标签B]</code>语法, 以选择笔记本和添加标签。 <strong>绑定账号后</strong>， 输入<code>(</code>自动会出现笔记本列表，请从中选择。</p>
-
-<h3>笔记标题</h3>
-
-<p><strong>马克飞象</strong>会自动使用文档内出现的第一个标题作为笔记标题。例如本文，就是第一行的 <code>欢迎使用马克飞象</code>。</p>
-
-<h3>快捷编辑</h3>
-
-<p>保存在印象笔记中的笔记，右上角会有一个红色的编辑按钮，点击后会回到<strong>马克飞象</strong>中打开并编辑该笔记。</p>
-
-<blockquote><p><strong>注意：</strong>目前用户在印象笔记中单方面做的任何修改，马克飞象是无法自动感知和更新的。所以请务必回到马克飞象编辑。</p></blockquote>
-
-<h3>数据同步</h3>
-
-<p><strong>马克飞象</strong>通过<strong>将Markdown原文以隐藏内容保存在笔记中</strong>的精妙设计，实现了对Markdown的存储和再次编辑。既解决了其他产品只是单向导出HTML的单薄，又规避了服务端存储Markdown带来的隐私安全问题。这样，服务端仅作为对印象笔记 API调用和数据转换之用。</p>
-
-<blockquote><p><strong>隐私声明：用户所有的笔记数据，均保存在印象笔记中。马克飞象不存储用户的任何笔记数据。</strong></p></blockquote>
-
-<h3>离线存储</h3>
-
-<p><strong>马克飞象</strong>使用浏览器离线存储将内容实时保存在本地，不必担心网络断掉或浏览器崩溃。为了节省空间和避免冲突，已同步至印象笔记并且不再修改的笔记将删除部分本地缓存，不过依然可以随时通过<code>文档管理</code>打开。</p>
-
-<blockquote><p><strong>注意：</strong>虽然浏览器存储大部分时候都比较可靠，但印象笔记作为专业云存储，更值得信赖。以防万一，<strong>请务必经常及时同步到印象笔记</strong>。</p></blockquote>
-
-<h2>编辑器相关</h2>
-
-<h3>设置</h3>
-
-<p>右侧系统菜单（快捷键<code>Cmd + M</code>）的<code>设置</code>中，提供了界面字体、字号、自定义CSS、vim/emacs 键盘模式等高级选项。</p>
-
-<h3>快捷键</h3>
-
-<p>帮助    <code>Cmd + /</code>
-同步文档    <code>Cmd + S</code>
-创建文档    <code>Cmd + Opt + N</code>
-最大化编辑器    <code>Cmd + Enter</code>
-预览文档 <code>Cmd + Opt + Enter</code>
-文档管理    <code>Cmd + O</code>
-系统菜单    <code>Cmd + M</code></p>
-
-<p>加粗    <code>Cmd + B</code>
-插入图片    <code>Cmd + G</code>
-插入链接    <code>Cmd + L</code>
-提升标题    <code>Cmd + H</code></p>
-
-<h2>关于收费</h2>
-
-<p><strong>马克飞象</strong>为新用户提供 10 天的试用期，试用期过后需要<a href="maxiang.info/vip.html">续费</a>才能继续使用。未购买或者未及时续费，将不能同步新的笔记。之前保存过的笔记依然可以编辑。</p>
-
-<h2>反馈与建议</h2>
-
-<ul>
-<li>微博：<a href="http://weibo.com/u/2788354117">@马克飞象</a>，<a href="http://weibo.com/ggock" title="开发者个人账号">@GGock</a></li>
-<li>邮箱：<a href="&#109;&#x61;&#105;&#108;&#x74;&#x6f;&#x3a;&#x68;&#117;&#x73;&#116;&#x67;&#111;&#x63;&#107;&#x40;&#x67;&#x6d;&#97;&#x69;&#108;&#46;&#x63;&#x6f;&#109;">&#x68;&#117;&#115;&#x74;&#103;&#111;&#99;&#107;&#64;&#103;&#x6d;&#x61;&#x69;&#108;&#x2e;&#x63;&#111;&#x6d;</a></li>
-</ul>
-
-
-<hr />
-
-<p>感谢阅读这份帮助文档。请点击右上角，绑定印象笔记账号，开启全新的记录与分享体验吧。</p>
-
-<p>HTML，但是不支持某些标签和属性，例如id，这就导致<code>脚注</code>和<code>TOC</code>无法正常点击。</p>
-<div class="footnotes">
-<hr/>
-<ol>
-<li id="fn:1">
-<p>这是一个示例脚注。请查阅 <a href="https://github.com/fletcher/MultiMarkdown/wiki/MultiMarkdown-Syntax-Guide#footnotes">MultiMarkdown 文档</a> 关于脚注的说明。 <strong>限制：</strong> 印象笔记的笔记内容使用 [ENML][5] 格式，基于 HTML，但是不支持某些标签和属性，例如id，这就导致<code>脚注</code>和<code>TOC</code>无法正常点击。<a href="#fnref:1" rev="footnote">&#8617;</a></p></li>
-</ol>
-</div>
-
 
 		
-		
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-04-15T20:05:57+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/dir1-test/'>dir1,test</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/04/15/hhahah/" itemprop="url">Hhahah</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		
-
-		
-		
+		<a href="/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>

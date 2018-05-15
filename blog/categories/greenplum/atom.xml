@@ -4,7 +4,7 @@
   <title><![CDATA[Category: greenplum | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/greenplum/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2018-05-11T14:09:59+08:00</updated>
+  <updated>2018-05-15T20:02:22+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -14,10 +14,311 @@
 
   
   <entry>
+    <title type="html"><![CDATA[GreenPlum安装]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/05/14/greenpluman-zhuang/"/>
+    <updated>2018-05-14T20:24:55+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/05/14/greenpluman-zhuang</id>
+    <content type="html"><![CDATA[<p>GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下：</p>
+
+<h3>安装前准备</h3>
+
+<h4>网络规划</h4>
+
+<p>Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。Master主机和Segment主机之间会组成一个内部网络（LAN）。
+为了充分发挥Greenplum数据库并行处理的性能，对网络带宽要求较高。服务器会配置多个网卡，内部网需要配置多个网段的IP。需要对外连接的服务器需配置外部IP。
+建议在Greenplum数据库系统安装之前，把网络配置规划好。
+<img src="/images/network.png" alt="" /></p>
+
+<h4>存储空间规划</h4>
+
+<p>首先，需要评估目标数据库数据所需要的空间容量。建议了解客户搭建Greenplum数据库的具体应用。举例：估计数据库所需空间为U，数据库需要启用Mirror，磁盘阵列总可用空间为D（Raid之后）。空间规划服务和如下公式：
+<code>2 * U + U / 3 = D * 70%</code>
+磁盘空间D平均分配到各个Segment服务器上。
+Master需要相应的空间。使用服务器内置硬盘的计算方式类似。</p>
+
+<h4>数据库实例规划</h4>
+
+<p>规划每个Segment服务器上建立的数据库实例的数量（instance数量），通常建议每2个CPU内核（core）对应一个数据库实例。
+如 ：<code>2*4</code>核CPU的服务器，可配置4个实例。</p>
+
+<!--more-->
+
+
+<h3>操作系统规划</h3>
+
+<h4>修改主机名</h4>
+
+<p>修改各台主机的主机名称。一般建议的命名规则如下：
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="ss">Master</span><span class="p">:</span> <span class="n">mdw</span>
+<span class="no">Standby</span> <span class="ss">Master</span><span class="p">:</span> <span class="n">smdw</span>
+<span class="no">Segment</span> <span class="ss">Host</span><span class="p">:</span> <span class="n">sdw1</span> <span class="n">sdw2</span> <span class="o">&amp;</span><span class="n">hellip</span><span class="p">;</span><span class="n">sdwn</span></code></pre></div>
+修改hostname:
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">hostnamectl <span class="nb">set</span>-hostname mdw</code></pre></div>
+2、修改<code>/etc/hosts</code>文件
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="mi">21</span><span class="o">.</span><span class="mi">104</span><span class="o">.</span><span class="mi">138</span><span class="o">.</span><span class="mi">21</span>   <span class="n">mdw</span><span class="o">-</span><span class="n">ext1</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">1</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">1</span> <span class="n">mdw</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">2</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">2</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">3</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">3</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">4</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">4</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">5</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">5</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">6</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">6</span></code></pre></div></p>
+
+<h4>关闭相关服务</h4>
+
+<p><div class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="n">service</span> <span class="n">iptables</span> <span class="n">save</span>
+<span class="n">service</span> <span class="n">iptables</span> <span class="n">stop</span>
+<span class="n">chkconfig</span> <span class="n">iptables</span> <span class="k">off</span>
+<span class="n">service</span> <span class="n">ip6tables</span> <span class="n">save</span>
+<span class="n">service</span> <span class="n">ip6tables</span> <span class="n">stop</span>
+<span class="n">chkconfig</span> <span class="n">ip6tables</span> <span class="k">off</span></code></pre></div></p>
+
+<h4>修改系统参数</h4>
+
+<p>编辑系统文件<code>/etc/sysctl.conf</code>,Sysctl是一个允许您改变正在运行中的Linux系统的接口。它包含一些 TCP/IP 堆栈和虚拟内存系统的高级选项
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">kernel</span><span class="o">.</span><span class="n">shmmax</span> <span class="o">=</span> <span class="mi">500000000</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">shmmni</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">shmall</span> <span class="o">=</span> <span class="mi">4000000000</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">sem</span> <span class="o">=</span> <span class="mi">250</span> <span class="mi">512000</span> <span class="mi">100</span> <span class="mi">2048</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">sysrq</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">core_uses_pid</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">msgmnb</span> <span class="o">=</span> <span class="mi">65536</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">msgmax</span> <span class="o">=</span> <span class="mi">65536</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">tcp_syncookies</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">ip_forward</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">default</span><span class="o">.</span><span class="n">accept_source_route</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">tcp_tw_recycle</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">tcp_max_syn_backlog</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">all</span><span class="o">.</span><span class="n">arp_filter</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">default</span><span class="o">.</span><span class="n">arp_filter</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">netdev_max_backlog</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">vm</span><span class="o">.</span><span class="n">overcommit_memory</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">msgmni</span> <span class="o">=</span> <span class="mi">2048</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">ip_local_port_range</span> <span class="o">=</span> <span class="mi">1025</span> <span class="mi">65535</span></code></pre></div>
+编辑系统文件<code>/etc/security/limits.conf</code>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">*</span> <span class="n">soft</span> <span class="n">nofile</span> <span class="mi">65536</span>
+<span class="o">*</span> <span class="n">hard</span> <span class="n">nofile</span> <span class="mi">65536</span>
+<span class="o">*</span> <span class="n">soft</span> <span class="n">nproc</span> <span class="mi">131072</span>
+<span class="o">*</span> <span class="n">hard</span> <span class="n">nproc</span> <span class="mi">131072</span></code></pre></div></p>
+
+<h4>修改磁盘预读配置</h4>
+
+<p>在参数文件<code>/etc/rc.d/rc.local</code>中增加下列内容:
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="no">DELL</span><span class="o">/</span><span class="ss">IBM</span><span class="p">:</span> <span class="n">blockdev</span> <span class="o">&amp;</span><span class="n">ndash</span><span class="p">;</span><span class="n">setra</span> <span class="mi">16384</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sd</span><span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span>
+<span class="ss">HP</span><span class="p">:</span> <span class="n">blockdev</span> <span class="o">&amp;</span><span class="n">ndash</span><span class="p">;</span><span class="n">setra</span> <span class="mi">16384</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cciss</span><span class="o">/</span><span class="n">c?d?</span><span class="o">&lt;</span><span class="sr">/em&gt;</span></code></pre></div></p>
+
+<h4>修改系统引导文件</h4>
+
+<p>编辑<code>/boot/grub/menu.lst</code>,Deadline scheduler 用 deadline 算法保证对于既定的 IO 请求以最小的延迟时间，从这一点理解，对于 DSS 应用应该会是很适合的
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">elevator</span><span class="o">=</span><span class="n">deadline</span></code></pre></div></p>
+
+<h4>启动IPMI服务</h4>
+
+<p>IPMI（Intelligent Platform Management Interface）即智能平台管理接口是使硬件管理具备“智能化”的新一代通用接口标准。如果没有安装相关服务，建议安装
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">service</span> <span class="n">ipmi</span> <span class="n">start</span>
+<span class="n">chkconfig</span> <span class="n">ipmi</span> <span class="n">on</span></code></pre></div></p>
+
+<h4>修改启动配置</h4>
+
+<p>编辑<code>/etc/inittab</code>，修改运行级别为3，多用户命令行模式
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="nb">id</span><span class="p">:</span><span class="mi">3</span><span class="ss">:initdefault</span><span class="p">:</span></code></pre></div></p>
+
+<h4>关闭selinux并重启机器</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/SELINUX<span class="o">=</span>enforcing/SELINUX<span class="o">=</span>disabled/<span class="p">&amp;</span>lsquo<span class="p">;</span> /etc/selinux/config</code></pre></div>
+如果临时关闭，使用
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">setenforce 0</code></pre></div></p>
+
+<h2>建立数据目录</h2>
+
+<h4>Master以及Standby Master主机</h4>
+
+<p>分区及格式化：
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span> <span class="nx">或者</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>
+<span class="nx">mkdir</span> <span class="o">-</span><span class="nx">p</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span><span class="err">（</span><span class="nx">Master数据目录</span><span class="err">）</span></code></pre></div>
+在/etc/fstab文件中增加
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span> <span class="o">/</span><span class="nx">data</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span></code></pre></div>
+把/data/master 赋予777权限
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">chmod</span> <span class="o">-</span><span class="nx">R</span> <span class="mi">777</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span></code></pre></div></p>
+
+<h4>Segment主机</h4>
+
+<p>分区及格式化：
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>    <span class="nx">或者</span>   <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>
+<span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sdb2</span>
+<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data1</span>  <span class="err">（</span><span class="nx">Segment数据目录</span><span class="err">，</span><span class="nx">可根据实例和分配空间不同规划不同的目录</span><span class="err">）</span>
+<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data2</span></code></pre></div>
+在/etc/fstab文件中增加
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span> <span class="o">/</span><span class="nx">data1</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span>
+<span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sdb2</span> <span class="o">/</span><span class="nx">data2</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span></code></pre></div>
+把/data/master 赋予777权限
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">chmod</span> <span class="o">-</span><span class="nx">R</span> <span class="mi">777</span> <span class="o">/</span><span class="nx">data1</span>
+<span class="nx">chmod</span> <span class="o">-</span><span class="nx">R</span> <span class="mi">777</span> <span class="o">/</span><span class="nx">data2</span></code></pre></div></p>
+
+<h2>Master节点安装GreenPlum</h2>
+
+<h4>Master机器运行安装文件</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">unzip greenplum-db-4.1.1.3-build-4-RHEL5-x86_64.zip
+/bin/bash greenplum-db-4.1.1.3-build-4-RHEL5-x86_64.bin</code></pre></div>
+安装完成后修改root用户home的~/.bashrc配置文件，增加
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh</code></pre></div></p>
+
+<h4>配置hostname文件（用于建立多机信任）</h4>
+
+<p>建议在安装目录下新建gpconfigs目录,包含所有master和segment主机名和别名的文件
+多网卡可能如下,<code>hostfile_exkeys</code>:
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">mdw</span>
+<span class="n">mdw</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">smdw</span>
+<span class="n">smdw</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">2</span></code></pre></div>
+单网卡可能如下,<code>hostfile_exkeys</code>:
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">mdw</span>
+<span class="n">smdw</span>
+<span class="n">sdw1</span>
+<span class="n">sdw2</span></code></pre></div>
+建立<code>all_hosts_only</code>,只包含主机名，不包含各个网段对应的<code>hostname</code>，用于<code>gpssh</code>命令,all_hosts_only:
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">mdw</span>
+<span class="n">smdw</span>
+<span class="n">sdw1</span>
+<span class="n">sdw2</span></code></pre></div></p>
+
+<h2>建立多机互信</h2>
+
+<p>root用户建立多机信任
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+gpssh-exkeys -f ./hostfile_exkeys</code></pre></div></p>
+
+<blockquote><p><strong>注意：</strong>对于<code>RHEL6.x</code>版本，建议先关闭<code>OPENSSL_CONF</code>环境变量并设置<code>selinux</code>为<code>disabled</code>再做多机互信
+如建立多机信任时出现<code>permission denied(publickey.gssapi-with-mic)</code>或者类似的错误，需要修改每台机器的<code>/etc/ssh/sshd_config</code>文件
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile.ssh/authorized_keys</code></pre></div>
+默认使用的22端口，如果22端口没开建议先打开22端口</p>
+
+<h4>建立用户以及用户组</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">gpssh -f ./all_hosts_only
+<span class="o">=</span>&gt;groupadd -g <span class="m">3030</span> <span class="nv">gpadmin</span>
+<span class="o">=</span>&gt;groupadd -g <span class="m">3040</span> <span class="nv">gpmon</span>
+<span class="o">=</span>&gt;useradd -u <span class="m">3030</span> -g gpadmin -m -s /bin/bash <span class="nv">gpadmin</span>
+<span class="o">=</span>&gt;useradd -u <span class="m">3040</span> -g gpmon -m -s /bin/bash <span class="nv">gpmon</span>
+<span class="o">=</span>&gt;echo gpadmin <span class="p">|</span> passwd  gpadmin <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">stdin</span>
+<span class="o">=</span>&gt;echo gpmon <span class="p">|</span> passwd  gpmon <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">stdin</span>
+<span class="o">=</span>&gt;chown -R gpadmin:gpadmin /data</code></pre></div></p>
+
+<h4>修改gpadmin用户配置</h4>
+
+<p>使用<code>gpadmin</code>用户操作，对于Master和Standby Master主机，修改 <code>~/.bashrc</code>文件，添加如下内容：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+<span class="nv">MASTER_DATA_DIRECTORY</span><span class="o">=</span>/data/master/gpseg-1
+<span class="nb">export </span>MASTER_DATA_DIRECTORY    <span class="o">(</span>gpstart默认启动的目录）</code></pre></div>
+对于Segment主机，修改 <code>~/.bashrc</code>文件，添加如下内容：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh</code></pre></div></p>
+
+<h4>gpadmin用户建立多机信任</h4>
+
+<p>使用gpadmin用户在Master主机上操作,提示密码，输入<code>gpadmin</code>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpssh-exkeys -f ./hostfile_exkeys</code></pre></div></p>
+
+<h2>时钟同步</h2>
+
+<p>所有涉及到的机器之间使用NTP做时钟同步</p>
+
+<h2>其他机器安装GP</h2>
+
+<h4>配置hostname文件</h4>
+
+<p>其他机器的安装主要操作时把安装在Master主机上的GP安装文件打包传到其他各台机器中。因此，需要配置一个hostname文件包含Standbymaster和各台Segment主机，配置文件stby_all_segs内容参考如下：
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">smdw</span>
+<span class="n">smdw</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">2</span></code></pre></div></p>
+
+<h4>并行安装</h4>
+
+<p>安装gzip，在Master主机上，使用root用户操作：
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">chmod</span> <span class="mi">777</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span>
+<span class="n">gpseginstall</span> <span class="o">-</span><span class="n">f</span> <span class="o">.</span><span class="n">/stby_all_segs</span> <span class="o">-</span><span class="nb">p</span> <span class="n">gpadmin</span></code></pre></div></p>
+
+<h2>系统检查</h2>
+
+<h4>配置检测</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">gpcheck -f /usr/local/greenplum-db/gpconfigs/all_hosts_single -m mdw -s smdw</code></pre></div></p>
+
+<h4>网络性能检测</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_1 -r N -d /tmp &gt; checknetwork.out
+gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_2 -r N -d /tmp &gt; checknetwork.out</code></pre></div></p>
+
+<h4>磁盘性能检测</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_hosts_single -r ds -D -d /data1/primary -d /data2/primary -d /data1/mirror -d /data2/mirror &gt; checkio.out</code></pre></div></p>
+
+<h2>初始化数据库</h2>
+
+<h4>获取初始化配置</h4>
+
+<p>请注意，Greenplum3.x版本和4.x版本的初始化配置文件格式存在差异，配置时建议从 $GPHOME/docs/cli_help/gpconfigs/ 目录中获取样例文件，然后进行修改。</p>
+
+<h4>配置样例</h4>
+
+<p>获取配置文件样例：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">cp <span class="nv">$GPHOME</span>/docs/cli_help/gpconfigs/gpinitsystem_config  <span class="nv">$GPHOME</span>/gpconfigs/</code></pre></div>
+修改配置文件：
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ARRAY_NAME</span><span class="o">=&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">EMC</span> <span class="n">Greenplum</span> <span class="n">DW</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span>
+<span class="n">SEG_PREFIX</span><span class="o">=</span><span class="n">gpseg</span>
+<span class="n">PORT_BASE</span><span class="o">=</span><span class="mi">40000</span>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span><span class="p">)</span>    <span class="o">//</span><span class="err">主实例</span>
+<span class="n">MASTER_HOSTNAME</span><span class="o">=</span><span class="n">mdw</span>    <span class="o">//</span><span class="err">主机名</span>
+<span class="n">MASTER_DIRECTORY</span><span class="o">=/</span><span class="n">data</span><span class="o">/</span><span class="n">master</span>
+<span class="n">MASTER_PORT</span><span class="o">=</span><span class="mi">5432</span>
+<span class="n">TRUSTED</span> <span class="n">SHELL</span><span class="o">=</span><span class="n">ssh</span>
+<span class="n">CHECK_POINT_SEGMENT</span><span class="o">=</span><span class="mi">8</span>
+<span class="n">ENCODING</span><span class="o">=</span><span class="n">UNICODE</span>
+<span class="n">MIRROR_PORT_BASE</span><span class="o">=</span><span class="mi">50000</span>
+<span class="n">REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">41000</span>
+<span class="n">MIRROR_REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">51000</span>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">MIRROR_DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span><span class="p">)</span>    <span class="o">//</span><span class="err">备实例</span>
+<span class="n">MACHINE_LIST_FILE</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">all_segs</span>  <span class="o">//</span><span class="n">segment</span><span class="err">主机列表文件</span></code></pre></div></p>
+
+<h4>整理实例列表</h4>
+
+<p>只列出各个网段IP的主机名称，不能添加sdw1、sdw2等
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">sdw1</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw3</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw3</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw4</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw4</span><span class="o">-</span><span class="mi">2</span></code></pre></div></p>
+
+<h4>初始化</h4>
+
+<p><div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">gpinitsystem</span> <span class="o">-</span><span class="n">c</span> <span class="sr">/usr/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">gpinitsystem_config</span> <span class="o">-</span><span class="n">s</span> <span class="n">smdw</span></code></pre></div></p>
+
+<h4>修改访问权限</h4>
+
+<p>修改Master数据目录（MASTER_DATA_DIRECTORY）下<code>pg_hba.conf</code>文件。需要了解客户实际情况，有多少客户端的IP地址以及角色需要访问数据库。举例如下：
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">host</span>     <span class="n">all</span>         <span class="n">gpadmin</span>         <span class="mi">10</span><span class="o">.</span><span class="mi">32</span><span class="o">.</span><span class="mi">38</span><span class="o">.</span><span class="mi">0</span><span class="o">/</span><span class="mi">16</span>          <span class="n">trust</span></code></pre></div>
+IP范围格式：IP 地址/CIDR，如：<code>10.32.38.0/16</code>；<code>255.0.0.0</code>表示 IPv4 CIDR 掩码长度 8，<code>255.255.255.0</code>表示 IPv4 CIDR 掩码长度 24，而 <code>255.255.255.255</code> 表示 CIDR 掩码长度 32；32就表示指定IP，24就表示小子网。
+修改完后数据库重载参数文件：
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">gpstop</span> <span class="o">-</span><span class="n">u</span></code></pre></div></p></blockquote>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[CentOS使用GreenPlum定时加载HDFS数据文件]]></title>
-    <link href="http://liyongxin.github.io/blog/2018/05/07/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/"/>
-    <updated>2018-05-07T18:59:28+08:00</updated>
-    <id>http://liyongxin.github.io/blog/2018/05/07/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian</id>
+    <link href="http://liyongxin.github.io/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/"/>
+    <updated>2018-05-03T14:08:00+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian</id>
     <content type="html"><![CDATA[<p>最近有个场景，数据会定时写入hdfs，需要GP从hdfs中将数据载入。网上关于gp连接hdfs的介绍不是很多，实现的过程中走了很多弯路。
 整个过程大概分为4步：</p>
 
@@ -65,8 +366,12 @@ rpm -ivh hadoop-hdfs-2.2.0_gphd_3_0_1_0-148.x86_64.rpm
 
 <p>在gp中使用gpadmin用户进行设置以下两个配置项，具体的值需要根据官方的资料进行匹配
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">gpconfig -c gp_hadoop_home -v <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>lsquo<span class="p">;</span>/usr/lib/gphd<span class="p">&amp;</span>rsquo<span class="p">;&amp;</span>rdquo<span class="p">;</span>
-gpconfig -c gp_hadoop_target_version -v <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>lsquo<span class="p">;</span>gphd-2.0<span class="p">&amp;</span>rsquo<span class="p">;&amp;</span>rdquo<span class="p">;</span></code></pre></div>
-其他hadoop版本以及target对应的值可参考下图：</p>
+gpconfig -c gp_hadoop_target_version -v <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>lsquo<span class="p">;</span>gphd-2.0<span class="p">&amp;</span>rsquo<span class="p">;&amp;</span>rdquo<span class="p">;</span></code></pre></div></p>
+
+<!--more-->
+
+
+<p>其他hadoop版本以及target对应的值可参考下图：</p>
 
 <table>
    <tr>
@@ -124,6 +429,106 @@ gpconfig -c gp_hadoop_target_version -v <span class="p">&amp;</span>ldquo<span c
    </tr>
 </table>
 
+
+<blockquote><p><strong>注意：</strong>设置完成之后需要完全重启GPDB，官方提示只需gpstop -u重新load即可，实测中会报错找不到java command。
+测试hdfs命令
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">hdfs</span> <span class="n">dfs</span> <span class="o">-</span><span class="n">ls</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span>
+<span class="no">Found</span> <span class="mi">13</span> <span class="n">items</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">19</span> <span class="mi">14</span><span class="p">:</span><span class="mi">53</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">hbase</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">08</span><span class="p">:</span><span class="mi">34</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">liyongxin</span>
+<span class="o">-</span><span class="n">rwxrwxrwx</span> <span class="mi">2</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">10</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">19</span> <span class="mi">14</span><span class="p">:</span><span class="mi">49</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">lyx</span><span class="o">.</span><span class="n">dat</span>
+<span class="o">-</span><span class="n">rwxrwxrwx</span> <span class="mi">3</span> <span class="n">gpadmin</span> <span class="n">supergroup</span> <span class="mi">16</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">19</span> <span class="mi">19</span><span class="p">:</span><span class="mi">54</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">lyx</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">16</span><span class="p">:</span><span class="mi">16</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">16</span><span class="p">:</span><span class="mi">16</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_tmp</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">20</span> <span class="mi">14</span><span class="p">:</span><span class="mi">20</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">tmp</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">09</span><span class="p">:</span><span class="mi">45</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">user</span></code></pre></div>
+将数据文件put到hdfs
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">cat</span> <span class="n">lyx</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">east</span><span class="p">,</span><span class="mi">15</span>
+<span class="n">west</span><span class="p">,</span><span class="mi">25</span>
+<span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">hdfs</span> <span class="n">dfs</span> <span class="o">-</span><span class="n">put</span> <span class="n">lyx</span><span class="o">.</span><span class="n">txt</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span><span class="o">/</span><span class="mi">1</span><span class="o">.</span><span class="n">txt</span>
+<span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">hdfs</span> <span class="n">dfs</span> <span class="o">-</span><span class="n">ls</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span><span class="o">/</span>
+<span class="no">Found</span> <span class="mi">1</span> <span class="n">items</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-</span><span class="n">r</span><span class="o">&amp;</span><span class="n">ndash</span><span class="p">;</span><span class="n">r</span><span class="o">&amp;</span><span class="n">ndash</span><span class="p">;</span> <span class="mi">3</span> <span class="n">gpadmin</span> <span class="n">supergroup</span> <span class="mi">16</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">17</span><span class="p">:</span><span class="mo">00</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span><span class="o">/</span><span class="n">lyx</span><span class="o">.</span><span class="n">txt</span></code></pre></div>
+建立外部表并测试,查询数据
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">lyx</span><span class="o">=</span><span class="c1"># select * from test_hdfs_ext1;</span>
+ <span class="n">age</span> <span class="o">|</span> <span class="nb">name</span>
+<span class="o">&amp;</span><span class="n">mdash</span><span class="p">;</span><span class="o">&amp;</span><span class="n">mdash</span><span class="p">;</span><span class="o">+&amp;</span><span class="n">mdash</span><span class="p">;</span><span class="o">&amp;</span><span class="n">mdash</span><span class="p">;</span>
+ <span class="n">east</span> <span class="o">|</span> <span class="mi">15</span>
+ <span class="n">west</span> <span class="o">|</span> <span class="mi">25</span>
+<span class="p">(</span><span class="mi">2</span> <span class="n">rows</span><span class="p">)</span></code></pre></div></p></blockquote>
+
+<h3>脚本定时加载数据文件</h3>
+
+<p>由于文件会不定时的写入到hdfs目录中，建立外部表采用通配符匹配的方式，但如果在执行加载的过程中有文件写入到目录，会将该文件一并加载到gp中，这样就无法实现对已加载的文件的记录，所以脚本中先将当前已有文件剪切到一个临时目录，加载完成后全部删除临时目录中文件，大致内容如下：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">database</span><span class="o">=</span>postgres
+<span class="nv">tablename</span><span class="o">=</span>hdfs
+<span class="nv">columns</span><span class="o">=</span><span class="p">&amp;</span>lsquo<span class="p">;</span>age text, name text<span class="p">&amp;</span>rsquo<span class="p">;</span>&lt;/p&gt;
+
+&lt;h1&gt;echo <span class="nv">$hdfsurl$filepath</span>&lt;/h1&gt;
+
+&lt;p&gt;hdfs_nns<span class="o">=(</span><span class="p">&amp;</span>lsquo<span class="p">;</span>10.110.17.181:8020<span class="p">&amp;</span>rsquo<span class="p">;</span> <span class="p">&amp;</span>lsquo<span class="p">;</span>10.110.17.182:8020<span class="p">&amp;</span>rsquo<span class="p">;</span><span class="o">)</span>
+<span class="nv">tmp_path</span><span class="o">=</span>mpp_tmp
+<span class="nv">data_path</span><span class="o">=</span>mpp_data
+<span class="k">function</span> get_hdfs_url<span class="o">(){</span>
+ <span class="nv">standby</span><span class="o">=</span><span class="p">&amp;</span>ldquo<span class="p">;</span>ls: Operation category READ is not supported in state standby<span class="p">&amp;</span>rdquo<span class="p">;;</span>
+ <span class="nv">res</span><span class="o">=</span>hdfs_nns<span class="o">[</span>0<span class="o">]</span>
+ <span class="k">for</span> var in <span class="k">${</span><span class="nv">hdfs_nns</span><span class="p">[@]</span><span class="k">}</span><span class="p">;</span>
+     <span class="k">do</span>
+         <span class="nv">res</span><span class="o">=</span>&lt;code&gt;hdfs dfs -ls hdfs://<span class="nv">$var</span>/ 2<span class="p">&amp;</span>gt<span class="p">;&amp;</span>amp<span class="p">;</span>1&lt;/code&gt;<span class="p">;</span>
+         <span class="k">if</span> <span class="o">[</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$res</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$standby</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+            <span class="nv">res</span><span class="o">=</span><span class="p">&amp;</span>lsquo<span class="p">;&amp;</span>rsquo<span class="p">;</span>
+         <span class="k">else</span>
+            <span class="nv">res</span><span class="o">=</span><span class="nv">$var</span>
+            <span class="nb">break</span>
+<span class="nb">         </span><span class="k">fi</span>
+     <span class="k">done</span>
+ <span class="nb">echo</span> <span class="nv">$res</span><span class="p">;</span>
+<span class="o">}</span>
+<span class="nv">hdfs_url</span><span class="o">=</span><span class="k">$(</span>get_hdfs_url<span class="k">)</span>&lt;/p&gt;
+
+&lt;p&gt;function is_file_exist<span class="o">(){</span>
+ hdfs dfs -ls hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$data_path</span>/ <span class="p">|</span> awk <span class="p">&amp;</span>lsquo<span class="p">;</span><span class="nv">$1</span> ~ /Found/ <span class="o">{</span>print 1<span class="o">}</span><span class="p">&amp;</span>rsquo<span class="p">;</span>
+<span class="o">}</span>&lt;/p&gt;
+
+&lt;p&gt;fss<span class="o">=</span><span class="k">$(</span>is_file_exist<span class="k">)</span>
+<span class="k">if</span> <span class="o">[</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$fss</span><span class="p">&amp;</span>rdquo<span class="p">;</span> !<span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>1<span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span>
+ <span class="k">then</span>
+ <span class="nb">echo</span> <span class="p">&amp;</span>lsquo<span class="p">;</span>no data file<span class="p">&amp;</span>rsquo<span class="p">;</span>
+ <span class="nb">exit </span>1
+<span class="k">fi</span>
+hdfs dfs -mv hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$data_path</span>/&lt;em&gt;.txt hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$tmp_path</span>/
+psql -U gpadmin -d <span class="nv">$database</span> <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span> EOF
+create external table hdfs_ext <span class="o">(</span><span class="nv">$columns</span><span class="o">)</span> location<span class="o">(</span><span class="p">&amp;</span>lsquo<span class="p">;</span>gphdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$tmp_path</span>/&lt;/em&gt;.txt<span class="p">&amp;</span>rsquo<span class="p">;</span><span class="o">)</span> format <span class="p">&amp;</span>lsquo<span class="p">;</span>text<span class="p">&amp;</span>rsquo<span class="p">;</span> <span class="o">(</span>delimiter <span class="p">&amp;</span>lsquo<span class="p">;</span>,<span class="p">&amp;</span>rsquo<span class="p">;</span><span class="o">)</span><span class="p">;</span>
+insert into <span class="nv">$tablename</span> <span class="k">select</span> * from hdfs_ext<span class="p">;</span>
+drop external table hdfs_ext<span class="p">;</span>
+EOF&lt;/p&gt;
+
+&lt;h1&gt;drop external table hdfs_ext<span class="p">;</span>&lt;/h1&gt;
+
+&lt;p&gt;hdfs dfs -rm -r hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$tmp_path</span>/*.txt&lt;/p&gt;
+
+&lt;h1&gt;hdfs dfs -ls <span class="nv">$hdfsurl$filepath</span> <span class="p">|</span> awk <span class="p">&amp;</span>lsquo<span class="p">;</span>BEGIN<span class="o">{</span><span class="nv">cur</span><span class="o">=</span>0<span class="p">;</span>filenames<span class="o">[</span>cur<span class="o">]=</span>0<span class="p">;</span><span class="nv">all</span><span class="o">=</span>0<span class="p">;</span><span class="o">}</span>&lt;/h1&gt;
+
+&lt;h1&gt;<span class="nv">$1</span> ~ /Found/ <span class="o">{</span><span class="nv">all</span><span class="o">=</span><span class="nv">$2</span><span class="p">;</span>print all<span class="p">;</span><span class="o">}</span>&lt;/h1&gt;
+
+&lt;h1&gt;<span class="nv">$8</span> ~ /hdfs*/ <span class="o">{</span>print <span class="nv">$8</span><span class="p">;</span>&lt;/h1&gt;
+
+&lt;h1&gt;filenames<span class="o">[</span>cur<span class="o">]=</span><span class="nv">$8</span><span class="p">;</span>cur++<span class="p">;</span>print <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">cur</span><span class="o">=</span><span class="p">&amp;</span>rdquo<span class="p">;</span>+<span class="p">&amp;</span>lsquo<span class="p">;</span>cur<span class="p">&amp;</span>rsquo<span class="p">;;</span>&lt;/h1&gt;
+
+&lt;h1&gt;if<span class="o">(</span><span class="nv">all</span><span class="o">==</span>cur<span class="o">){</span>&lt;/h1&gt;
+
+&lt;p&gt; <span class="c">#external tables</span>
+ <span class="c"># psql -U gpadmin -d lyx &amp;lt;&amp;lt; EOF</span>
+ <span class="c"># CREATE SCHEMA ;</span>
+ <span class="c">#EOF&lt;/p&gt;</span>
+
+&lt;h1&gt;print <span class="p">&amp;</span>ldquo<span class="p">;</span>over,all<span class="o">=</span><span class="p">&amp;</span>rdquo<span class="p">;&amp;</span>lsquo<span class="p">;</span>all<span class="p">&amp;</span>rsquo<span class="p">;</span><span class="o">}</span>&lt;/h1&gt;
+
+&lt;h1&gt;<span class="o">}</span><span class="err">&#39;</span>&lt;/h1&gt;
+
+&lt;p&gt;</code></pre></div>
+最后放入crontab中即可实现定时增量的处理</p>
 ]]></content>
   </entry>
   

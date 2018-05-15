@@ -4,7 +4,7 @@
   <title><![CDATA[Category: alauda | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/alauda/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2018-05-11T14:09:59+08:00</updated>
+  <updated>2018-05-15T20:02:22+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -50,8 +50,12 @@ class SomeClass:
 <pre><code class="ruby">curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
 </code></pre>
 
-<p><div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer&quot;</span><span class="o">&gt;</span><span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">pyenv</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">&lt;</span><span class="sr">/a&gt; | bash</span></code></pre></div>
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="p">&amp;</span>ldquo<span class="p">;</span>~/.pyenv/bin:<span class="nv">$PATH</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
+<p><div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer&quot;</span><span class="o">&gt;</span><span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">pyenv</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">&lt;</span><span class="sr">/a&gt; | bash</span></code></pre></div></p>
+
+<!--more-->
+
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="p">&amp;</span>ldquo<span class="p">;</span>~/.pyenv/bin:<span class="nv">$PATH</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
 <span class="nb">eval</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="k">$(</span>pyenv init -<span class="k">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
 <span class="nb">eval</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="k">$(</span>pyenv virtualenv-init -<span class="k">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span></code></pre></div>
 <div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="vi">@requires_authorization</span>
@@ -172,7 +176,7 @@ class SomeClass:
 
 <ul>
 <li>微博：<a href="http://weibo.com/u/2788354117">@马克飞象</a>，<a href="http://weibo.com/ggock" title="开发者个人账号">@GGock</a></li>
-<li>邮箱：<a href="&#109;&#x61;&#x69;&#108;&#116;&#111;&#x3a;&#x68;&#117;&#x73;&#116;&#x67;&#x6f;&#99;&#x6b;&#x40;&#103;&#109;&#97;&#x69;&#108;&#x2e;&#99;&#x6f;&#x6d;">&#x68;&#x75;&#115;&#116;&#x67;&#111;&#99;&#107;&#64;&#x67;&#109;&#97;&#105;&#x6c;&#46;&#x63;&#111;&#109;</a></li>
+<li>邮箱：<a href="&#x6d;&#97;&#x69;&#x6c;&#116;&#111;&#58;&#x68;&#117;&#115;&#116;&#103;&#x6f;&#99;&#x6b;&#64;&#103;&#109;&#97;&#105;&#108;&#x2e;&#x63;&#111;&#109;">&#x68;&#x75;&#x73;&#x74;&#x67;&#x6f;&#99;&#107;&#64;&#x67;&#109;&#x61;&#x69;&#x6c;&#x2e;&#x63;&#x6f;&#109;</a></li>
 </ul>
 
 

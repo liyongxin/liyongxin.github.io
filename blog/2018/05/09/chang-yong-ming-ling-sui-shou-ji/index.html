@@ -9,8 +9,8 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content=" 常用命令随手记 统计系统各类连接数 netstat -n | awk &#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39; 结果类似如下格式： ESTABLISHED 23
-TIME_WAIT 707 ">
+	<meta name="description" content="常用命令随手记 统计系统各类连接数 netstat -n | awk &#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39; 结果类似如下格式： ESTABLISHED 23
+TIME_WAIT 707 ab命令简单压力测试 ab &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -115,6 +115,15 @@ TIME_WAIT 707 ">
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">ESTABLISHED 23
 TIME_WAIT 707</code></pre></div>
 
+
+<ul>
+<li>ab命令简单压力测试</li>
+</ul>
+
+
+<p>ab -n 50000000 -c 10 <a href="http://127.0.0.1:8080/">http://127.0.0.1:8080/</a>
+- grep 正则或的写法
+grep -E &ldquo;\&lt;(root|gao|uer1)>&rdquo; /etc/passwd</p>
 </div>
 
 </article>
