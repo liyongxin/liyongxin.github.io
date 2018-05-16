@@ -9,7 +9,8 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="GreenPlum脚本化安装 greenplum GreenPlum安装 GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下： 安装前准备 网络规划 Greenplum数据库系统常见的拓扑图如上图所示， &hellip;">
+	<meta name="description" content="greenplum GreenPlum脚本化安装 由于手动安装Greenplum过于繁琐，考虑对安装过程进行自动化，针对手动安装的过程，大致整理了几个脚本，简化安装程序，安装过程中必要的交互操作可以通过expect来实现，比如多机互信环节、master安装GreenPlum过程等。
+大致过程如下 &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -120,15 +121,52 @@
 <time datetime="2018-05-15T20:02:51+08:00" data-updated="true" itemprop="datePublished"></time></div>
 		<div class="tags">
 
+
+	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
+
+
 </div>
 		
 	</div>
 	<h1 class="title" itemprop="name"><a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" itemprop="url">GreenPlum脚本化安装</a></h1>
 	<div class="entry-content" itemprop="articleBody">
-		
+		<p>由于手动安装<code>Greenplum</code>过于繁琐，考虑对安装过程进行自动化，针对手动安装的过程，大致整理了几个脚本，简化安装程序，安装过程中必要的交互操作可以通过<code>expect</code>来实现，比如多机互信环节、<code>master</code>安装<code>GreenPlum</code>过程等。
+大致过程如下：</p>
+
+<h2>准备脚本</h2>
+
+<p><code>root</code>用户登录<code>master</code>节点，创建<code>/opt/gp</code>目录</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir /opt/gp</code></pre></div>
+
+
+<p>拷贝<code>gp.tar</code>到<code>/opt/gp</code>目录，解压</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar -xvf gp.tar -C /opt/gp
+chmod -R <span class="m">777</span> /opt/gp</code></pre></div>
+
+
+<h2>master安装GP</h2>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">cd</span> /opt/gp
+./greenplum-db-4.3.0.0-build-3-RHEL5-x86_64.bin</code></pre></div>
+
+
+<h2>关闭相关服务，执行脚本拷贝</h2>
+
+<h4>配置hosts文件,内容参照如下</h4>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">222</span> <span class="n">mdw</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">223</span> <span class="n">smdw</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">224</span> <span class="n">sdw1</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">225</span> <span class="n">sdw2</span></code></pre></div>
+
+
+
+
 
 		
-		
+		<a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>

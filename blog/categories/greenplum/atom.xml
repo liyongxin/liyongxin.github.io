@@ -4,7 +4,7 @@
   <title><![CDATA[Category: greenplum | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/greenplum/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2018-05-15T20:02:22+08:00</updated>
+  <updated>2018-05-15T20:39:07+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -12,6 +12,481 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[GreenPlum脚本化安装]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/"/>
+    <updated>2018-05-15T20:02:51+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang</id>
+    <content type="html"><![CDATA[<p>由于手动安装<code>Greenplum</code>过于繁琐，考虑对安装过程进行自动化，针对手动安装的过程，大致整理了几个脚本，简化安装程序，安装过程中必要的交互操作可以通过<code>expect</code>来实现，比如多机互信环节、<code>master</code>安装<code>GreenPlum</code>过程等。
+大致过程如下：</p>
+
+<h2>准备脚本</h2>
+
+<p><code>root</code>用户登录<code>master</code>节点，创建<code>/opt/gp</code>目录
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir /opt/gp</code></pre></div>
+拷贝<code>gp.tar</code>到<code>/opt/gp</code>目录，解压
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar -xvf gp.tar -C /opt/gp
+chmod -R <span class="m">777</span> /opt/gp</code></pre></div></p>
+
+<h2>master安装GP</h2>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">cd</span> /opt/gp
+./greenplum-db-4.3.0.0-build-3-RHEL5-x86_64.bin</code></pre></div></p>
+
+<h2>关闭相关服务，执行脚本拷贝</h2>
+
+<h4>配置hosts文件,内容参照如下</h4>
+
+<p><div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">222</span> <span class="n">mdw</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">223</span> <span class="n">smdw</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">224</span> <span class="n">sdw1</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">225</span> <span class="n">sdw2</span></code></pre></div></p>
+
+<!--more-->
+
+
+<h4>执行脚本pre_c.sh</h4>
+
+<p>需输入机器密码，进行各节点修改hosts、建目录、关防火墙、selinux等操作
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;!/bin/sh&lt;/h1&gt;
+
+&lt;p&gt;cat ./all_hosts <span class="p">|</span> <span class="k">while</span> <span class="nb">read </span>line
+<span class="k">do</span>
+   <span class="nv">ip</span><span class="o">=</span><span class="k">${</span><span class="nv">line</span><span class="p">% &lt;em&gt;</span><span class="k">}</span>
+   <span class="nv">hostname</span><span class="o">=</span><span class="k">${</span><span class="nv">line</span><span class="p">#&lt;/em&gt; </span><span class="k">}</span>
+   <span class="nv">hosts</span><span class="o">=</span>&lt;code&gt;cat ./all_hosts&lt;/code&gt;
+   <span class="nv">sshfile</span><span class="o">=</span>/etc/ssh/sshd_config
+   ssh root@<span class="nv">$ip</span> <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span>-!!!
+<span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$hosts</span><span class="p">&amp;</span>rdquo<span class="p">;|</span>sed -i <span class="p">&amp;</span>lsquo<span class="p">;</span>/^M//g<span class="p">&amp;</span>rsquo<span class="p">;</span> &gt;&gt; /etc/hosts
+sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/SELINUX<span class="o">=</span>enforcing/SELINUX<span class="o">=</span>disabled/<span class="p">&amp;</span>lsquo<span class="p">;</span> /etc/selinux/config
+setenforce 0
+service iptables save
+service iptables stop
+chkconfig iptables off
+service ip6tables save
+service ip6tables stop
+chkconfig ip6tables off&lt;/p&gt;
+
+&lt;h1&gt;/etc/ssh/sshd_config&lt;/h1&gt;
+
+&lt;p&gt;sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/^#PermitRootLogin.&lt;em&gt;/PermitRootLogin yes/<span class="p">&amp;</span>lsquo<span class="p">;</span> <span class="nv">$sshfile</span>
+sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/^#RSAAuthentication.&lt;/em&gt;/RSAAuthentication yes/<span class="p">&amp;</span>rsquo<span class="p">;</span> <span class="nv">$sshfile</span>
+sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/^#PubkeyAuthentication.&lt;em&gt;/PubkeyAuthentication yes/<span class="p">&amp;</span>lsquo<span class="p">;</span> <span class="nv">$sshfile</span>
+sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/^#AuthorizedKeysFile.&lt;/em&gt;/AuthorizedKeysFile .ssh<span class="se">\/</span>authorized_keys/<span class="p">&amp;</span>rsquo<span class="p">;</span> <span class="nv">$sshfile</span>
+<span class="k">if</span> <span class="o">[</span> ! -d /opt/gp <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+   mkdir -p /opt/gp
+   chmod <span class="m">777</span> /opt/gp
+<span class="k">fi</span>
+<span class="nb">exit</span>
+!!!
+<span class="k">done</span></code></pre></div></p>
+
+<h2>为root用户建立互信并添加必要的用户和组</h2>
+
+<h4>配置all_hosts文件，内容参照如下：</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">mdw
+smdw
+sdw1
+sdw2</code></pre></div></p>
+
+<h4>执行rtrust_adduser.sh,需输入一次机器密码</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;!/bin/sh&lt;/h1&gt;
+
+&lt;p&gt;source /usr/local/greenplum-db/greenplum_path.sh
+chmod <span class="m">777</span> /opt/gp/all_hosts
+gpssh-exkeys -f /opt/gp/all_hosts&lt;/p&gt;
+
+&lt;h1&gt;./addUser.sh&lt;/h1&gt;
+
+&lt;p&gt;gpssh -f ./all_hosts <span class="p">&amp;</span>lsquo<span class="p">;</span>groupadd -g <span class="m">3030</span> gpadmin<span class="p">;</span>groupadd -g <span class="m">3040</span> gpmon<span class="p">;</span>useradd -u <span class="m">3030</span> -g gpadmin -m -s /bin/bash gpadmin<span class="p">;</span>useradd -u <span class="m">3040</span> -g gpmon -m -s /bin/bash gpmon<span class="p">;</span><span class="nb">echo </span>gpadmin <span class="p">|</span> passwd gpadmin <span class="p">&amp;</span>ndash<span class="p">;</span>stdin<span class="p">;</span><span class="nb">echo </span>gpmon <span class="p">|</span> passwd gpmon <span class="p">&amp;</span>ndash<span class="p">;</span>stdin<span class="p">;</span>chown -R gpadmin:gpadmin /data<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata1<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata2<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata3<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata4<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata5<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata6<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata7<span class="p">;</span>chown -R gpadmin:gpadmin /gpdata8<span class="p">;&amp;</span>rsquo<span class="p">;</span></code></pre></div></p>
+
+<h2>各节点安装必要的软件包，拷贝相关的脚本</h2>
+
+<h4>配置所有segment节点配置文件all_segs,参照如下</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">sdw1
+sdw2</code></pre></div></p>
+
+<h4>配置standby节点配置文件standby，若不安装smdw，无需配置，参照如下</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">smdw</code></pre></div></p>
+
+<h4>执行cprpm.sh，若环境没法连接外网，需手动搭建本地源服务器，并传递参数本地源服务器ip地址，若可连外网，无需传参</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;!/bin/bash&lt;/h1&gt;
+
+&lt;p&gt;localyum_ip<span class="o">=</span><span class="nv">$1</span>
+<span class="nb">echo</span> <span class="nv">$localyum_ip</span>
+<span class="k">if</span> <span class="o">[[</span> <span class="nv">$localyum_ip</span> <span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span> <span class="o">]]</span><span class="p">;</span><span class="k">then</span>
+    <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>Did not <span class="nb">set </span>up <span class="nb">local </span>yum repository,rpms will be downloaded from Internet<span class="p">&amp;</span>rdquo<span class="p">;</span>
+    yum -y install gcc openssh-clients unzip zip OpenIPMI ipmitool xfsprogs kmod-xfs ntp
+    <span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+    gpssh -f ./all_hosts yum -y install gcc openssh-clients unzip zip OpenIPMI ipmitool xfsprogs kmod-xfs ntp
+    <span class="c"># exit 0</span>
+<span class="k">fi</span>&lt;/p&gt;
+
+&lt;p&gt;if <span class="o">[</span> ! -f <span class="p">&amp;</span>ldquo<span class="p">;</span>./all_hosts<span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>Error:could not find file all_hosts!!!<span class="p">&amp;</span>rdquo<span class="p">;</span>
+    <span class="nb">exit </span>1
+<span class="k">fi</span>&lt;/p&gt;
+
+&lt;p&gt;if <span class="o">[</span> ! -f <span class="p">&amp;</span>ldquo<span class="p">;</span>./gpinstall_inspur.tar<span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>Error:could not find file gpinstall_inspur.tar!!!<span class="p">&amp;</span>rdquo<span class="p">;</span>
+    <span class="nb">exit </span>1
+<span class="k">fi</span>
+<span class="k">if</span> <span class="o">[[</span> <span class="nv">$localyum_ip</span> !<span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span> <span class="o">]]</span><span class="p">;</span><span class="k">then</span>
+    <span class="c">#yum -y install gcc openssh-clients unzip zip OpenIPMI ipmitool xfsprogs kmod-xfs ntp</span>
+    <span class="k">if</span> <span class="o">[</span> ! -d <span class="p">&amp;</span>ldquo<span class="p">;</span>/etc/yum.repos.d_backup<span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+        mkdir /etc/yum.repos.d_backup
+    <span class="k">fi</span>
+    mv /etc/yum.repos.d/*.repo /etc/yum.repos.d_backup
+    touch /etc/yum.repos.d/localyum.repo
+    cat &gt; /etc/yum.repos.d/localyum.repo <span class="p">&amp;</span>lt<span class="p">;</span>&lt;EOF
+        <span class="o">[</span>localyum<span class="o">]</span>
+        <span class="nv">name</span><span class="o">=</span>localyum
+        <span class="nv">baseurl</span><span class="o">=</span>http://ipforlocalyumrepo/Packages
+        <span class="nv">enabled</span><span class="o">=</span>1
+        <span class="nv">gpgcheck</span><span class="o">=</span>0
+    EOF
+    sed -i /baseurl/d /etc/yum.repos.d/localyum.repo
+    <span class="nb">echo</span> <span class="s2">&quot;baseurl=http://${localyum_ip}/Packages&quot;</span> &gt;&gt;/etc/yum.repos.d/localyum.repo
+    yum makecache
+    yum -y update
+<span class="k">fi</span>
+<span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+gpscp -f ./all_hosts ./gpinstall_inspur.tar <span class="o">=</span>:/opt/gp&lt;/p&gt;
+
+&lt;p&gt;gpssh -f ./all_hosts <span class="p">&amp;</span>lsquo<span class="p">;</span>tar -xvf /opt/gp/gpinstall_inspur.tar -C /opt/gp<span class="p">;</span>chmod -R <span class="m">777</span> /opt/gp<span class="p">;</span>rpm -ivh /opt/gp/ed-1.1-3.3.el6.x86_64.rpm<span class="p">&amp;</span>rsquo<span class="p">;</span>&lt;/p&gt;
+
+&lt;h1&gt;rpm -ivh /opt/gp/ed-1.1-3.3.el6.x86_64.rpm&lt;/h1&gt;
+
+&lt;p&gt;if <span class="o">[[</span> <span class="nv">$localyum_ip</span> !<span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span> <span class="o">]]</span><span class="p">;</span><span class="k">then</span>
+    <span class="c">#master node download using local yum repository</span>
+    <span class="c">#./install-uselocalyum.sh $localyum_ip</span>
+    <span class="c">#source /usr/local/greenplum-db/greenplum_path.sh</span>
+    <span class="c">#segment nodes download using local yum repository</span>
+    gpssh -f ./all_segs /opt/gp/install-uselocalyum.sh <span class="nv">$localyum_ip</span>
+    <span class="c">#if having standby node,download rpms for it</span>
+    <span class="k">if</span> <span class="o">[</span> -f ./standby <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+       gpssh -f ./standby /opt/gp/install-uselocalyum.sh <span class="nv">$localyum_ip</span>
+    <span class="k">fi</span>
+<span class="k">fi</span></code></pre></div></p>
+
+<h2>执行osconfig_batch.sh,进行操作系统参数优化</h2>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+gpssh -f ./all_hosts /opt/gp/os.sh</code></pre></div>
+os.sh内容如下：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;!/bin/bash&lt;/h1&gt;
+
+&lt;p&gt;gpfiledir<span class="o">=</span>/opt/gp
+<span class="nv">bakdir</span><span class="o">=</span><span class="nv">$gpfiledir</span>/backup
+<span class="nv">hosts</span><span class="o">=</span>/etc/hosts
+<span class="nv">sourcedir</span><span class="o">=</span>/opt/gp
+<span class="nv">ipaddr</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> &lt;code&gt;hostname -I&lt;/code&gt;<span class="k">)</span>
+<span class="nb">echo</span> <span class="nv">$ipaddr</span>&lt;/p&gt;
+
+&lt;h1&gt;exit 0&lt;/h1&gt;
+
+&lt;p&gt;cat <span class="nv">$hosts</span> <span class="p">|</span> <span class="k">while</span> <span class="nb">read </span>line
+<span class="k">do</span>
+   <span class="nv">ip</span><span class="o">=</span><span class="k">${</span><span class="nv">line</span><span class="p">% &lt;em&gt;</span><span class="k">}</span>
+   <span class="nv">hostname</span><span class="o">=</span><span class="k">${</span><span class="nv">line</span><span class="p">#&lt;/em&gt; </span><span class="k">}</span>
+   <span class="nb">echo</span> <span class="nv">$ip$hostname</span> &gt;&gt; ip.out
+   <span class="k">if</span> <span class="o">[</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$ipaddr</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$ip</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+      <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>开始修改<span class="nv">$hostname</span>机器的配置<span class="p">&amp;</span>rdquo<span class="p">;</span>
+      hostname <span class="nv">$hostname</span>
+      sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/^HOSTNAME<span class="o">=</span>.*/HOSTNAME<span class="o">=</span><span class="p">&amp;</span>lsquo<span class="p">;&amp;</span>ldquo<span class="p">;</span><span class="nv">$hostname</span><span class="p">&amp;</span>rdquo<span class="p">;&amp;</span>rsquo<span class="p">;</span>/<span class="p">&amp;</span>lsquo<span class="p">;</span> /etc/sysconfig/network
+      <span class="nb">break</span>
+<span class="nb">   </span><span class="k">fi</span>
+<span class="k">done</span>&lt;/p&gt;
+
+&lt;h1&gt;backup configs&lt;/h1&gt;
+
+&lt;p&gt;if <span class="o">[</span> ! -d <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$bakdir</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+   mkdir -p <span class="nv">$bakdir</span>
+   chmod <span class="m">777</span> <span class="nv">$bakdir</span>
+<span class="k">fi</span>&lt;/p&gt;
+
+&lt;p&gt;cp /etc/security/limits.conf <span class="nv">$bakdir</span>
+cp /etc/security/limits.d/90-nproc.conf <span class="nv">$bakdir</span>
+cp /etc/rc.d/rc.local <span class="nv">$bakdir</span>
+cp /boot/grub/grub.conf <span class="nv">$bakdir</span>
+cp /etc/inittab <span class="nv">$bakdir</span>
+cp /etc/sysctl.conf <span class="nv">$bakdir</span>&lt;/p&gt;
+
+&lt;h1&gt;/etc/limits/limits.conf&lt;/h1&gt;
+
+&lt;p&gt;cat <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span> EOF &gt;&gt; /etc/security/limits.conf
+* soft nofile 65536
+* hard nofile 65536
+* soft nproc 131072
+* hard nproc 131072
+EOF&lt;/p&gt;
+
+&lt;h1&gt;/etc/limits/limits.d/90-nproc.conf&lt;/h1&gt;
+
+&lt;p&gt;cat <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span> EOF &gt;&gt; /etc/security/limits.d/90-nproc.conf
+* soft nproc 131072
+* hard nproc 131072
+EOF&lt;/p&gt;
+
+&lt;h1&gt;/etc/rc.d/rc.local&lt;/h1&gt;
+
+&lt;p&gt;echo <span class="p">&amp;</span>ldquo<span class="p">;</span>blockdev <span class="p">&amp;</span>ndash<span class="p">;</span>setra <span class="m">16384</span> /dev/sd*<span class="p">&amp;</span>rdquo<span class="p">;</span> &gt;&gt; /etc/rc.d/rc.local&lt;/p&gt;
+
+&lt;h1&gt;/4.4.4/boot/grub/grub.conf&lt;/h1&gt;
+
+&lt;p&gt;echo <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">elevator</span><span class="o">=</span>deadline <span class="nv">transparent_hugepage</span><span class="o">=</span>never<span class="p">&amp;</span>rdquo<span class="p">;</span> &gt;&gt; /boot/grub/grub.conf&lt;/p&gt;
+
+&lt;h1&gt;/etc/inittab&lt;/h1&gt;
+
+&lt;p&gt;sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/^id:*:initdefault:/id:3:initdefault:/<span class="p">&amp;</span>lsquo<span class="p">;</span> /etc/inittab&lt;/p&gt;
+
+&lt;h1&gt;/etc/sysctl.conf&lt;/h1&gt;
+
+&lt;p&gt;cat <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span> EOF &gt; /etc/sysctl.conf
+net.bridge.bridge-nf-call-ip6tables <span class="o">=</span> 0
+net.bridge.bridge-nf-call-iptables <span class="o">=</span> 0
+net.bridge.bridge-nf-call-arptables <span class="o">=</span> 0
+kernel.shmmax <span class="o">=</span> 500000000
+kernel.shmmni <span class="o">=</span> 4096
+kernel.shmall <span class="o">=</span> 4000000000
+kernel.sem <span class="o">=</span> <span class="m">250</span> <span class="m">512000</span> <span class="m">100</span> 2048
+kernel.sysrq <span class="o">=</span> 1
+kernel.core_uses_pid <span class="o">=</span> 1
+kernel.msgmnb <span class="o">=</span> 65536
+kernel.msgmax <span class="o">=</span> 65536
+net.ipv4.tcp_syncookies <span class="o">=</span> 1
+net.ipv4.ip_forward <span class="o">=</span> 0
+net.ipv4.conf.default.accept_source_route <span class="o">=</span> 0
+net.ipv4.tcp_tw_recycle <span class="o">=</span> 1
+net.ipv4.tcp_max_syn_backlog <span class="o">=</span> 4096
+net.ipv4.conf.all.arp_filter <span class="o">=</span> 1
+net.ipv4.conf.default.arp_filter <span class="o">=</span> 1
+net.core.netdev_max_backlog <span class="o">=</span> 10000
+vm.overcommit_memory <span class="o">=</span> 2
+kernel.msgmni <span class="o">=</span> 2048
+net.ipv4.ip_local_port_range <span class="o">=</span> <span class="m">1025</span> 65535
+EOF</code></pre></div></p>
+
+<h2>重启各节点</h2>
+
+<h2>建立数据目录，进行磁盘挂载，逻辑卷需手动创建</h2>
+
+<h4>配置segment数据目录逻辑卷lvm,参照如下</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">/dev/sdb1
+/dev/sdb2</code></pre></div></p>
+
+<h4>配置master和standby数据目录逻辑卷lvm-master-standby，参照如下</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">master :/dev/sdb1
+standby :/dev/sdb1</code></pre></div></p>
+
+<h4>执行all_nodes_mount_batch.sh</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;!/bin/sh&lt;/h1&gt;
+
+&lt;h1&gt;config volum <span class="k">for</span> all segment nodes&lt;/h1&gt;
+
+&lt;h1&gt;gpssh -f ./all_segs /opt/gp/read.sh&lt;/h1&gt;
+
+&lt;h1&gt;prepare to config master<span class="p">&amp;</span>rsquo<span class="p">;</span>s volume&lt;/h1&gt;
+
+&lt;p&gt;dir1<span class="o">=</span>/data
+<span class="nv">dir2</span><span class="o">=</span>/data/master
+<span class="nv">fstab</span><span class="o">=</span>/etc/fstab
+<span class="nv">lvmconfig_ms</span><span class="o">=</span><span class="nv">$1</span>
+<span class="nv">lvmconfig_segs</span><span class="o">=</span><span class="nv">$2</span>
+<span class="nv">dirPath</span><span class="o">=</span><span class="k">$(</span><span class="nb">cd</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="k">$(</span>dirname <span class="p">&amp;</span>rdquo<span class="p">;</span><span class="nv">$0</span><span class="s2">&quot;)&amp;ldquo;; pwd)</span>
+<span class="s2">if [ ! -f &amp;rdquo;$lvmconfig_ms&quot;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+   <span class="nv">lvmconfig_ms</span><span class="o">=</span><span class="nv">$dirPath</span>/lvm-master-standby
+   <span class="k">if</span> <span class="o">[</span> ! -f <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$lvmconfig_ms</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+     <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>Config file does not exist!<span class="p">&amp;</span>rdquo<span class="p">;</span>
+     <span class="nb">exit </span>0
+   <span class="k">fi</span>
+<span class="k">fi</span>
+<span class="k">if</span> <span class="o">[</span> ! -f <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$lvmconfig_seg</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+   <span class="nv">lvmconfig_seg</span><span class="o">=</span><span class="nv">$dirPath</span>/lvm
+   <span class="k">if</span> <span class="o">[</span> ! -f <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$lvmconfig_seg</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+     <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>配置文件不存在<span class="p">&amp;</span>rdquo<span class="p">;</span>
+     <span class="nb">exit </span>0
+   <span class="k">fi</span>
+<span class="k">fi</span>&lt;/p&gt;
+
+&lt;p&gt;function isMounted<span class="o">(</span><span class="k">)</span><span class="o">{</span>
+     <span class="nv">res</span><span class="o">=</span>0
+     <span class="nv">mountstr</span><span class="o">=</span><span class="k">$(</span>mount <span class="p">|</span> grep <span class="nv">$1</span><span class="k">)</span>
+     <span class="c">#echo $mountstr &gt; isout.log</span>
+     <span class="nv">constr</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$mountstr</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="p">|</span>grep <span class="nv">$1</span><span class="k">)</span>
+     <span class="c"># echo $constr &gt;&gt; isout.log</span>
+     <span class="k">if</span> <span class="o">[[</span> <span class="nv">$constr</span> !<span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+       <span class="nv">res</span><span class="o">=</span>1
+     <span class="k">fi</span>
+     <span class="nb">echo</span> <span class="nv">$res</span>
+<span class="o">}</span>&lt;/p&gt;
+
+&lt;h1&gt;begin to config master<span class="p">&amp;</span>rsquo<span class="p">;</span>s volume&lt;/h1&gt;
+
+&lt;p&gt;master_str<span class="o">=</span>&lt;code&gt;cat <span class="nv">$lvmconfig_ms</span> <span class="p">|</span> grep master&lt;/code&gt;
+<span class="nb">echo</span> <span class="nv">$master_str</span>
+<span class="nv">master_device</span><span class="o">=</span><span class="k">${</span><span class="nv">master_str</span><span class="p">#*:</span><span class="k">}</span>
+<span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>Device name of master: <span class="p">&amp;</span>rdquo<span class="p">;</span><span class="nv">$master_device</span>
+<span class="k">if</span> <span class="o">[[</span> <span class="nv">$master_device</span> <span class="o">==</span> <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nb">exit </span>1
+<span class="k">fi</span>
+<span class="nv">res</span><span class="o">=</span><span class="k">$(</span>isMounted <span class="nv">$master_device</span><span class="k">)</span>
+<span class="nb">echo</span> <span class="nv">$res</span>
+<span class="k">if</span> <span class="o">[[</span> <span class="nv">$res</span> <span class="o">==</span> <span class="m">1</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+    umount <span class="nv">$master_device</span>
+<span class="k">fi</span>
+mkfs.xfs -f <span class="nv">$master_device</span>
+<span class="k">if</span> <span class="o">[</span> -d <span class="nv">$dir1</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    rm -rf <span class="nv">$dir1</span>
+<span class="k">fi</span>
+mkdir <span class="nv">$dir1</span>
+<span class="k">if</span> <span class="o">[</span> -d <span class="nv">$dir2</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    rm -rf <span class="nv">$dir2</span>
+<span class="k">fi</span>&lt;/p&gt;
+
+&lt;h1&gt;mkdir <span class="nv">$dir2</span>&lt;/h1&gt;
+
+&lt;p&gt;fstabstr<span class="o">=</span><span class="k">${</span><span class="nv">master_device</span><span class="k">}</span><span class="p">&amp;</span>ldquo<span class="p">;</span> <span class="p">&amp;</span>rdquo<span class="p">;</span><span class="k">${</span><span class="nv">dir1</span><span class="k">}</span><span class="p">&amp;</span>ldquo<span class="p">;</span> xfs rw,noatime,inode64,allocsize<span class="o">=</span>16m <span class="m">1</span> 1<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="nb">echo</span> <span class="nv">$fstabstr</span>
+mount <span class="nv">$master_device</span> <span class="nv">$dir1</span> <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> <span class="o">(</span>grep -q <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$fstabstr</span><span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="nv">$fstab</span> <span class="o">||</span> <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">$fstabstr</span><span class="p">&amp;</span>rdquo<span class="p">;</span> &gt;&gt; <span class="nv">$fstab</span><span class="k">)</span>
+chmod -R <span class="m">777</span> <span class="nv">$dir1</span>
+mkdir -p <span class="nv">$dir2</span>&lt;/p&gt;
+
+&lt;h1&gt;segments&lt;/h1&gt;
+
+&lt;p&gt;source /usr/local/greenplum-db/greenplum_path.sh
+gpscp -f ./all_segs <span class="nv">$dirPath</span>/lvm <span class="o">=</span>:/opt/gp
+gpssh -f ./all_segs <span class="nv">$dirPath</span>/read.sh <span class="nv">$dirPath</span>/lvm&lt;/p&gt;
+
+&lt;h1&gt;if having standby node,config its volume&lt;/h1&gt;
+
+&lt;p&gt;if <span class="o">[</span> -f ./standby <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+     <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>standby config file exists<span class="p">&amp;</span>rdquo<span class="p">;</span>
+     gpscp -f ./standby <span class="nv">$lvmconfig_ms</span> <span class="o">=</span>:/opt/gp
+     cat ./standby <span class="p">|</span> <span class="k">while</span> <span class="nb">read </span>line
+     <span class="k">do</span>
+     gpssh -f ./standby <span class="nv">$dirPath</span>/standby_mount.sh <span class="nv">$lvmconfig_ms</span>
+     <span class="k">done</span>
+<span class="k">fi</span></code></pre></div></p>
+
+<h2>执行bashrx.sh，修改bashrc文件</h2>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;!/bin/sh&lt;/h1&gt;
+
+&lt;h1&gt;edit bashrc on master node&lt;/h1&gt;
+
+&lt;p&gt;source /usr/local/greenplum-db/greenplum_path.sh
+cat <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span> EOF &gt;&gt; /root/.bashrc
+<span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+EOF
+cat <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span> EOF &gt;&gt; /home/gpadmin/.bashrc
+    <span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+    <span class="nv">MASTER_DATA_DIRECTORY</span><span class="o">=</span>/data/master/gpseg-1
+    <span class="nb">export </span>MASTER_DATA_DIRECTORY
+EOF&lt;/p&gt;
+
+&lt;h1&gt;edit bashrc on all segments&lt;/h1&gt;
+
+&lt;p&gt;gpssh -f ./all_segs /opt/gp/segs_modify_bashrc.sh&lt;/p&gt;
+
+&lt;h1&gt;if having standby node,modify its bashrc&lt;/h1&gt;
+
+&lt;p&gt;if <span class="o">[</span> -f ./standby <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+   gpssh -f ./standby /opt/gp/stb_modify_bashrc.sh
+   <span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>exist standby node<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="k">fi</span></code></pre></div></p>
+
+<h2>执行gtrust_seginstall.sh，gpadmin用户互信及其他机器安装GP，需输入密码gpadmin</h2>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+chmod <span class="m">777</span> /opt/gp/all_hosts
+su - gpadmin -c <span class="p">&amp;</span>ldquo<span class="p">;</span>gpssh-exkeys -f /opt/gp/all_hosts<span class="p">&amp;</span>rdquo<span class="p">;</span>
+chmod <span class="m">777</span> /usr/local
+gpseginstall -f all_segs -p gpadmin
+<span class="k">if</span> <span class="o">[</span> -f ./standby <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+    gpseginstall -f ./standby -p gpadmin
+<span class="k">fi</span>
+cp <span class="nv">$GPHOME</span>/docs/cli_help/gpconfigs/gpinitsystem_config /opt/gp</code></pre></div></p>
+
+<h2>配置ntp时钟同步，执行ntpsyc_start.sh</h2>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;!/bin/sh&lt;/h1&gt;
+
+&lt;h1&gt;this scrip accepts two parameters,the first is ip of external ntp_server,the second one which is optional is the hostname of master node&lt;/h1&gt;
+
+&lt;h1&gt;external ntp_server ip&lt;/h1&gt;
+
+&lt;p&gt;ntp_server<span class="o">=</span><span class="nv">$1</span>&lt;/p&gt;
+
+&lt;h1&gt;configure master node&lt;/h1&gt;
+
+&lt;p&gt;source /usr/local/greenplum-db/greenplum_path.sh
+<span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>server <span class="nv">$ntp_server</span><span class="p">&amp;</span>rdquo<span class="p">;</span> &gt;&gt; /etc/ntp.conf
+<span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>server 127.127.1.0<span class="p">&amp;</span>rdquo<span class="p">;</span> &gt;&gt; /etc/ntp.conf
+<span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>fudge 127.127.1.0 stratum 8<span class="p">&amp;</span>rdquo<span class="p">;</span> &gt;&gt; /etc/ntp.conf
+service ntpd restart
+chkconfig ntpd on&lt;/p&gt;
+
+&lt;h1&gt;configure all segments&lt;/h1&gt;
+
+&lt;h1&gt;hostname of master node&lt;/h1&gt;
+
+&lt;p&gt;master<span class="o">=</span><span class="nv">$2</span>
+<span class="k">if</span> <span class="o">[[</span> <span class="nv">$master</span> <span class="o">=</span> <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span> <span class="o">]]</span><span class="p">;</span><span class="k">then</span>
+    <span class="nv">master</span><span class="o">=</span><span class="p">&amp;</span>ldquo<span class="p">;</span>mdw<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="k">fi</span>
+<span class="nb">echo</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>master name is:<span class="nv">$master</span><span class="p">&amp;</span>rdquo<span class="p">;</span>&lt;/p&gt;
+
+&lt;h1&gt;configure segment node&lt;/h1&gt;
+
+&lt;p&gt;gpssh -f ./all_segs /opt/gp/ntpsyc_segs.sh <span class="nv">$master</span>&lt;/p&gt;
+
+&lt;p&gt;if <span class="o">[</span> -f ./standby <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    cat ./standby <span class="p">|</span> <span class="k">while</span> <span class="nb">read </span>line
+    <span class="k">do</span>
+    <span class="c">#gpssh -f ./standby echo &amp;ldquo;server $master prefer&amp;rdquo; &gt;&gt; /etc/ntp.conf</span>
+    <span class="c">#gpssh -f ./standby echo &amp;ldquo;server $ntp_server&amp;rdquo; &gt;&gt; /etc/ntp.conf</span>
+    gpssh -f ./standby /opt/gp/ntpsyc_config_standby.sh <span class="nv">$master</span> <span class="nv">$ntp_server</span>
+    gpssh -f ./all_segs /opt/gp/ntpsyc_segs_with_standby.sh <span class="nv">$line</span>
+    <span class="c">#gpssh -f ./all_segs echo &amp;ldquo;server $line&amp;rdquo; &gt;&gt; /etc/ntp.conf</span>
+    <span class="c">#gpssh -f ./standby sed -i &amp;ldquo;a\server $master prefer&amp;rdquo; /etc/ntp.conf</span>
+    <span class="c">#gpssh -f ./standby sed -i &amp;ldquo;a\server $ntp_server&amp;rdquo; /etc/ntp.conf</span>
+    <span class="c">#gpssh -f ./all_segs sed -i &amp;ldquo;a\server $line&amp;rdquo; /etc/ntp.conf</span>
+    <span class="k">done</span>
+    <span class="c">#gpssh -f ./standby service ntpd restart</span>
+    <span class="c">#gpssh -f ./standby chkconfig ntpd on</span>
+    <span class="c">#gpssh -f ./all_segs service ntpd restart</span>
+    <span class="c">#gpssh -f ./all_segs chkconfig ntpd on</span>
+<span class="k">fi</span></code></pre></div></p>
+
+<h2>修改配置文件进行初始化</h2>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">gpinitsystem -c gpinitsystem_config -s smdw <span class="c">#若无standby，无需添加-s smdw</span></code></pre></div></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[GreenPlum安装]]></title>
@@ -133,8 +608,8 @@ Master需要相应的空间。使用服务器内置硬盘的计算方式类似�
 <h4>Master以及Standby Master主机</h4>
 
 <p>分区及格式化：
-<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span> <span class="nx">或者</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>
-<span class="nx">mkdir</span> <span class="o">-</span><span class="nx">p</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span><span class="err">（</span><span class="nx">Master数据目录</span><span class="err">）</span></code></pre></div>
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>  <span class="err">#</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>
+<span class="nx">mkdir</span> <span class="o">-</span><span class="nx">p</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span> <span class="err">#</span> <span class="nx">Master数据目录</span></code></pre></div>
 在/etc/fstab文件中增加
 <div class="highlight"><pre><code class="language-go" data-lang="go"><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span> <span class="o">/</span><span class="nx">data</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span></code></pre></div>
 把/data/master 赋予777权限
@@ -143,9 +618,9 @@ Master需要相应的空间。使用服务器内置硬盘的计算方式类似�
 <h4>Segment主机</h4>
 
 <p>分区及格式化：
-<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>    <span class="nx">或者</span>   <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>  <span class="err">#</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>
 <span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sdb2</span>
-<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data1</span>  <span class="err">（</span><span class="nx">Segment数据目录</span><span class="err">，</span><span class="nx">可根据实例和分配空间不同规划不同的目录</span><span class="err">）</span>
+<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data1</span>  <span class="err">#</span> <span class="nx">Segment数据目录</span><span class="err">，</span><span class="nx">可根据实例和分配空间不同规划不同的目录</span>
 <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data2</span></code></pre></div>
 在/etc/fstab文件中增加
 <div class="highlight"><pre><code class="language-go" data-lang="go"><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span> <span class="o">/</span><span class="nx">data1</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span>
@@ -215,7 +690,7 @@ AuthorizedKeysFile.ssh/authorized_keys</code></pre></div>
 <p>使用<code>gpadmin</code>用户操作，对于Master和Standby Master主机，修改 <code>~/.bashrc</code>文件，添加如下内容：
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
 <span class="nv">MASTER_DATA_DIRECTORY</span><span class="o">=</span>/data/master/gpseg-1
-<span class="nb">export </span>MASTER_DATA_DIRECTORY    <span class="o">(</span>gpstart默认启动的目录）</code></pre></div>
+<span class="nb">export </span>MASTER_DATA_DIRECTORY  <span class="c"># gpstart默认启动的目录</span></code></pre></div>
 对于Segment主机，修改 <code>~/.bashrc</code>文件，添加如下内容：
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh</code></pre></div></p>
 
@@ -275,8 +750,8 @@ gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_2 -r N -d /tmp &gt; che
 <div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ARRAY_NAME</span><span class="o">=&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">EMC</span> <span class="n">Greenplum</span> <span class="n">DW</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span>
 <span class="n">SEG_PREFIX</span><span class="o">=</span><span class="n">gpseg</span>
 <span class="n">PORT_BASE</span><span class="o">=</span><span class="mi">40000</span>
-<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span><span class="p">)</span>    <span class="o">//</span><span class="err">主实例</span>
-<span class="n">MASTER_HOSTNAME</span><span class="o">=</span><span class="n">mdw</span>    <span class="o">//</span><span class="err">主机名</span>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span><span class="p">)</span>   <span class="c"># 主实例</span>
+<span class="n">MASTER_HOSTNAME</span><span class="o">=</span><span class="n">mdw</span>    <span class="c"># 主机名</span>
 <span class="n">MASTER_DIRECTORY</span><span class="o">=/</span><span class="n">data</span><span class="o">/</span><span class="n">master</span>
 <span class="n">MASTER_PORT</span><span class="o">=</span><span class="mi">5432</span>
 <span class="n">TRUSTED</span> <span class="n">SHELL</span><span class="o">=</span><span class="n">ssh</span>
@@ -285,8 +760,8 @@ gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_2 -r N -d /tmp &gt; che
 <span class="n">MIRROR_PORT_BASE</span><span class="o">=</span><span class="mi">50000</span>
 <span class="n">REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">41000</span>
 <span class="n">MIRROR_REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">51000</span>
-<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">MIRROR_DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span><span class="p">)</span>    <span class="o">//</span><span class="err">备实例</span>
-<span class="n">MACHINE_LIST_FILE</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">all_segs</span>  <span class="o">//</span><span class="n">segment</span><span class="err">主机列表文件</span></code></pre></div></p>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">MIRROR_DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span><span class="p">)</span>    <span class="c"># 备实例</span>
+<span class="n">MACHINE_LIST_FILE</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">all_segs</span>  <span class="c"># segment主机列表文件</span></code></pre></div></p>
 
 <h4>整理实例列表</h4>
 

@@ -243,8 +243,8 @@ Master需要相应的空间。使用服务器内置硬盘的计算方式类似�
 
 <p>分区及格式化：</p>
 
-<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span> <span class="nx">或者</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>
-<span class="nx">mkdir</span> <span class="o">-</span><span class="nx">p</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span><span class="err">（</span><span class="nx">Master数据目录</span><span class="err">）</span></code></pre></div>
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>  <span class="err">#</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>
+<span class="nx">mkdir</span> <span class="o">-</span><span class="nx">p</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span> <span class="err">#</span> <span class="nx">Master数据目录</span></code></pre></div>
 
 
 <p>在/etc/fstab文件中增加</p>
@@ -261,9 +261,9 @@ Master需要相应的空间。使用服务器内置硬盘的计算方式类似�
 
 <p>分区及格式化：</p>
 
-<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>    <span class="nx">或者</span>   <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>  <span class="err">#</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>
 <span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sdb2</span>
-<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data1</span>  <span class="err">（</span><span class="nx">Segment数据目录</span><span class="err">，</span><span class="nx">可根据实例和分配空间不同规划不同的目录</span><span class="err">）</span>
+<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data1</span>  <span class="err">#</span> <span class="nx">Segment数据目录</span><span class="err">，</span><span class="nx">可根据实例和分配空间不同规划不同的目录</span>
 <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data2</span></code></pre></div>
 
 
@@ -359,7 +359,7 @@ AuthorizedKeysFile.ssh/authorized_keys</code></pre></div>
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
 <span class="nv">MASTER_DATA_DIRECTORY</span><span class="o">=</span>/data/master/gpseg-1
-<span class="nb">export </span>MASTER_DATA_DIRECTORY    <span class="o">(</span>gpstart默认启动的目录）</code></pre></div>
+<span class="nb">export </span>MASTER_DATA_DIRECTORY  <span class="c"># gpstart默认启动的目录</span></code></pre></div>
 
 
 <p>对于Segment主机，修改 <code>~/.bashrc</code>文件，添加如下内容：</p>
@@ -436,8 +436,8 @@ gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_2 -r N -d /tmp &gt; che
 <div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ARRAY_NAME</span><span class="o">=</span><span class="s">&quot;EMC Greenplum DW&quot;</span>
 <span class="n">SEG_PREFIX</span><span class="o">=</span><span class="n">gpseg</span>
 <span class="n">PORT_BASE</span><span class="o">=</span><span class="mi">40000</span>
-<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span><span class="p">)</span>    <span class="o">//</span><span class="err">主实例</span>
-<span class="n">MASTER_HOSTNAME</span><span class="o">=</span><span class="n">mdw</span>    <span class="o">//</span><span class="err">主机名</span>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span><span class="p">)</span>   <span class="c"># 主实例</span>
+<span class="n">MASTER_HOSTNAME</span><span class="o">=</span><span class="n">mdw</span>    <span class="c"># 主机名</span>
 <span class="n">MASTER_DIRECTORY</span><span class="o">=/</span><span class="n">data</span><span class="o">/</span><span class="n">master</span>
 <span class="n">MASTER_PORT</span><span class="o">=</span><span class="mi">5432</span>
 <span class="n">TRUSTED</span> <span class="n">SHELL</span><span class="o">=</span><span class="n">ssh</span>
@@ -446,8 +446,8 @@ gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_2 -r N -d /tmp &gt; che
 <span class="n">MIRROR_PORT_BASE</span><span class="o">=</span><span class="mi">50000</span>
 <span class="n">REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">41000</span>
 <span class="n">MIRROR_REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">51000</span>
-<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">MIRROR_DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span><span class="p">)</span>    <span class="o">//</span><span class="err">备实例</span>
-<span class="n">MACHINE_LIST_FILE</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">all_segs</span>  <span class="o">//</span><span class="n">segment</span><span class="err">主机列表文件</span></code></pre></div>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">MIRROR_DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span><span class="p">)</span>    <span class="c"># 备实例</span>
+<span class="n">MACHINE_LIST_FILE</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">all_segs</span>  <span class="c"># segment主机列表文件</span></code></pre></div>
 
 
 <h4>整理实例列表</h4>
