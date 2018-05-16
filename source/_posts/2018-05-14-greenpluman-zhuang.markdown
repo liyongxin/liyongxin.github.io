@@ -116,8 +116,8 @@ setenforce 0
 ####Master以及Standby Master主机
 分区及格式化：
 {% highlight go %}
-mkfs.xfs /dev/sda3 或者 mkfs -t xfs /dev/sda3
-mkdir -p /data/master（Master数据目录）
+mkfs.xfs /dev/sda3  # mkfs -t xfs /dev/sda3
+mkdir -p /data/master # Master数据目录
 {% endhighlight %}
 在/etc/fstab文件中增加
 {% highlight go %}
@@ -130,9 +130,9 @@ chmod -R 777 /data/master
 ####Segment主机
 分区及格式化：
 {% highlight go %}
-mkfs.xfs  /dev/sda2    或者   mkfs -t xfs /dev/sda2
+mkfs.xfs  /dev/sda2  # mkfs -t xfs /dev/sda2
 mkfs.xfs  /dev/sdb2
-mkdir /data1  （Segment数据目录，可根据实例和分配空间不同规划不同的目录）
+mkdir /data1  # Segment数据目录，可根据实例和分配空间不同规划不同的目录
 mkdir /data2
 {% endhighlight %}
 在/etc/fstab文件中增加
@@ -212,7 +212,7 @@ gpssh -f ./all_hosts_only
 {% highlight bash %}
 source /usr/local/greenplum-db/greenplum_path.sh
 MASTER_DATA_DIRECTORY=/data/master/gpseg-1
-export MASTER_DATA_DIRECTORY    (gpstart默认启动的目录）
+export MASTER_DATA_DIRECTORY  # gpstart默认启动的目录
 {% endhighlight %}
 对于Segment主机，修改 `~/.bashrc`文件，添加如下内容：
 {% highlight bash %}
@@ -269,8 +269,8 @@ cp $GPHOME/docs/cli_help/gpconfigs/gpinitsystem_config  $GPHOME/gpconfigs/
 ARRAY_NAME="EMC Greenplum DW"
 SEG_PREFIX=gpseg
 PORT_BASE=40000
-declare -a DATA_DIRECTORY=(/data1 /data1 /data1 /data1)    //主实例
-MASTER_HOSTNAME=mdw    //主机名
+declare -a DATA_DIRECTORY=(/data1 /data1 /data1 /data1)   # 主实例
+MASTER_HOSTNAME=mdw    # 主机名
 MASTER_DIRECTORY=/data/master
 MASTER_PORT=5432
 TRUSTED SHELL=ssh
@@ -279,8 +279,8 @@ ENCODING=UNICODE
 MIRROR_PORT_BASE=50000
 REPLICATION_PORT_BASE=41000
 MIRROR_REPLICATION_PORT_BASE=51000
-declare -a MIRROR_DATA_DIRECTORY=(/data2 /data2 /data2 /data2)    //备实例
-MACHINE_LIST_FILE=/usr/local/greenplum-db/gpconfigs/all_segs  //segment主机列表文件
+declare -a MIRROR_DATA_DIRECTORY=(/data2 /data2 /data2 /data2)    # 备实例
+MACHINE_LIST_FILE=/usr/local/greenplum-db/gpconfigs/all_segs  # segment主机列表文件
 {% endhighlight %}
 ####整理实例列表
 只列出各个网段IP的主机名称，不能添加sdw1、sdw2等

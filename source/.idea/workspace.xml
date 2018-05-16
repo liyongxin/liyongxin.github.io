@@ -41,11 +41,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="2018-05-14-greenpluman-zhuang.markdown" pinned="false" current-in-tab="true">
+      <file leaf-file-name="2018-05-14-greenpluman-zhuang.markdown" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/_posts/2018-05-14-greenpluman-zhuang.markdown">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="192">
-              <caret line="8" column="8" lean-forward="true" selection-start-line="8" selection-start-column="8" selection-end-line="8" selection-end-column="8" />
+            <state relative-caret-position="173">
+              <caret line="22" column="0" lean-forward="false" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="11" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2018-05-15-greenplumjiao-ben-hua-an-zhuang.markdown" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/_posts/2018-05-15-greenplumjiao-ben-hua-an-zhuang.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-1985">
+              <caret line="7" column="116" lean-forward="false" selection-start-line="7" selection-start-column="116" selection-end-line="7" selection-end-column="116" />
               <folding />
             </state>
           </provider>
@@ -122,6 +132,7 @@
         <option value="$PROJECT_DIR$/_posts/2018-05-07-greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian.markdown" />
         <option value="$PROJECT_DIR$/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown" />
         <option value="$PROJECT_DIR$/_posts/2018-05-14-greenpluman-zhuang.markdown" />
+        <option value="$PROJECT_DIR$/_posts/2018-05-15-greenplumjiao-ben-hua-an-zhuang.markdown" />
       </list>
     </option>
   </component>
@@ -341,6 +352,14 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/_posts/2018-05-14-greenpluman-zhuang.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="173">
+          <caret line="22" column="0" lean-forward="false" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="432">
@@ -349,10 +368,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/_posts/2018-05-14-greenpluman-zhuang.markdown">
+    <entry file="file://$PROJECT_DIR$/_posts/2018-05-15-greenplumjiao-ben-hua-an-zhuang.markdown">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="192">
-          <caret line="8" column="8" lean-forward="true" selection-start-line="8" selection-start-column="8" selection-end-line="8" selection-end-column="8" />
+        <state relative-caret-position="-1985">
+          <caret line="7" column="116" lean-forward="false" selection-start-line="7" selection-start-column="116" selection-end-line="7" selection-end-column="116" />
           <folding />
         </state>
       </provider>
