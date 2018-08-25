@@ -1,0 +1,454 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>kubernetes中的认证相关 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="Kubernetes中的认证相关 关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章： Controlling Access to the Kubernetes API
+Kubernetes 中的用户与身份认证授权
+Kubernetes RBAC - 基于角色的访问控制 &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Kubernetes中的认证相关</h1>
+	<div class="entry-content" itemprop="articleBody"><p>关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章：</p>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/">Controlling Access to the Kubernetes API</a></li>
+<li><a href="https://jimmysong.io/posts/user-authentication-in-kubernetes/">Kubernetes 中的用户与身份认证授权</a></li>
+<li><a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">Kubernetes RBAC - 基于角色的访问控制</a></li>
+</ul>
+
+
+<h2>Kubernetes API的访问控制原理回顾</h2>
+
+<p>Kubernetes集群的访问权限控制由<code>kube-apiserver</code>负责，<code>kube-apiserver</code>的访问权限控制由身份验证(authentication)、授权(authorization)
+和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
+<img src="/images/k8s-apiserver-access-control-overview.svg" alt="" /></p>
+
+<h3>身份验证（Authentication）</h3>
+
+<p>这个环节它面对的输入是整个<code>http request</code>，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
+<code>basic auth</code>、普通token以及<code>jwt token</code>(用于serviceaccount)。</p>
+
+<p>APIServer启动时，可以指定一种Authentication方法，也可以指定多种方法。如果指定了多种方法，那么APIServer将会逐个使用这些方法对客户端请求进行验证，
+只要请求数据通过其中一种方法的验证，APIServer就会认为Authentication成功；</p>
+
+<p>在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，默认支持<code>client证书</code>验证和<code>serviceaccount</code>两种身份验证方式。
+证书认证通过设置<code>--client-ca-file</code>根证书以及<code>--tls-cert-file</code>和<code>--tls-private-key-file</code>来开启。</p>
+
+<p>在这个环节，apiserver会通过client证书或
+<code>http header</code>中的字段(比如serviceaccount的<code>jwt token</code>)来识别出请求的<code>用户身份</code>，包括”user”、”group”等，这些信息将在后面的<code>authorization</code>环节用到。</p>
+
+<h2>授权（Authorization）</h2>
+
+<p>这个环节面对的输入是<code>http request context</code>中的各种属性，包括：<code>user</code>、<code>group</code>、<code>request path</code>（比如：<code>/api/v1</code>、<code>/healthz</code>、<code>/version</code>等）、
+<code>request verb</code>(比如：<code>get</code>、<code>list</code>、<code>create</code>等)。</p>
+
+<p>APIServer会将这些属性值与事先配置好的访问策略(<code>access policy</code>）相比较。APIServer支持多种<code>authorization mode</code>，包括<code>Node、RBAC、Webhook</code>等。</p>
+
+<p>APIServer启动时，可以指定一种<code>authorization mode</code>，也可以指定多种<code>authorization mode</code>，如果是后者，只要Request通过了其中一种mode的授权，
+那么该环节的最终结果就是授权成功。在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，<code>authorization-mode</code>的默认配置是<code>”Node,RBAC”</code>。</p>
+
+<p>Node授权器主要用于各个node上的kubelet访问apiserver时使用的，其他一般均由RBAC授权器来授权。</p>
+
+<h2>kubectl的授权认证</h2>
+
+<p><code>kubeadm init</code>启动完master节点后，会默认输出类似下面的提示内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">... ...
+Your Kubernetes master has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+  mkdir -p <span class="nv">$HOME</span>/.kube
+  sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
+  sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config
+... ...</code></pre></div>
+
+
+<p>这些信息是在告知我们如何配置<code>kubeconfig</code>文件。按照上述命令配置后，master节点上的<code>kubectl</code>就可以直接使用<code>$HOME/.kube/config</code>的信息访问<code>k8s cluster</code>了。
+并且，通过这种配置方式，<code>kubectl</code>也拥有了整个集群的管理员(root)权限。</p>
+
+<p>很多K8s初学者在这里都会有疑问：</p>
+
+<ul>
+<li>当<code>kubectl</code>使用这种<code>kubeconfig</code>方式访问集群时，<code>Kubernetes</code>的<code>kube-apiserver</code>是如何对来自<code>kubectl</code>的访问进行身份验证(<code>authentication</code>)和授权(<code>authorization</code>)的呢？</li>
+<li>为什么来自<code>kubectl</code>的请求拥有最高的管理员权限呢？</li>
+</ul>
+
+
+<h3>kubectl的身份认证（authentication）</h3>
+
+<p>我们先从kubectl使用的<code>kubeconfig</code>入手。kubectl使用的kubeconfig文件实质上就是<code>kubeadm init</code>过程中生成的<code>/etc/kubernetes/admin.conf</code>，
+我们查看一下该kubeconfig文件的内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl config view</span>
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: REDACTED
+    server: https://192.168.8.33:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: <span class="o">{}</span>
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: REDACTED
+    client-key-data: REDACTED</code></pre></div>
+
+
+<p>关于kubeconfig文件的解释，可以在<a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/">这里</a>自行脑补。在这些输出信息中，我们着重提取到两个信息：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">user name: kubernetes-admin
+client-certificate-data: XXXX</code></pre></div>
+
+
+<p>前面提到过apiserver的authentication支持通过<code>tls client certificate、basic auth、token</code>等方式对客户端发起的请求进行身份校验，
+从kubeconfig信息来看，kubectl显然在请求中使用了<code>tls client certificate</code>的方式，即客户端的证书。另外我们知道Kubernetes是没有user这种资源的，
+通过k8s API也无法创建user。</p>
+
+<p>那么kubectl的身份信息就应该“隐藏”在<code>client-certificate</code>的数据中，我们来查看一下。</p>
+
+<p>首先把<code>/etc/kubernetes/kubelet.conf</code>中的<code>client-key-data</code>内容保存在<code>admin-client-certificate.txt</code>中</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt</span>
+<span class="nv">LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBbjVLRFNhck1VZzdldmErbS9lOCswQ0tSaUl4ajY4a1lwazBYbFBEcEN4WmtLVWhpCkt2K0lqZG80RUFvWG5SWThHRUEvaUpVbmUyNzJBU3ZIeXB0OGFwOWtha3l6ZEZ1bXlKbmV2TjBuWldYeEFkQXMKUTlmcUZyVGcyTTFpTjJPYjFPb3VnR2pHenJ6bEw3Wm5xc3hQcHppOEtCeEVsM0dUVGFLVG5hSzFRWDUwNkt2aApIVkdXMTdkazZLWEltZDZhYWo0VmNNOXJaeEZ5bCs3SzFyQ2hPWXBhNzJUYWpqdEtuZm9FdzNxV0tmb0JXclBkCjJCRDhSaW4vcmlEbGNKTy9GRUt3azJQb1ZrcWx4bzdObWtld0Zma2txTVJrOHY3WTZVUTNvT1lhVDdsMFV0bEUKVzdCaEw1U0lkcTZIbGVzVU1CQkk4NDZEMnFZNk4zdGlndTFES3dJREFRQUJBb0lCQUFjMlJmekVYV3V3QkYwcQpYUy9JNmx2WjFCNEp5bEpUeW10cHZKRWN1a3VuL1dyb1BKZVk2UUVRUmN4anlHRnZLZFFtd3poWEZXdTh2aDJiCmJ2STNTTTVBMmZiNzlIaGoxQXZvK0dvc3pLVUdrSGYyZ3FtbVRvd3NMS1ZmMHZxUjQrOGhqbXg3VDlEME5KK04KYk80SlFlaGE1aFlpQU8rZlVIc0h5QWd0M0dkVFQ0eEh6elBzYjd0dXAxd1hJUVp5SnRkSTR1MGdaMmJFcUw2dQpGdm12RlF2RzY0S1dtQ0Eydk9zclNpb1QxTGpFMDJuZk11dWhvbEhxRVoxNEx4Lzk0elI4MXlYMjV2MnBCVE9yCitvOFBYNGhtUEprckJCVUNvQVZrSmlCYmVqMUh4TW1iQXlhM2ZlaXZBR01LcXh6b2wrVkltUmUwVE8xNk1WbWoKT1dzRGJYRUNnWUVBeW84aUNRR05iQ0p3QzIvOEkzaXU2TktGc2ZYZ08waC9RT0xhbGlReWlzbEx3anBadXNrVQpsaE1zR0xkQUFoZDVrZmVpTUF1UHRPbHNxb1NjeE80eDh1RUFqcUtndklVMHR1NjFjYWFPV29BTnczMkt2bDRnCk05UmxRbFVDMXRRT0htdFRsdURrSmRUQWFGQSswYjFMeVBnZFNlamV1eFl3dlR1MHV1R1BXNlVDZ1lFQXlhd0wKNEcyN05VT0JpSmpGalNPdGEvcjJtVHpEbFNPVUl6NlpyandVd1ZHbTQvRXdPZmx6czROYWd3R0RHK0tvM2lDagpySVJnUkhaMktCWXNjQUlKQk4xWVNpVjZxVzgvaEUzT3k0Y0EySFVZd1NmTktXNXZQSUNMcnVaMGxZWTJlcHFlClZLZXZUNUJWMlJvK3gxZFo2TE4vcXk0c3RHTzhTYWp0b1FxUUtvOENnWUFiQmNOTm5rWm1vYVYrOFI2YkFOT2MKdmRFV0w2NE5XcHVYWld3eDBYeG9wWGdVM2tId09Ea2wyRUx1dlN1dDI4SGRKa01kMDcwRkxvclBxTWRkUWtXcAptRGpCenBKUTlCaFhPenM3Z1RQR2dRVFZDcCtDeS8zUnpFa0I4Mk5nazRPYXJVakdmUlFTcy9KRE9FbFpJNzdECmZjNHllUDJWeWQwUXNiRm5xUVc5L1FLQmdRQzhZblU1c09jV2F6ZStCSTlOTjAyUk4zNVJTRnllblB5Tks3WGMKOXd5Z1JRaXpscUpwRldjS0FpSnppOThRRmx1T0cwa3BKd0xTRVNKd2NiNFM1eVBMb29RTnh4TGM0U21oQ2htcApMelFQL3RvZjNIRWVTYVdwQzU3dnd5Q1dhQ2ZOd1U4elh1dzVVMmVPQktFdURwL1M2cEhRc3JKWjAyeVlGaS9iCnBnVmphd0tCZ1FDbS9sejBRWXFUUFlQcG93RHpSZE84K1VaUmNVRHFKcFZ4TmdpRVdWN0pUN09qaENxVDdMUFAKQkZMYzdCY2hYTElMaElxOGhHNmJrL2dvNWt1TzhuMWpOTjFPTlNMaHh6RVp2VVgva000RE5FYjRaLzVON1JxWAp0Q0hMeFNDZXFUZVJ6K1FXRGRFL2pXaklEcU9McEdUVjdVbXJKN2kvU04rcE02dHZTWVFSUlE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo</span><span class="o">=</span></code></pre></div>
+
+
+<p>然后对上述内容base64解密，然后存储在<code>admin.crt</code>文件中</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt |base64 -d &gt; admin.crt</span>
+<span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin.crt</span>
+-----BEGIN CERTIFICATE-----
+MIIC8jCCAdqgAwIBAgIIQD98S9X+SVUwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+AxMKa3ViZXJuZXRlczAeFw0xODA4MjAwNTUwMzlaFw0xOTA4MjAwNTUwNDFaMDQx
+FzAVBgNVBAoTDnN5c3RlbTptYXN0ZXJzMRkwFwYDVQQDExBrdWJlcm5ldGVzLWFk
+bWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs5Rpnr5a68Cp4/EC
+1IeebFl1z3ixDVT3pwR5YZgfy5E98IYB42c3fFrgV6fOuewOaW3bwrS9SZ4NMqB9
+6TYXlZYkwxeQIp1HE+VSdbAHww7XE8zizv9/BSEynSqDglodmmDres0Cs9/3PG2F
+B9OcAVycRzvxx87iecSzRwVF5DoopFbYkPJY/OjTQMeO8LX8YvoBYCD0ZpHxu7NE
+b9qdUhPKH7ExbgSsSVZ75npjNtdDzlFzD4+tyYkvpBIYttOWHMFMQhipOyG+t1Af
+ydVHzzsiAxgA/00ulxNCvhx1WXN+mL3PeDeBYMSFWo6cg60ih0nnNPk3rezrHoAg
+294QxwIDAQABoycwJTAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUH
+AwIwDQYJKoZIhvcNAQELBQADggEBAFQ9ZvPCQsQQVR1kszsHip3qqcmIwUlkJiF6
+YUVRzeG/QG15dIid5i87q5ZyK+NZhsuBrROnNUDSlg77jD61iHw+jREWd1pYAoK3
+OyLcFd5q73xp+0aP1yEsRDnTmb7gzvKAYnFwKue7OZOVfpzWk0qakWkaPrzx6Bzp
+G62X6p6701sL+9Gru56M8+tp+3/z635Z+56VjAFErzs5Sv5Pw5eAYxA12ebigNeh
+0fIpVyPSZtA1MYgkbtqvjR6qxpgQUBvTCL7unNOGmdrvZI73fDLl+tTvlcgFDWcm
+jlt8d2/5x/55BAfH/6LfqzfbDfOqlicKYvogLa7QE/A0uquVjLg<span class="o">=</span>
+-----END CERTIFICATE-----</code></pre></div>
+
+
+<p>然后用openssl工具查看crt证书内容</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in admin.crt -noout</span>
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number: <span class="m">4629555607114762581</span> <span class="o">(</span>0x403f7c4bd5fe4955<span class="o">)</span>
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
+        Validity
+            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
+            Not After : Aug <span class="m">20</span> 05:50:41 <span class="m">2019</span> GMT
+        Subject: <span class="nv">O</span><span class="o">=</span>system:masters, <span class="nv">CN</span><span class="o">=</span>kubernetes-admin
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            ... ...</code></pre></div>
+
+
+<p>从证书输出的信息中，我们看到了下面这行：</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">Subject</span><span class="p">:</span> <span class="n">O</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">masters</span><span class="p">,</span> <span class="n">CN</span><span class="o">=</span><span class="n">kubernetes</span><span class="o">-</span><span class="n">admin</span></code></pre></div>
+
+
+<p>说明在认证阶段，<code>apiserver</code>会首先使用<code>--client-ca-file</code>配置的CA证书去验证kubectl提供的证书的有效性,基本的方式</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl verify -CAfile /etc/kubernetes/pki/ca.crt /etc/kubernetes/admin.crt</span>
+/etc/kubernetes/admin.crt: OK</code></pre></div>
+
+
+<p>然后认证通过后，提取出签发证书时指定的CN(Common Name),<code>kubernetes-admin</code>，作为请求的用户名 (User Name),
+O(Organization)， 从证书中提取该字段作为请求用户所属的组 (Group)，<code>group = system:masters</code>，然后传递给后面的授权模块</p>
+
+<h3>kubectl的授权</h3>
+
+<p>kubeadm在init初始引导集群启动过程中，创建了许多<code>default</code>的<code>role、clusterrole、rolebinding</code>和<code>clusterrolebinding</code>，
+在k8s有关RBAC的官方文档中，我们看到下面一些<code>default clusterrole</code>列表:</p>
+
+<p><img src="/images/kubeadm-default-clusterrole-list.png" alt="" />
+其中第一个cluster-admin这个cluster role binding绑定了system:masters group，这和authentication环节传递过来的身份信息不谋而合。
+沿着system:masters group对应的cluster-admin clusterrolebinding“追查”下去，真相就会浮出水面。</p>
+
+<p>我们查看一下这一binding：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrolebinding/cluster-admin -n kube-system -o yaml</span>
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: <span class="s2">&quot;true&quot;</span>
+  creationTimestamp: 2018-08-20T05:51:30Z
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: cluster-admin
+  resourceVersion: <span class="s2">&quot;93&quot;</span>
+  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterrolebindings/cluster-admin
+  uid: 163adc34-a43d-11e8-89a4-000c2948e532
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:masters</code></pre></div>
+
+
+<p> 我们看到在kube-system名字空间中，一个名为cluster-admin的clusterrolebinding将cluster-admin cluster role与system:masters Group绑定到了一起，
+ 赋予了所有归属于system:masters Group中用户cluster-admin角色所拥有的权限。</p>
+
+<p> 我们再来查看一下cluster-admin这个role的具体权限信息：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrole/cluster-admin -n kube-system -o yaml</span>
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: <span class="s2">&quot;true&quot;</span>
+  creationTimestamp: 2018-08-20T05:51:30Z
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: cluster-admin
+  resourceVersion: <span class="s2">&quot;40&quot;</span>
+  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterroles/cluster-admin
+  uid: 15f71927-a43d-11e8-89a4-000c2948e532
+rules:
+- apiGroups:
+  - <span class="s1">&#39;*&#39;</span>
+  resources:
+  - <span class="s1">&#39;*&#39;</span>
+  verbs:
+  - <span class="s1">&#39;*&#39;</span>
+- nonResourceURLs:
+  - <span class="s1">&#39;*&#39;</span>
+  verbs:
+  - <span class="s1">&#39;*&#39;</span></code></pre></div>
+
+
+<p>从rules列表中来看，cluster-admin这个角色对所有resources、verbs、apiGroups均有无限制的操作权限，
+即整个集群的root权限。于是kubectl的请求就可以操控和管理整个集群了。</p>
+
+<p>总结一下kubectl的认证过程：</p>
+
+<p><img src="/images/how-kubectl-be-authorized.png" alt="" /></p>
+
+<h3>疑问</h3>
+
+<p>使用kubeadm-1.11.2版本初始化集群，即使不配置.kube/config文件，也可以直接访问到kubernetes cluster,
+<a href="https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/">官方文档</a>中对这块的记录如下：</p>
+
+<p>To make kubectl work for your non-root user, run these commands, which are also part of the kubeadm init output:</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir -p <span class="nv">$HOME</span>/.kube
+sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
+sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config</code></pre></div>
+
+
+<p>Alternatively, if you are the root user, you can run:</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">KUBECONFIG</span><span class="o">=</span>/etc/kubernetes/admin.conf</code></pre></div>
+
+
+<ul>
+<li>关于非root用户，尝试新建了用户，且没有配置kubeconfig文件的情况下，依然可以通过kubectl直接访问集群。</li>
+<li>关于<code>KUBECONFIG</code>环境变量，发现未设置该env，而且尝试把<code>/etc/kubernetes/admin.conf</code> 文件删除掉，重启apiserver的情况，依然可以访问</li>
+</ul>
+
+
+<h2>kubelet的授权认证</h2>
+
+<p>研究完kubectl的认证与授权，使用相同的方式去找kubelet的访问，首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式做base64解码，
+openssl查看crt证书，</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
+        Validity
+            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
+            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
+        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
+                Modulus:
+                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
+    ... ...</code></pre></div>
+
+
+<p>得到我们期望的内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div>
+
+
+<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in `kubectl get clusterrolebindings |awk &#39;{print $1}&#39;`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &#39;system:nodes&#39;;done</span>
+NAME
+Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="s2">&quot;NAME&quot;</span> not found
+cluster-admin
+flannel
+kubeadm:kubelet-bootstrap
+kubeadm:node-autoapprove-bootstrap
+kubeadm:node-autoapprove-certificate-rotation
+  name: system:nodes
+kubeadm:node-proxier
+system:aws-cloud-provider
+system:basic-user
+... ...</code></pre></div>
+
+
+<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
+尝试去找资料，</p>
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2018
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

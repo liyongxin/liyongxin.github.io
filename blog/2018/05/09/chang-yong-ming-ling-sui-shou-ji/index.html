@@ -121,9 +121,67 @@ TIME_WAIT 707</code></pre></div>
 </ul>
 
 
-<p>ab -n 50000000 -c 10 <a href="http://127.0.0.1:8080/">http://127.0.0.1:8080/</a>
-- grep 正则或的写法
-grep -E &ldquo;\&lt;(root|gao|uer1)>&rdquo; /etc/passwd</p>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ab</span> <span class="o">-</span><span class="n">n</span> <span class="mi">50000000</span> <span class="o">-</span><span class="n">c</span> <span class="mi">10</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="p">:</span><span class="mi">8080</span><span class="o">/</span></code></pre></div>
+
+
+<ul>
+<li>grep 正则或的写法</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">grep</span> <span class="o">-</span><span class="n">E</span> <span class="s">&quot;\&lt;(root|gao|uer1)\&gt;&quot;</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span></code></pre></div>
+
+
+<ul>
+<li>uwsgi reload</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ps</span> <span class="n">afx</span><span class="p">;</span>
+<span class="n">kill</span> <span class="o">-</span><span class="n">HUP</span> <span class="err">$</span><span class="n">pid_of_uwsgi</span></code></pre></div>
+
+
+<ul>
+<li>xargs相关</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">find . -type f -name <span class="s2">&quot;*.jpg&quot;</span> -print <span class="p">|</span> xargs tar -czvf images.tar.gz
+
+<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX
+name name name name
+
+<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX -n2
+name name
+name name</code></pre></div>
+
+
+<ul>
+<li>多行输入单行输出：</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">cat test.txt <span class="p">|</span> xargs
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
+
+
+<ul>
+<li>压缩加速</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar --use-compress-program<span class="o">=</span>pigz -xvpf PKG-20180627.tar.gz</code></pre></div>
+
+
+<ul>
+<li>curl发送get或者post请求</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">curl -H <span class="s2">&quot;Content-Type:application/json&quot;</span> -X POST -d <span class="s1">&#39;{&quot;user&quot;: &quot;admin&quot;, &quot;passwd&quot;:&quot;12345678&quot;}&#39;</span> http://127.0.0.1:8000/login
+curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http://127.0.0.1:8080/login</code></pre></div>
+
 </div>
 
 </article>

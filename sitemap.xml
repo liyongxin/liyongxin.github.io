@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/</loc>
+<lastmod>2018-08-25T14:41:00+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/</loc>
+<lastmod>2018-05-17T20:30:37+08:00</lastmod>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/</loc>
 <lastmod>2018-05-15T20:02:51+08:00</lastmod>
 </url>
@@ -37,5 +45,14 @@
 </url>
 <url>
 <loc>http://liyongxin.github.io/blog/categories/greenplum/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/javascript/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/kubernetes/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/k8s/</loc>
 </url>
 </urlset>
