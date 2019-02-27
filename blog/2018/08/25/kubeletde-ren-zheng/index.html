@@ -1,0 +1,205 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>kubelet的认证 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="Kubelet的认证 研究完kubectl的认证与授权，使用相同的方式去找kubelet的访问，
+首先定位配置文件/etc/kubernetes/kubelet.conf，然后用相同的方式对client-key-data做base64解码，保存为kubelet.crt文件。 &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2018/08/25/kubeletde-ren-zheng/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Kubelet的认证</h1>
+	<div class="entry-content" itemprop="articleBody"><p>研究完<a href="../kuberneteszhong-de-ren-zheng-xiang-guan">kubectl的认证与授权</a>，使用相同的方式去找kubelet的访问，
+首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式对<code>client-key-data</code>做base64解码，保存为kubelet.crt文件。</p>
+
+<p>openssl查看crt证书，</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
+        Validity
+            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
+            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
+        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
+                Modulus:
+                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
+    ... ...</code></pre></div>
+
+
+<p>得到我们期望的内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div>
+
+
+<blockquote><p>关于Subject，在k8s中可以理解为角色绑定主体，RoleBinding或者ClusterRoleBinding可以将角色绑定到角色绑定主体（Subject）。
+角色绑定主体可以是用户组（Group）、用户（User）或者服务账户（Service Accounts）</p></blockquote>
+
+<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in `kubectl get clusterrolebindings |awk &#39;{print $1}&#39;`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &#39;system:nodes&#39;;done</span>
+NAME
+Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="s2">&quot;NAME&quot;</span> not found
+cluster-admin
+flannel
+kubeadm:kubelet-bootstrap
+kubeadm:node-autoapprove-bootstrap
+kubeadm:node-autoapprove-certificate-rotation
+  name: system:nodes
+kubeadm:node-proxier
+system:aws-cloud-provider
+system:basic-user
+... ...</code></pre></div>
+
+
+<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
+尝试去找<a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">资料</a>，发现了这么一段</p>
+
+<p><img src="/images/rbac.png" alt="" /></p>
+
+<p>Kubernetes 1.7开始, apiserver的启动中默认增加了<code>--authorization-mode=Node,RBAC</code>,也就是说，除了RBAC外，还有Node这种特殊的授权方式，</p>
+
+<p>继续查找<a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">kubernetes官方的信息</a>,得知</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">Node authorization is a special-purpose authorization mode that specifically authorizes API requests made by kubelets.</code></pre></div>
+
+
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

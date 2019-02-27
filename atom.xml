@@ -4,7 +4,7 @@
   <title><![CDATA[Earlene]]></title>
   <link href="http://liyongxin.github.io/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2018-08-25T18:12:24+08:00</updated>
+  <updated>2019-02-27T10:31:18+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -14,7 +14,207 @@
 
   
   <entry>
-    <title type="html"><![CDATA[kubernetes中的认证相关]]></title>
+    <title type="html"><![CDATA[kubernetes 问题整理]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li/"/>
+    <updated>2018-08-31T10:36:27+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li</id>
+    <content type="html"><![CDATA[<p>本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～</p>
+
+<h2>kubernetes多网卡导致的问题</h2>
+
+<p>部署机器是阿里云，有两块网卡，<code>eth0</code>外网，<code>eth1 vpc</code>内网，集群的路由信息如下</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 src<span class="o">]</span><span class="c"># route</span>
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         gateway         0.0.0.0         UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+10.0.0.0        10.81.35.247    255.0.0.0       UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+10.81.32.0      0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+39.107.40.0     0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+100.64.0.0      10.81.35.247    255.192.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1002</span>   <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span>   <span class="m">0</span>        <span class="m">0</span> eth1
+172.16.0.0      10.81.35.247    255.240.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+192.168.0.0     0.0.0.0         255.255.255.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> cni0
+192.168.0.0     0.0.0.0         255.255.240.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> docker0
+192.168.1.0     192.168.1.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1
+192.168.2.0     192.168.2.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1</code></pre></div>
+
+
+<ul>
+<li><h4>docker0网段与cni0网段冲突问题</h4></li>
+</ul>
+
+
+<p>docker启动时没有指定bip，从上述路由规则发现，docker0使用了192.168的段,刚好给flannel设置的cidr段冲突，
+所以需要给docker修改默认的网段，解决方法是给docker配置bip网段,然后重启docker，观察docker0的route规则</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 ~<span class="o">]</span><span class="c"># cat /etc/docker/daemon.json</span>
+<span class="o">{</span>
+    <span class="s2">&quot;insecure-registries&quot;</span>: <span class="o">[]</span>,
+    <span class="s2">&quot;graph&quot;</span>: <span class="s2">&quot;/var/lib/docker&quot;</span>,
+    <span class="s2">&quot;bip&quot;</span>: <span class="s2">&quot;172.17.0.1/16&quot;</span>,
+    <span class="s2">&quot;registry-mirrors&quot;</span>: <span class="o">[</span><span class="s2">&quot;https://registry.docker-cn.com&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-driver&quot;</span>: <span class="s2">&quot;devicemapper&quot;</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span><span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>, <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span>
+        <span class="s2">&quot;dm.thinpooldev=/dev/mapper/docker-thinpool&quot;</span>,
+        <span class="s2">&quot;dm.min_free_space=0%&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>,
+        <span class="s2">&quot;dm.fs=ext4&quot;</span>
+    <span class="o">]</span>,
+    <span class="s2">&quot;log-driver&quot;</span>: <span class="s2">&quot;fluentd&quot;</span>,
+    <span class="s2">&quot;log-opts&quot;</span>:
+    <span class="o">{</span>
+        <span class="s2">&quot;fluentd-address&quot;</span>: <span class="s2">&quot;localhost:24224&quot;</span>,
+        <span class="s2">&quot;tag&quot;</span>: <span class="s2">&quot;docker.&quot;</span>,
+        <span class="s2">&quot;fluentd-async-connect&quot;</span>: <span class="s2">&quot;true&quot;</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+
+<ul>
+<li><h4>集群初始化问题</h4></li>
+</ul>
+
+
+<p>使用<code>kubeadm</code>搭建，若未指定&ndash;advertise-address地址则k8s默认拿default网卡，
+而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
+时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  bindPort: 6443
+etcd:
+  endpoints:
+  <span class="c">#sed -i &quot;/#ETCD_ENDPOINTS/a\  - http://123.456:2379/g&quot; ./abc.yml</span>
+  <span class="c">#ETCD ENDPOINTS</span>
+  - http://10.81.32.150:2379
+apiServerExtraArgs:
+  apiserver-count: <span class="s2">&quot;1&quot;</span>
+  insecure-port: <span class="s2">&quot;8080&quot;</span>
+  advertise-address<span class="o">=</span>10.81.32.150
+  service-node-port-range: <span class="s2">&quot;30000-32000&quot;</span>
+  admission-control: <span class="s2">&quot;Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota&quot;</span>
+  feature-gates: <span class="s2">&quot;MountPropagation=true&quot;</span>
+  endpoint-reconciler-type: <span class="s2">&quot;lease&quot;</span>
+controllerManagerExtraArgs:
+  pod-eviction-timeout: <span class="s2">&quot;30s&quot;</span>
+  node-monitor-period: <span class="s2">&quot;2s&quot;</span>
+  node-monitor-grace-period: <span class="s2">&quot;16s&quot;</span>
+controllerManagerExtraVolumes:
+- name: k8s
+  hostPath: /etc/kubernetes
+  mountPath: /etc/kubernetes
+imageRepository: index.docker.cn/claas
+networking:
+  podSubnet: 192.168.0.0/16
+kubernetesVersion: v1.9.6
+token: 8d775a.8f70da6999842a27
+tokenTTL: <span class="s2">&quot;0&quot;</span>
+apiServerCertSANs:
+- 127.0.0.1
+- amazonaws.com.cn
+- amazonaws.com
+- 10.81.32.150
+- 10.81.32.150</code></pre></div>
+
+
+<ul>
+<li><h4>flannel网络问题</h4>
+
+<p>多网卡导致flannel网络选择网卡错误,flannel在初始化的时候会默认找defalut网卡，如果需要指定，则在flannel的
+初始化yaml文件中通过&ndash;iface指定网卡，</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">... ...
+      containers:
+      - name: kube-flannel
+        image: index.alauda.cn/claas/flannel:v0.9.1
+        <span class="nb">command</span>: <span class="o">[</span> <span class="s2">&quot;/opt/bin/flanneld&quot;</span>, <span class="s2">&quot;--ip-masq&quot;</span>, <span class="s2">&quot;--kube-subnet-mgr&quot;</span>, <span class="s2">&quot;--iface=eth0&quot;</span><span class="o">]</span>
+        securityContext:
+          privileged: <span class="nb">true</span>
+<span class="nb">        </span>env:
+  ... ...</code></pre></div>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[kubelet的认证]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/08/25/kubeletde-ren-zheng/"/>
+    <updated>2018-08-25T18:17:17+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/08/25/kubeletde-ren-zheng</id>
+    <content type="html"><![CDATA[<p>研究完<a href="../kuberneteszhong-de-ren-zheng-xiang-guan">kubectl的认证与授权</a>，使用相同的方式去找kubelet的访问，
+首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式对<code>client-key-data</code>做base64解码，保存为kubelet.crt文件。</p>
+
+<p>openssl查看crt证书，</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
+        Validity
+            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
+            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
+        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
+                Modulus:
+                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
+    ... ...</code></pre></div>
+
+
+<p>得到我们期望的内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div>
+
+
+<blockquote><p>关于Subject，在k8s中可以理解为角色绑定主体，RoleBinding或者ClusterRoleBinding可以将角色绑定到角色绑定主体（Subject）。
+角色绑定主体可以是用户组（Group）、用户（User）或者服务账户（Service Accounts）</p></blockquote>
+
+<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in `kubectl get clusterrolebindings |awk &#39;{print $1}&#39;`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &#39;system:nodes&#39;;done</span>
+NAME
+Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="s2">&quot;NAME&quot;</span> not found
+cluster-admin
+flannel
+kubeadm:kubelet-bootstrap
+kubeadm:node-autoapprove-bootstrap
+kubeadm:node-autoapprove-certificate-rotation
+  name: system:nodes
+kubeadm:node-proxier
+system:aws-cloud-provider
+system:basic-user
+... ...</code></pre></div>
+
+
+<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
+尝试去找<a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">资料</a>，发现了这么一段</p>
+
+<p><img src="http://liyongxin.github.io/images/rbac.png" alt="" /></p>
+
+<p>Kubernetes 1.7开始, apiserver的启动中默认增加了<code>--authorization-mode=Node,RBAC</code>,也就是说，除了RBAC外，还有Node这种特殊的授权方式，</p>
+
+<p>继续查找<a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">kubernetes官方的信息</a>,得知</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">Node authorization is a special-purpose authorization mode that specifically authorizes API requests made by kubelets.</code></pre></div>
+
+
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[kubectl的认证与授权]]></title>
     <link href="http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/"/>
     <updated>2018-08-25T14:41:00+08:00</updated>
     <id>http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan</id>
@@ -33,7 +233,7 @@
 和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
 <img src="http://liyongxin.github.io/images/k8s-apiserver-access-control-overview.svg" alt="" /></p>
 
-<h3>身份验证（Authentication）</h3>
+<h4>身份验证（Authentication）</h4>
 
 <p>这个环节它面对的输入是整个<code>http request</code>，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
 <code>basic auth</code>、普通token以及<code>jwt token</code>(用于serviceaccount)。</p>
@@ -47,7 +247,7 @@
 <p>在这个环节，apiserver会通过client证书或
 <code>http header</code>中的字段(比如serviceaccount的<code>jwt token</code>)来识别出请求的<code>用户身份</code>，包括”user”、”group”等，这些信息将在后面的<code>authorization</code>环节用到。</p>
 
-<h2>授权（Authorization）</h2>
+<h4>授权（Authorization）</h4>
 
 <p>这个环节面对的输入是<code>http request context</code>中的各种属性，包括：<code>user</code>、<code>group</code>、<code>request path</code>（比如：<code>/api/v1</code>、<code>/healthz</code>、<code>/version</code>等）、
 <code>request verb</code>(比如：<code>get</code>、<code>list</code>、<code>create</code>等)。</p>
@@ -84,7 +284,7 @@ To start using your cluster, you need to run the following as a regular user:
 </ul>
 
 
-<h3>kubectl的身份认证（authentication）</h3>
+<h4>kubectl的身份认证（authentication）</h4>
 
 <p>我们先从kubectl使用的<code>kubeconfig</code>入手。kubectl使用的kubeconfig文件实质上就是<code>kubeadm init</code>过程中生成的<code>/etc/kubernetes/admin.conf</code>，
 我们查看一下该kubeconfig文件的内容：</p>
@@ -185,7 +385,10 @@ Certificate:
 <p>然后认证通过后，提取出签发证书时指定的CN(Common Name),<code>kubernetes-admin</code>，作为请求的用户名 (User Name),
 O(Organization)， 从证书中提取该字段作为请求用户所属的组 (Group)，<code>group = system:masters</code>，然后传递给后面的授权模块</p>
 
-<h3>kubectl的授权</h3>
+<blockquote><p>X509 客户端证书
+通过将 &ndash;client-ca-file=SOMEFILE 选项传递给 API server 来启用客户端证书认证。引用的文件必须包含一个或多个证书颁发机构，用于验证提交给 API server 的客户端证书。如果客户端证书已提交并验证，则使用 subject 的 Common Name（CN）作为请求的用户名。从 Kubernetes 1.4开始，客户端证书还可以使用证书的 organization 字段来指示用户的组成员身份。</p></blockquote>
+
+<h4>kubectl的授权</h4>
 
 <p>kubeadm在init初始引导集群启动过程中，创建了许多<code>default</code>的<code>role、clusterrole、rolebinding</code>和<code>clusterrolebinding</code>，
 在k8s有关RBAC的官方文档中，我们看到下面一些<code>default clusterrole</code>列表:</p>
@@ -253,10 +456,6 @@ rules:
 <p>从rules列表中来看，cluster-admin这个角色对所有resources、verbs、apiGroups均有无限制的操作权限，
 即整个集群的root权限。于是kubectl的请求就可以操控和管理整个集群了。</p>
 
-<p>总结一下kubectl的认证过程：</p>
-
-<p><img src="http://liyongxin.github.io/images/how-kubectl-be-authorized.png" alt="" /></p>
-
 <h3>疑问</h3>
 
 <p>使用kubeadm-1.11.2版本初始化集群，即使不配置.kube/config文件，也可以直接访问到kubernetes cluster,
@@ -280,54 +479,28 @@ sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k
 </ul>
 
 
-<h2>kubelet的授权认证</h2>
+<p>关于以上疑问已经弄明白，当我们在master节点中使用kubectl请求时，如果没有设置$HOME/.kube/config文件，则默认是通过本地的非安全端口来访问
+apiserver，</p>
 
-<p>研究完kubectl的认证与授权，使用相同的方式去找kubelet的访问，首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式做base64解码，
-openssl查看crt证书，</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
-Certificate:
-    Data:
-        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
-        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
-        Validity
-            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
-            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
-        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
-                Modulus:
-                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
-    ... ...</code></pre></div>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@ip-172-31-10-236 centos<span class="o">]</span><span class="c"># kubectl get no -v 7</span>
+I0930 06:55:41.036661   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/alauda.io/v3/serverresources.json
+I0930 06:55:41.037250   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/v1/serverresources.json
+I0930 06:55:41.037484   <span class="m">13865</span> round_trippers.go:383<span class="o">]</span> GET http://localhost:8080/api/v1/nodes
+I0930 06:55:41.037502   <span class="m">13865</span> round_trippers.go:390<span class="o">]</span> Request Headers:
+I0930 06:55:41.037515   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     Accept: application/json
+I0930 06:55:41.037528   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     User-Agent: kubectl/v1.7.3 <span class="o">(</span>linux/amd64<span class="o">)</span> kubernetes/2c2fe6e
+I0930 06:55:41.046449   <span class="m">13865</span> round_trippers.go:408<span class="o">]</span> Response Status: <span class="m">200</span> OK in <span class="m">8</span> milliseconds
+I0930 06:55:41.067926   <span class="m">13865</span> cached_discovery.go:119<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/servergroups.json
+I0930 06:55:41.068015   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/apiregistration.k8s.io/v1beta1/serverresources.json</code></pre></div>
 
 
-<p>得到我们期望的内容：</p>
+<p> 如果</p>
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div>
+<h3>小结</h3>
 
+<p>总结一下kubectl的认证过程：</p>
 
-<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in `kubectl get clusterrolebindings |awk &#39;{print $1}&#39;`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &#39;system:nodes&#39;;done</span>
-NAME
-Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="s2">&quot;NAME&quot;</span> not found
-cluster-admin
-flannel
-kubeadm:kubelet-bootstrap
-kubeadm:node-autoapprove-bootstrap
-kubeadm:node-autoapprove-certificate-rotation
-  name: system:nodes
-kubeadm:node-proxier
-system:aws-cloud-provider
-system:basic-user
-... ...</code></pre></div>
-
-
-<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
-尝试去找资料，</p>
+<p><img src="http://liyongxin.github.io/images/how-kubectl-be-authorized.png" alt="" /></p>
 ]]></content>
   </entry>
   
@@ -1391,6 +1564,78 @@ a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">curl -H <span class="s2">&quot;Content-Type:application/json&quot;</span> -X POST -d <span class="s1">&#39;{&quot;user&quot;: &quot;admin&quot;, &quot;passwd&quot;:&quot;12345678&quot;}&#39;</span> http://127.0.0.1:8000/login
 curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http://127.0.0.1:8080/login</code></pre></div>
 
+
+<ul>
+<li>kubernetes 滚动升级</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c"># run test deploy</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl run --image=nginx --port=80 --replicas=2 yxli-nginx</span>
+<span class="c"># scale replica</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl scale --replicas=1 deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl get deploy</span>
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+busybox      <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>            <span class="m">2</span>           39d
+busybox1     <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           39d
+yxli-nginx   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           2h
+<span class="c"># update image</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl set image  deploy/yxli-nginx yxli-nginx=nginx:alpine</span>
+<span class="c"># 查看升级历史</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">1</span>         &lt;none&gt;
+<span class="m">2</span>         &lt;none&gt;
+<span class="c"># 回顾至上次版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout undo deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">2</span>         &lt;none&gt;
+<span class="m">3</span>         &lt;none&gt;
+<span class="c"># 回滚至指定版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm --to-revision=2</span></code></pre></div>
+
+
+<ul>
+<li>查看docker使用的cpu核心数</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
+/sys/fs/cgroup/cpuset/docker
+<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># cat cpuset.cpus</span>
+0-7</code></pre></div>
+
+
+<h1>find查找</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># find  /var/log/ -size +200M -type f -exec ls {} +</span></code></pre></div>
+
+
+<h1>sed 匹配替换</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#/dev/mapper/centos-swap swap                    swap    defaults        0 0</span>
+sed -i <span class="s1">&#39;/ swap / s/^\(.*\)$/#\1/g&#39;</span> /etc/fstab</code></pre></div>
+
+
+<h1>dd命令</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#创建一个大小为256M的文件</span>
+dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>/swapfile <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span> <span class="nv">count</span><span class="o">=</span>262144
+<span class="c">#测试硬盘的读写速度</span>
+dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span> <span class="nv">count</span><span class="o">=</span><span class="m">1000000</span> <span class="nv">of</span><span class="o">=</span>/root/1Gb.file
+dd <span class="k">if</span><span class="o">=</span>/root/1Gb.file <span class="nv">bs</span><span class="o">=</span>64k <span class="p">|</span> dd <span class="nv">of</span><span class="o">=</span>/dev/null</code></pre></div>
+
+
+<h1>iostat命令</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#安装</span>
+yum install sysstat
+<span class="c">#测试机器设备读写情况，所有设备，间隔1s，执行10次</span>
+iostat -d -x <span class="m">1</span> 10</code></pre></div>
+
 ]]></content>
   </entry>
   
@@ -1818,7 +2063,7 @@ hdfs dfs -rm -r hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$tmp_p
 
 <ul>
 <li>微博：<a href="http://weibo.com/u/2788354117">@马克飞象</a>，<a href="http://weibo.com/ggock" title="开发者个人账号">@GGock</a></li>
-<li>邮箱：<a href="&#109;&#97;&#x69;&#x6c;&#x74;&#111;&#58;&#x68;&#x75;&#115;&#116;&#x67;&#x6f;&#99;&#x6b;&#x40;&#x67;&#109;&#x61;&#105;&#108;&#x2e;&#x63;&#x6f;&#109;">&#104;&#117;&#x73;&#116;&#x67;&#x6f;&#x63;&#x6b;&#64;&#103;&#x6d;&#97;&#x69;&#108;&#46;&#x63;&#111;&#x6d;</a></li>
+<li>邮箱：<a href="&#x6d;&#x61;&#x69;&#108;&#116;&#x6f;&#58;&#104;&#x75;&#x73;&#x74;&#103;&#111;&#99;&#x6b;&#x40;&#x67;&#x6d;&#x61;&#x69;&#x6c;&#46;&#99;&#x6f;&#109;">&#x68;&#117;&#x73;&#x74;&#103;&#111;&#99;&#107;&#64;&#x67;&#109;&#x61;&#x69;&#x6c;&#46;&#99;&#111;&#x6d;</a></li>
 </ul>
 
 

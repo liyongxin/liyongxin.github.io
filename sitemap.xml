@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li/</loc>
+<lastmod>2018-08-31T10:36:27+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2018/08/25/kubeletde-ren-zheng/</loc>
+<lastmod>2018-08-25T18:17:17+08:00</lastmod>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/</loc>
 <lastmod>2018-08-25T14:41:00+08:00</lastmod>
 </url>
@@ -29,10 +37,10 @@
 <lastmod>2018-04-24T00:00:00+08:00</lastmod>
 </url>
 <url>
-<loc>http://liyongxin.github.io/blog/archives/</loc>
+<loc>http://liyongxin.github.io/</loc>
 </url>
 <url>
-<loc>http://liyongxin.github.io/</loc>
+<loc>http://liyongxin.github.io/blog/archives/</loc>
 </url>
 <url>
 <loc>http://liyongxin.github.io/about/</loc>

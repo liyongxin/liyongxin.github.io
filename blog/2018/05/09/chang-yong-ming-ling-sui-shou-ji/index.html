@@ -182,6 +182,78 @@ a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">curl -H <span class="s2">&quot;Content-Type:application/json&quot;</span> -X POST -d <span class="s1">&#39;{&quot;user&quot;: &quot;admin&quot;, &quot;passwd&quot;:&quot;12345678&quot;}&#39;</span> http://127.0.0.1:8000/login
 curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http://127.0.0.1:8080/login</code></pre></div>
 
+
+<ul>
+<li>kubernetes 滚动升级</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c"># run test deploy</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl run --image=nginx --port=80 --replicas=2 yxli-nginx</span>
+<span class="c"># scale replica</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl scale --replicas=1 deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl get deploy</span>
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+busybox      <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>            <span class="m">2</span>           39d
+busybox1     <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           39d
+yxli-nginx   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           2h
+<span class="c"># update image</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl set image  deploy/yxli-nginx yxli-nginx=nginx:alpine</span>
+<span class="c"># 查看升级历史</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">1</span>         &lt;none&gt;
+<span class="m">2</span>         &lt;none&gt;
+<span class="c"># 回顾至上次版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout undo deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">2</span>         &lt;none&gt;
+<span class="m">3</span>         &lt;none&gt;
+<span class="c"># 回滚至指定版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm --to-revision=2</span></code></pre></div>
+
+
+<ul>
+<li>查看docker使用的cpu核心数</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
+/sys/fs/cgroup/cpuset/docker
+<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># cat cpuset.cpus</span>
+0-7</code></pre></div>
+
+
+<h1>find查找</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># find  /var/log/ -size +200M -type f -exec ls {} +</span></code></pre></div>
+
+
+<h1>sed 匹配替换</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#/dev/mapper/centos-swap swap                    swap    defaults        0 0</span>
+sed -i <span class="s1">&#39;/ swap / s/^\(.*\)$/#\1/g&#39;</span> /etc/fstab</code></pre></div>
+
+
+<h1>dd命令</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#创建一个大小为256M的文件</span>
+dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>/swapfile <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span> <span class="nv">count</span><span class="o">=</span>262144
+<span class="c">#测试硬盘的读写速度</span>
+dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span> <span class="nv">count</span><span class="o">=</span><span class="m">1000000</span> <span class="nv">of</span><span class="o">=</span>/root/1Gb.file
+dd <span class="k">if</span><span class="o">=</span>/root/1Gb.file <span class="nv">bs</span><span class="o">=</span>64k <span class="p">|</span> dd <span class="nv">of</span><span class="o">=</span>/dev/null</code></pre></div>
+
+
+<h1>iostat命令</h1>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#安装</span>
+yum install sysstat
+<span class="c">#测试机器设备读写情况，所有设备，间隔1s，执行10次</span>
+iostat -d -x <span class="m">1</span> 10</code></pre></div>
+
 </div>
 
 </article>
@@ -199,7 +271,7 @@ curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http:
 
 </div>
 			</div>
-			<footer id="footer" class="inner">Copyright &copy; 2018
+			<footer id="footer" class="inner">Copyright &copy; 2019
 
     yxli@alauda.io
 

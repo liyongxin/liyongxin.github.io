@@ -1,0 +1,265 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>kubernetes 问题整理 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="Kubernetes 问题整理 本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～ kubernetes多网卡导致的问题 部署机器是阿里云，有两块网卡，eth0外网，eth1 vpc内网，集群的路由信息如下 [root@10 src]# route
+Kernel IP &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Kubernetes 问题整理</h1>
+	<div class="entry-content" itemprop="articleBody"><p>本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～</p>
+
+<h2>kubernetes多网卡导致的问题</h2>
+
+<p>部署机器是阿里云，有两块网卡，<code>eth0</code>外网，<code>eth1 vpc</code>内网，集群的路由信息如下</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 src<span class="o">]</span><span class="c"># route</span>
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         gateway         0.0.0.0         UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+10.0.0.0        10.81.35.247    255.0.0.0       UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+10.81.32.0      0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+39.107.40.0     0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+100.64.0.0      10.81.35.247    255.192.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1002</span>   <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span>   <span class="m">0</span>        <span class="m">0</span> eth1
+172.16.0.0      10.81.35.247    255.240.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+192.168.0.0     0.0.0.0         255.255.255.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> cni0
+192.168.0.0     0.0.0.0         255.255.240.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> docker0
+192.168.1.0     192.168.1.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1
+192.168.2.0     192.168.2.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1</code></pre></div>
+
+
+<ul>
+<li><h4>docker0网段与cni0网段冲突问题</h4></li>
+</ul>
+
+
+<p>docker启动时没有指定bip，从上述路由规则发现，docker0使用了192.168的段,刚好给flannel设置的cidr段冲突，
+所以需要给docker修改默认的网段，解决方法是给docker配置bip网段,然后重启docker，观察docker0的route规则</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 ~<span class="o">]</span><span class="c"># cat /etc/docker/daemon.json</span>
+<span class="o">{</span>
+    <span class="s2">&quot;insecure-registries&quot;</span>: <span class="o">[]</span>,
+    <span class="s2">&quot;graph&quot;</span>: <span class="s2">&quot;/var/lib/docker&quot;</span>,
+    <span class="s2">&quot;bip&quot;</span>: <span class="s2">&quot;172.17.0.1/16&quot;</span>,
+    <span class="s2">&quot;registry-mirrors&quot;</span>: <span class="o">[</span><span class="s2">&quot;https://registry.docker-cn.com&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-driver&quot;</span>: <span class="s2">&quot;devicemapper&quot;</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span><span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>, <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span>
+        <span class="s2">&quot;dm.thinpooldev=/dev/mapper/docker-thinpool&quot;</span>,
+        <span class="s2">&quot;dm.min_free_space=0%&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>,
+        <span class="s2">&quot;dm.fs=ext4&quot;</span>
+    <span class="o">]</span>,
+    <span class="s2">&quot;log-driver&quot;</span>: <span class="s2">&quot;fluentd&quot;</span>,
+    <span class="s2">&quot;log-opts&quot;</span>:
+    <span class="o">{</span>
+        <span class="s2">&quot;fluentd-address&quot;</span>: <span class="s2">&quot;localhost:24224&quot;</span>,
+        <span class="s2">&quot;tag&quot;</span>: <span class="s2">&quot;docker.&quot;</span>,
+        <span class="s2">&quot;fluentd-async-connect&quot;</span>: <span class="s2">&quot;true&quot;</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+
+<ul>
+<li><h4>集群初始化问题</h4></li>
+</ul>
+
+
+<p>使用<code>kubeadm</code>搭建，若未指定&ndash;advertise-address地址则k8s默认拿default网卡，
+而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
+时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  bindPort: 6443
+etcd:
+  endpoints:
+  <span class="c">#sed -i &quot;/#ETCD_ENDPOINTS/a\  - http://123.456:2379/g&quot; ./abc.yml</span>
+  <span class="c">#ETCD ENDPOINTS</span>
+  - http://10.81.32.150:2379
+apiServerExtraArgs:
+  apiserver-count: <span class="s2">&quot;1&quot;</span>
+  insecure-port: <span class="s2">&quot;8080&quot;</span>
+  advertise-address<span class="o">=</span>10.81.32.150
+  service-node-port-range: <span class="s2">&quot;30000-32000&quot;</span>
+  admission-control: <span class="s2">&quot;Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota&quot;</span>
+  feature-gates: <span class="s2">&quot;MountPropagation=true&quot;</span>
+  endpoint-reconciler-type: <span class="s2">&quot;lease&quot;</span>
+controllerManagerExtraArgs:
+  pod-eviction-timeout: <span class="s2">&quot;30s&quot;</span>
+  node-monitor-period: <span class="s2">&quot;2s&quot;</span>
+  node-monitor-grace-period: <span class="s2">&quot;16s&quot;</span>
+controllerManagerExtraVolumes:
+- name: k8s
+  hostPath: /etc/kubernetes
+  mountPath: /etc/kubernetes
+imageRepository: index.docker.cn/claas
+networking:
+  podSubnet: 192.168.0.0/16
+kubernetesVersion: v1.9.6
+token: 8d775a.8f70da6999842a27
+tokenTTL: <span class="s2">&quot;0&quot;</span>
+apiServerCertSANs:
+- 127.0.0.1
+- amazonaws.com.cn
+- amazonaws.com
+- 10.81.32.150
+- 10.81.32.150</code></pre></div>
+
+
+<ul>
+<li><h4>flannel网络问题</h4>
+
+<p>多网卡导致flannel网络选择网卡错误,flannel在初始化的时候会默认找defalut网卡，如果需要指定，则在flannel的
+初始化yaml文件中通过&ndash;iface指定网卡，</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">... ...
+      containers:
+      - name: kube-flannel
+        image: index.alauda.cn/claas/flannel:v0.9.1
+        <span class="nb">command</span>: <span class="o">[</span> <span class="s2">&quot;/opt/bin/flanneld&quot;</span>, <span class="s2">&quot;--ip-masq&quot;</span>, <span class="s2">&quot;--kube-subnet-mgr&quot;</span>, <span class="s2">&quot;--iface=eth0&quot;</span><span class="o">]</span>
+        securityContext:
+          privileged: <span class="nb">true</span>
+<span class="nb">        </span>env:
+  ... ...</code></pre></div>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

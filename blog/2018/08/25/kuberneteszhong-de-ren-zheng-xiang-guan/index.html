@@ -5,11 +5,11 @@
 
 <head>
 	<meta charset="utf-8">
-	<title>kubernetes中的认证相关 - Earlene</title>
+	<title>kubectl的认证与授权 - Earlene</title>
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="Kubernetes中的认证相关 关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章： Controlling Access to the Kubernetes API
+	<meta name="description" content="Kubectl的认证与授权 关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章： Controlling Access to the Kubernetes API
 Kubernetes 中的用户与身份认证授权
 Kubernetes RBAC - 基于角色的访问控制 &hellip;">
 	
@@ -102,7 +102,7 @@ Kubernetes RBAC - 基于角色的访问控制 &hellip;">
 			
 			<div class="mid-col-container">
 				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
-	<h1 class="title" itemprop="name">Kubernetes中的认证相关</h1>
+	<h1 class="title" itemprop="name">Kubectl的认证与授权</h1>
 	<div class="entry-content" itemprop="articleBody"><p>关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章：</p>
 
 <ul>
@@ -118,7 +118,7 @@ Kubernetes RBAC - 基于角色的访问控制 &hellip;">
 和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
 <img src="/images/k8s-apiserver-access-control-overview.svg" alt="" /></p>
 
-<h3>身份验证（Authentication）</h3>
+<h4>身份验证（Authentication）</h4>
 
 <p>这个环节它面对的输入是整个<code>http request</code>，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
 <code>basic auth</code>、普通token以及<code>jwt token</code>(用于serviceaccount)。</p>
@@ -132,7 +132,7 @@ Kubernetes RBAC - 基于角色的访问控制 &hellip;">
 <p>在这个环节，apiserver会通过client证书或
 <code>http header</code>中的字段(比如serviceaccount的<code>jwt token</code>)来识别出请求的<code>用户身份</code>，包括”user”、”group”等，这些信息将在后面的<code>authorization</code>环节用到。</p>
 
-<h2>授权（Authorization）</h2>
+<h4>授权（Authorization）</h4>
 
 <p>这个环节面对的输入是<code>http request context</code>中的各种属性，包括：<code>user</code>、<code>group</code>、<code>request path</code>（比如：<code>/api/v1</code>、<code>/healthz</code>、<code>/version</code>等）、
 <code>request verb</code>(比如：<code>get</code>、<code>list</code>、<code>create</code>等)。</p>
@@ -169,7 +169,7 @@ To start using your cluster, you need to run the following as a regular user:
 </ul>
 
 
-<h3>kubectl的身份认证（authentication）</h3>
+<h4>kubectl的身份认证（authentication）</h4>
 
 <p>我们先从kubectl使用的<code>kubeconfig</code>入手。kubectl使用的kubeconfig文件实质上就是<code>kubeadm init</code>过程中生成的<code>/etc/kubernetes/admin.conf</code>，
 我们查看一下该kubeconfig文件的内容：</p>
@@ -270,7 +270,10 @@ Certificate:
 <p>然后认证通过后，提取出签发证书时指定的CN(Common Name),<code>kubernetes-admin</code>，作为请求的用户名 (User Name),
 O(Organization)， 从证书中提取该字段作为请求用户所属的组 (Group)，<code>group = system:masters</code>，然后传递给后面的授权模块</p>
 
-<h3>kubectl的授权</h3>
+<blockquote><p>X509 客户端证书
+通过将 &ndash;client-ca-file=SOMEFILE 选项传递给 API server 来启用客户端证书认证。引用的文件必须包含一个或多个证书颁发机构，用于验证提交给 API server 的客户端证书。如果客户端证书已提交并验证，则使用 subject 的 Common Name（CN）作为请求的用户名。从 Kubernetes 1.4开始，客户端证书还可以使用证书的 organization 字段来指示用户的组成员身份。</p></blockquote>
+
+<h4>kubectl的授权</h4>
 
 <p>kubeadm在init初始引导集群启动过程中，创建了许多<code>default</code>的<code>role、clusterrole、rolebinding</code>和<code>clusterrolebinding</code>，
 在k8s有关RBAC的官方文档中，我们看到下面一些<code>default clusterrole</code>列表:</p>
@@ -338,10 +341,6 @@ rules:
 <p>从rules列表中来看，cluster-admin这个角色对所有resources、verbs、apiGroups均有无限制的操作权限，
 即整个集群的root权限。于是kubectl的请求就可以操控和管理整个集群了。</p>
 
-<p>总结一下kubectl的认证过程：</p>
-
-<p><img src="/images/how-kubectl-be-authorized.png" alt="" /></p>
-
 <h3>疑问</h3>
 
 <p>使用kubeadm-1.11.2版本初始化集群，即使不配置.kube/config文件，也可以直接访问到kubernetes cluster,
@@ -365,54 +364,28 @@ sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k
 </ul>
 
 
-<h2>kubelet的授权认证</h2>
+<p>关于以上疑问已经弄明白，当我们在master节点中使用kubectl请求时，如果没有设置$HOME/.kube/config文件，则默认是通过本地的非安全端口来访问
+apiserver，</p>
 
-<p>研究完kubectl的认证与授权，使用相同的方式去找kubelet的访问，首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式做base64解码，
-openssl查看crt证书，</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
-Certificate:
-    Data:
-        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
-        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
-        Validity
-            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
-            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
-        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
-                Modulus:
-                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
-    ... ...</code></pre></div>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@ip-172-31-10-236 centos<span class="o">]</span><span class="c"># kubectl get no -v 7</span>
+I0930 06:55:41.036661   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/alauda.io/v3/serverresources.json
+I0930 06:55:41.037250   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/v1/serverresources.json
+I0930 06:55:41.037484   <span class="m">13865</span> round_trippers.go:383<span class="o">]</span> GET http://localhost:8080/api/v1/nodes
+I0930 06:55:41.037502   <span class="m">13865</span> round_trippers.go:390<span class="o">]</span> Request Headers:
+I0930 06:55:41.037515   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     Accept: application/json
+I0930 06:55:41.037528   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     User-Agent: kubectl/v1.7.3 <span class="o">(</span>linux/amd64<span class="o">)</span> kubernetes/2c2fe6e
+I0930 06:55:41.046449   <span class="m">13865</span> round_trippers.go:408<span class="o">]</span> Response Status: <span class="m">200</span> OK in <span class="m">8</span> milliseconds
+I0930 06:55:41.067926   <span class="m">13865</span> cached_discovery.go:119<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/servergroups.json
+I0930 06:55:41.068015   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/apiregistration.k8s.io/v1beta1/serverresources.json</code></pre></div>
 
 
-<p>得到我们期望的内容：</p>
+<p> 如果</p>
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div>
+<h3>小结</h3>
 
+<p>总结一下kubectl的认证过程：</p>
 
-<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in `kubectl get clusterrolebindings |awk &#39;{print $1}&#39;`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &#39;system:nodes&#39;;done</span>
-NAME
-Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="s2">&quot;NAME&quot;</span> not found
-cluster-admin
-flannel
-kubeadm:kubelet-bootstrap
-kubeadm:node-autoapprove-bootstrap
-kubeadm:node-autoapprove-certificate-rotation
-  name: system:nodes
-kubeadm:node-proxier
-system:aws-cloud-provider
-system:basic-user
-... ...</code></pre></div>
-
-
-<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
-尝试去找资料，</p>
+<p><img src="/images/how-kubectl-be-authorized.png" alt="" /></p>
 </div>
 
 </article>
@@ -430,7 +403,7 @@ system:basic-user
 
 </div>
 			</div>
-			<footer id="footer" class="inner">Copyright &copy; 2018
+			<footer id="footer" class="inner">Copyright &copy; 2019
 
     yxli@alauda.io
 
