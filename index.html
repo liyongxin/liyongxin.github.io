@@ -1008,18 +1008,27 @@ REVISION  CHANGE-CAUSE
 0-7</code></pre></div>
 
 
-<h1>find查找</h1>
+<ul>
+<li>find查找</li>
+</ul>
+
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># find  /var/log/ -size +200M -type f -exec ls {} +</span></code></pre></div>
 
 
-<h1>sed 匹配替换</h1>
+<ul>
+<li>sed 匹配替换</li>
+</ul>
+
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#/dev/mapper/centos-swap swap                    swap    defaults        0 0</span>
 sed -i <span class="s1">&#39;/ swap / s/^\(.*\)$/#\1/g&#39;</span> /etc/fstab</code></pre></div>
 
 
-<h1>dd命令</h1>
+<ul>
+<li>dd命令</li>
+</ul>
+
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#创建一个大小为256M的文件</span>
 dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>/swapfile <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span> <span class="nv">count</span><span class="o">=</span>262144
@@ -1028,12 +1037,27 @@ dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">b
 dd <span class="k">if</span><span class="o">=</span>/root/1Gb.file <span class="nv">bs</span><span class="o">=</span>64k <span class="p">|</span> dd <span class="nv">of</span><span class="o">=</span>/dev/null</code></pre></div>
 
 
-<h1>iostat命令</h1>
+<ul>
+<li>iostat命令</li>
+</ul>
+
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#安装</span>
 yum install sysstat
 <span class="c">#测试机器设备读写情况，所有设备，间隔1s，执行10次</span>
 iostat -d -x <span class="m">1</span> 10</code></pre></div>
+
+
+<ul>
+<li>route表操作</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#添加路由</span>
+route add default gw 192.168.1.1
+route add -net 10.20.30.40 netmask 255.255.255.248 eth0
+<span class="c">#删除路由</span>
+route del -net 10.20.30.48 netmask 255.255.255.248 gw 10.20.30.41</code></pre></div>
 
 
 		
