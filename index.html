@@ -977,7 +977,7 @@ Master需要相应的空间。使用服务器内置硬盘的计算方式类似�
 	<h1 class="title" itemprop="name"><a href="/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/" itemprop="url">常用命令随手记</a></h1>
 	<div class="entry-content" itemprop="articleBody">
 		<ul>
-<li>统计系统各类连接数</li>
+<li><h4>统计系统各类连接数</h4></li>
 </ul>
 
 
@@ -991,7 +991,7 @@ TIME_WAIT 707</code></pre></div>
 
 
 <ul>
-<li>ab命令简单压力测试</li>
+<li><h4>ab命令简单压力测试</h4></li>
 </ul>
 
 
@@ -999,15 +999,7 @@ TIME_WAIT 707</code></pre></div>
 
 
 <ul>
-<li>grep 正则或的写法</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">grep</span> <span class="o">-</span><span class="n">E</span> <span class="s">&quot;\&lt;(root|gao|uer1)\&gt;&quot;</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span></code></pre></div>
-
-
-<ul>
-<li>uwsgi reload</li>
+<li><h4>uwsgi reload</h4></li>
 </ul>
 
 
@@ -1016,7 +1008,7 @@ TIME_WAIT 707</code></pre></div>
 
 
 <ul>
-<li>xargs相关</li>
+<li><h4>xargs相关</h4></li>
 </ul>
 
 
@@ -1031,7 +1023,7 @@ name name</code></pre></div>
 
 
 <ul>
-<li>多行输入单行输出：</li>
+<li><h4>多行输入单行输出：</h4></li>
 </ul>
 
 
@@ -1041,7 +1033,7 @@ a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
 
 
 <ul>
-<li>压缩加速</li>
+<li><h4>压缩加速</h4></li>
 </ul>
 
 
@@ -1049,7 +1041,7 @@ a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
 
 
 <ul>
-<li>curl发送get或者post请求</li>
+<li><h4>curl发送get或者post请求</h4></li>
 </ul>
 
 
@@ -1058,15 +1050,7 @@ curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http:
 
 
 <ul>
-<li>find查找</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># find  /var/log/ -size +200M -type f -exec ls {} +</span></code></pre></div>
-
-
-<ul>
-<li>sed 匹配替换</li>
+<li><h4>sed 匹配替换</h4></li>
 </ul>
 
 
@@ -1075,7 +1059,7 @@ sed -i <span class="s1">&#39;/ swap / s/^\(.*\)$/#\1/g&#39;</span> /etc/fstab</c
 
 
 <ul>
-<li>dd命令</li>
+<li><h4>dd命令</h4></li>
 </ul>
 
 
@@ -1087,7 +1071,7 @@ dd <span class="k">if</span><span class="o">=</span>/root/1Gb.file <span class="
 
 
 <ul>
-<li>iostat命令</li>
+<li><h4>iostat命令</h4></li>
 </ul>
 
 
@@ -1098,7 +1082,7 @@ iostat -d -x <span class="m">1</span> 10</code></pre></div>
 
 
 <ul>
-<li>route表操作</li>
+<li><h4>route表操作</h4></li>
 </ul>
 
 
@@ -1110,7 +1094,7 @@ route del -net 10.20.30.48 netmask 255.255.255.248 gw 10.20.30.41</code></pre></
 
 
 <ul>
-<li>tail 取输出结果的最后几行</li>
+<li><h4>tail 取输出结果的最后几行</h4></li>
 </ul>
 
 
@@ -1130,7 +1114,7 @@ alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m
 
 
 <ul>
-<li>awk 指定行号输出</li>
+<li><h4>awk 指定行号输出</h4></li>
 </ul>
 
 
@@ -1141,7 +1125,7 @@ alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m
 
 
 <ul>
-<li>sed 删除指定行</li>
+<li><h4>sed 删除指定行</h4></li>
 </ul>
 
 
@@ -1152,8 +1136,9 @@ alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m
 
 
 <ul>
-<li>grep
-find命令是根据文件的属性进行查找，如文件名，文件大小，所有者，所属组，是否为空，访问时间，修改时间等</li>
+<li><h4>find</h4>
+
+<p><code>find</code>命令是根据文件的属性进行查找，如文件名，文件大小，所有者，所属组，是否为空，访问时间，修改时间等</p></li>
 </ul>
 
 
@@ -1161,17 +1146,22 @@ find命令是根据文件的属性进行查找，如文件名，文件大小，�
 <span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># find /tmp -size +10000c -and -mtime +2</span>
 
 <span class="c">#查找当前文件系统中的所有目录并排序</span>
-<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># find . -type d | sort</span></code></pre></div>
+<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># find . -type d | sort</span>
+<span class="c">#查找`/var/log`目录下大于200M的以`.log`结尾的文件并删除掉</span>
+<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># find  /var/log/  -name  &quot;*.log&quot; -size +200M -type f -exec rm {} \;</span></code></pre></div>
 
 
 <ul>
-<li>grep
-grep是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找</li>
+<li><h4>grep</h4>
+
+<p><code>grep</code>是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找</p></li>
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#显示/usr/src目录下的文件(包含子目录)包含magic的行</span>
-<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># grep -r magic /usr/src</span></code></pre></div>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#显示/usr/src目录下的文件(包含子目录)包含magic的行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># grep -r magic /usr/src</span>
+<span class="c">#正则表达式</span>
+<span class="n">grep</span> <span class="o">-</span><span class="n">E</span> <span class="s">&quot;\&lt;(root|gao|uer1)\&gt;&quot;</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span></code></pre></div>
 
 
 		
