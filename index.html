@@ -9,8 +9,8 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="Kubernetes 问题整理 本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～ kubernetes多网卡导致的问题 部署机器是阿里云，有两块网卡，eth0外网，eth1 vpc内网，集群的路由信息如下 [root@10 src]# route
-Kernel IP &hellip;">
+	<meta name="description" content="k8s, kubernetes, K8s小知识 k8s默认驱逐设置 // DefaultEvictionHard includes default options for hard eviction.
+var DefaultEvictionHard = map[string]string{ & &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -102,6 +102,99 @@ Kernel IP &hellip;">
 			<div class="mid-col-container">
 				<div id="content" class="inner">
 <div itemscope itemtype="http://schema.org/Blog">
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-02-28T11:12:56+08:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/k8s/'>k8s</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes,</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/k8sxiao-zhi-shi/" itemprop="url">K8s小知识</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<ul>
+<li>k8s默认驱逐设置</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">// DefaultEvictionHard includes default options <span class="k">for</span> hard eviction.
+var <span class="nv">DefaultEvictionHard</span> <span class="o">=</span> map<span class="o">[</span>string<span class="o">]</span>string<span class="o">{</span>
+        <span class="s2">&quot;memory.available&quot;</span>:  <span class="s2">&quot;100Mi&quot;</span>,
+        <span class="s2">&quot;nodefs.available&quot;</span>:  <span class="s2">&quot;10%&quot;</span>,
+        <span class="s2">&quot;nodefs.inodesFree&quot;</span>: <span class="s2">&quot;5%&quot;</span>,
+        <span class="s2">&quot;imagefs.available&quot;</span>: <span class="s2">&quot;15%&quot;</span>,
+<span class="o">}</span></code></pre></div>
+
+
+<ul>
+<li>kubernetes 滚动升级</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c"># run test deploy</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl run --image=nginx --port=80 --replicas=2 yxli-nginx</span>
+<span class="c"># scale replica</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl scale --replicas=1 deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl get deploy</span>
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+busybox      <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>            <span class="m">2</span>           39d
+busybox1     <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           39d
+yxli-nginx   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           2h
+<span class="c"># update image</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl set image  deploy/yxli-nginx yxli-nginx=nginx:alpine</span>
+<span class="c"># 查看升级历史</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">1</span>         &lt;none&gt;
+<span class="m">2</span>         &lt;none&gt;
+<span class="c"># 回顾至上次版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout undo deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">2</span>         &lt;none&gt;
+<span class="m">3</span>         &lt;none&gt;
+<span class="c"># 回滚至指定版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm --to-revision=2</span></code></pre></div>
+
+
+<ul>
+<li>查看docker使用的cpu核心数</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
+/sys/fs/cgroup/cpuset/docker
+<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># cat cpuset.cpus</span>
+0-7</code></pre></div>
+
+
+
+
+		
+		
+	</div>
+
+</article>
 
 
     <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
@@ -965,50 +1058,6 @@ curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http:
 
 
 <ul>
-<li>kubernetes 滚动升级</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c"># run test deploy</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl run --image=nginx --port=80 --replicas=2 yxli-nginx</span>
-<span class="c"># scale replica</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl scale --replicas=1 deploy/yxli-nginx</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl get deploy</span>
-NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
-busybox      <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>            <span class="m">2</span>           39d
-busybox1     <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           39d
-yxli-nginx   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           2h
-<span class="c"># update image</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl set image  deploy/yxli-nginx yxli-nginx=nginx:alpine</span>
-<span class="c"># 查看升级历史</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
-deployments <span class="s2">&quot;yxli-nginx&quot;</span>
-REVISION  CHANGE-CAUSE
-<span class="m">1</span>         &lt;none&gt;
-<span class="m">2</span>         &lt;none&gt;
-<span class="c"># 回顾至上次版本</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout undo deploy/yxli-nginx</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
-deployments <span class="s2">&quot;yxli-nginx&quot;</span>
-REVISION  CHANGE-CAUSE
-<span class="m">2</span>         &lt;none&gt;
-<span class="m">3</span>         &lt;none&gt;
-<span class="c"># 回滚至指定版本</span>
-<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm --to-revision=2</span></code></pre></div>
-
-
-<ul>
-<li>查看docker使用的cpu核心数</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
-/sys/fs/cgroup/cpuset/docker
-<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># cat cpuset.cpus</span>
-0-7</code></pre></div>
-
-
-<ul>
 <li>find查找</li>
 </ul>
 
@@ -1058,6 +1107,50 @@ route add default gw 192.168.1.1
 route add -net 10.20.30.40 netmask 255.255.255.248 eth0
 <span class="c">#删除路由</span>
 route del -net 10.20.30.48 netmask 255.255.255.248 gw 10.20.30.41</code></pre></div>
+
+
+<ul>
+<li>tail 取输出结果的最后几行</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis</span>
+alauda-redis-67d89d58db-2gqdd                 1/1       Running   <span class="m">0</span>          1d
+alauda-redis-cluster-1-56489c6c87-4nwdc       1/1       Running   <span class="m">0</span>          14d
+alauda-redis-cluster-2-75fb5cb78b-h5l82       1/1       Running   <span class="m">0</span>          14d
+alauda-redis-cluster-3-8697f4746f-645sj       1/1       Running   <span class="m">1</span>          14d
+alauda-redis-cluster-4-7677cbcd8d-z8pvb       1/1       Running   <span class="m">0</span>          14d
+alauda-redis-cluster-5-564b7444d7-8z5dh       1/1       Running   <span class="m">1</span>          63d
+alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m">1</span>          63d
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n1</span>
+alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m">1</span>          63d
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n2</span>
+alauda-redis-cluster-5-564b7444d7-8z5dh       1/1       Running   <span class="m">1</span>          63d
+alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m">1</span>          63d</code></pre></div>
+
+
+<ul>
+<li>awk 指定行号输出</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#输出最后一行</span>
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;END{print $1}&#39;</span>
+<span class="c">#输出指定行</span>
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;NR==1{print $1}&#39;</span></code></pre></div>
+
+
+<ul>
+<li>sed 删除指定行</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#删除前两行，输出剩下的行</span>
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed 1,2d</span>
+<span class="c">#删除最后一行</span>
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed &#39;$&#39;d</span></code></pre></div>
+
+
 
 
 		
@@ -1189,13 +1282,13 @@ gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39
 		<div class="tags">
 
 
-	<a class='category' href='/blog/categories/alauda/'>alauda</a>
+	<a class='category' href='/blog/categories/markdown/'>markdown</a>
 
 
 </div>
 		
 	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/" itemprop="url">Qs 升级组件流程</a></h1>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/" itemprop="url">马克飞象-markdown</a></h1>
 	<div class="entry-content" itemprop="articleBody">
 		<p><strong>马克飞象</strong>是一款专为印象笔记（Evernote）打造的Markdown编辑器，通过精心的设计与技术实现，配合印象笔记强大的存储和同步功能，带来前所未有的书写体验。特点概述：</p>
 

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: k8s | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/k8s/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-02-27T14:37:08+08:00</updated>
+  <updated>2019-02-28T11:17:44+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -12,6 +12,70 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[k8s小知识]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/02/28/k8sxiao-zhi-shi/"/>
+    <updated>2019-02-28T11:12:56+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/02/28/k8sxiao-zhi-shi</id>
+    <content type="html"><![CDATA[<ul>
+<li><p>k8s默认驱逐设置
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">// DefaultEvictionHard includes default options <span class="k">for</span> hard eviction.
+var <span class="nv">DefaultEvictionHard</span> <span class="o">=</span> map<span class="o">[</span>string<span class="o">]</span>string<span class="o">{</span>
+      <span class="p">&amp;</span>ldquo<span class="p">;</span>memory.available<span class="p">&amp;</span>rdquo<span class="p">;</span>:  <span class="p">&amp;</span>ldquo<span class="p">;</span>100Mi<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+      <span class="p">&amp;</span>ldquo<span class="p">;</span>nodefs.available<span class="p">&amp;</span>rdquo<span class="p">;</span>:  <span class="p">&amp;</span>ldquo<span class="p">;</span>10%<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+      <span class="p">&amp;</span>ldquo<span class="p">;</span>nodefs.inodesFree<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>5%<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+      <span class="p">&amp;</span>ldquo<span class="p">;</span>imagefs.available<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>15%<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+<span class="o">}</span></code></pre></div></p></li>
+<li><p>kubernetes 滚动升级
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;run <span class="nb">test </span>deploy&lt;/h1&gt;
+
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl run &amp;ndash;image=nginx &amp;ndash;port=80 &amp;ndash;replicas=2 yxli-nginx</span>
+
+&lt;h1&gt;scale replica&lt;/h1&gt;
+
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl scale &amp;ndash;replicas=1 deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl get deploy</span>
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+busybox      <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>            <span class="m">2</span>           39d
+busybox1     <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           39d
+yxli-nginx   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           2h
+
+&lt;h1&gt;update image&lt;/h1&gt;
+
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl set image  deploy/yxli-nginx yxli-nginx=nginx:alpine</span>
+
+&lt;h1&gt;查看升级历史&lt;/h1&gt;
+
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-nginx<span class="p">&amp;</span>rdquo<span class="p">;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">1</span>         &lt;none&gt;
+<span class="m">2</span>         &lt;none&gt;
+
+&lt;h1&gt;回顾至上次版本&lt;/h1&gt;
+
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout undo deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-nginx<span class="p">&amp;</span>rdquo<span class="p">;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">2</span>         &lt;none&gt;
+<span class="m">3</span>         &lt;none&gt;
+
+&lt;h1&gt;回滚至指定版本&lt;/h1&gt;
+
+&lt;p&gt;<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm &amp;ndash;to-revision=2</span></code></pre></div></p></li>
+<li>查看docker使用的cpu核心数
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
+/sys/fs/cgroup/cpuset/docker
+<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># cat cpuset.cpus</span>
+0-7</code></pre></div></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[kubelet的认证]]></title>
