@@ -1,0 +1,175 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>ansible 随手记 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="Ansible 随手记 task解析json并注册变量给其他task使用 # get config task stdout is json format
+- name: &quot;get_config&quot; shell: /usr/local/sbin/kubectl get cm &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2019/02/28/ansible-sui-shou-ji/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Ansible 随手记</h1>
+	<div class="entry-content" itemprop="articleBody"><ul>
+<li><h4>task解析json并注册变量给其他task使用</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c"># get config task stdout is json format</span>
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;get_config&quot;</span>
+  <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">kubectl</span> <span class="n">get</span> <span class="n">cm</span> <span class="k">global</span><span class="o">-</span><span class="n">var</span> <span class="o">-</span><span class="n">n</span> <span class="n">alauda</span><span class="o">-</span><span class="n">system</span> <span class="o">-</span><span class="n">o</span> <span class="n">json</span>
+  <span class="n">register</span><span class="p">:</span> <span class="n">cms</span>
+
+<span class="o">-</span> <span class="n">set_fact</span><span class="p">:</span> <span class="n">data</span><span class="o">=</span><span class="s">&quot;&quot;</span>
+
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;read_config&quot;</span>
+  <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">redis</span><span class="o">-</span><span class="n">cli</span> <span class="o">-</span><span class="n">a</span>
+  <span class="n">when</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;kind&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ConfigMap&#39;</span></code></pre></div>
+
+
+<ul>
+<li><h3>ansible自定义模块执行命令支持管道</h3>
+
+<p>自定义ansible module时，可以默认使用<code>AnsibleModule</code>的实例<code>run_command</code>来执行shell命令,可以指定use_unsafe_shell=True来让ansible支持管道。
+use_shell会和shell模块类似，若不指定，默认为False，则已command模块运行，command是比较安全的隧道连接，但是不支持管道</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="sd">&quot;&quot;&quot;The main function.&quot;&quot;&quot;</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">AnsibleModule</span><span class="p">(</span><span class="n">argument_spec</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span><span class="n">supports_check_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="s">&quot;/usr/local/sbin/kubectl get po -n alauda-system |grep alauda-redis|awk </span><span class="se">\&#39;</span><span class="s">END{print $1}&quot;</span><span class="p">,</span> <span class="n">use_unsafe_shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">redis</span> <span class="o">=</span> <span class="n">Redis</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="n">rst</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">get_redis_status</span><span class="p">()</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">exit_json</span><span class="p">(</span><span class="o">**</span><span class="n">rst</span><span class="p">)</span></code></pre></div>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

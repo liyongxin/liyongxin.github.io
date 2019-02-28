@@ -9,8 +9,8 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="k8s, kubernetes, K8s小知识 k8s默认驱逐设置 // DefaultEvictionHard includes default options for hard eviction.
-var DefaultEvictionHard = map[string]string{ & &hellip;">
+	<meta name="description" content="ansible Ansible 随手记 task解析json并注册变量给其他task使用 # get config task stdout is json format
+- name: &quot;get_config&quot; shell: /usr/local/sbin/kubectl &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -102,6 +102,72 @@ var DefaultEvictionHard = map[string]string{ & &hellip;">
 			<div class="mid-col-container">
 				<div id="content" class="inner">
 <div itemscope itemtype="http://schema.org/Blog">
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-02-28T14:18:47+08:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/ansible/'>ansible</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/ansible-sui-shou-ji/" itemprop="url">Ansible 随手记</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<ul>
+<li><h4>task解析json并注册变量给其他task使用</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c"># get config task stdout is json format</span>
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;get_config&quot;</span>
+  <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">kubectl</span> <span class="n">get</span> <span class="n">cm</span> <span class="k">global</span><span class="o">-</span><span class="n">var</span> <span class="o">-</span><span class="n">n</span> <span class="n">alauda</span><span class="o">-</span><span class="n">system</span> <span class="o">-</span><span class="n">o</span> <span class="n">json</span>
+  <span class="n">register</span><span class="p">:</span> <span class="n">cms</span>
+
+<span class="o">-</span> <span class="n">set_fact</span><span class="p">:</span> <span class="n">data</span><span class="o">=</span><span class="s">&quot;&quot;</span>
+
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;read_config&quot;</span>
+  <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">redis</span><span class="o">-</span><span class="n">cli</span> <span class="o">-</span><span class="n">a</span>
+  <span class="n">when</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;kind&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ConfigMap&#39;</span></code></pre></div>
+
+
+<ul>
+<li><h3>ansible自定义模块执行命令支持管道</h3>
+
+<p>自定义ansible module时，可以默认使用<code>AnsibleModule</code>的实例<code>run_command</code>来执行shell命令,可以指定use_unsafe_shell=True来让ansible支持管道。
+use_shell会和shell模块类似，若不指定，默认为False，则已command模块运行，command是比较安全的隧道连接，但是不支持管道</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="sd">&quot;&quot;&quot;The main function.&quot;&quot;&quot;</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">AnsibleModule</span><span class="p">(</span><span class="n">argument_spec</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span><span class="n">supports_check_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="s">&quot;/usr/local/sbin/kubectl get po -n alauda-system |grep alauda-redis|awk </span><span class="se">\&#39;</span><span class="s">END{print $1}&quot;</span><span class="p">,</span> <span class="n">use_unsafe_shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">redis</span> <span class="o">=</span> <span class="n">Redis</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="n">rst</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">get_redis_status</span><span class="p">()</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">exit_json</span><span class="p">(</span><span class="o">**</span><span class="n">rst</span><span class="p">)</span></code></pre></div>
+
+
+		
+		
+	</div>
+
+</article>
 
 
     <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
@@ -1274,95 +1340,11 @@ gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39
 
 </article>
 
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-04-24T00:00:00+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/markdown/'>markdown</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/" itemprop="url">马克飞象-markdown</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p><strong>马克飞象</strong>是一款专为印象笔记（Evernote）打造的Markdown编辑器，通过精心的设计与技术实现，配合印象笔记强大的存储和同步功能，带来前所未有的书写体验。特点概述：</p>
-
-<ul>
-<li><strong>功能丰富</strong> ：支持高亮代码块、<em>LaTeX</em> 公式、流程图，本地图片以及附件上传，甚至截图粘贴，工作学习好帮手；</li>
-<li><strong>得心应手</strong> ：简洁高效的编辑器，提供<a href="http://maxiang.info/client_zh">桌面客户端</a>以及<a href="https://chrome.google.com/webstore/detail/kidnkfckhbdkfgbicccmdggmpgogehop">离线Chrome App</a>，支持移动端 Web；</li>
-<li><strong>深度整合</strong> ：支持选择笔记本和添加标签，支持从印象笔记跳转编辑，轻松管理。</li>
-</ul>
-
-
-<h2>Markdown简介</h2>
-
-<blockquote><p>Markdown 是一种轻量级标记语言，它允许人们使用易读易写的纯文本格式编写文档，然后转换成格式丰富的HTML页面。    —— <a href="https://zh.wikipedia.org/wiki/Markdown">维基百科</a></p></blockquote>
-
-<p>正如您在阅读的这份文档，它使用简单的符号标识不同的标题，将某些文字标记为<strong>粗体</strong>或者<em>斜体</em>，创建一个<a href="http://www.example.com">链接</a>或一个脚注<sup id="fnref:1"><a href="#fn:1" rel="footnote">1</a></sup>。下面列举了几个高级功能，更多语法请按<code>Cmd + /</code>查看帮助。</p>
-
-<h3>代码块</h3>
-
-<figure class='code'><figcaption><span>linenos:false</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="nd">@requires_authorization</span>
-</span><span class='line'><span class="k">def</span> <span class="nf">somefunc</span><span class="p">(</span><span class="n">param1</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">param2</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-</span><span class='line'>    <span class="sd">&#39;&#39;&#39;A docstring&#39;&#39;&#39;</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">param1</span> <span class="o">&gt;</span> <span class="n">param2</span><span class="p">:</span> <span class="c"># interesting</span>
-</span><span class='line'>        <span class="k">print</span> <span class="s">&#39;Greater&#39;</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">(</span><span class="n">param2</span> <span class="o">-</span> <span class="n">param1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">None</span>
-</span><span class='line'><span class="k">class</span> <span class="nc">SomeClass</span><span class="p">:</span>
-</span><span class='line'>    <span class="k">pass</span>
-</span><span class='line'><span class="o">&gt;&gt;&gt;</span> <span class="n">message</span> <span class="o">=</span> <span class="s">&#39;&#39;&#39;interpreter</span>
-</span><span class='line'><span class="s">... prompt&#39;&#39;&#39;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">pyenv</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span> <span class="o">|</span> <span class="n">bash</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">pyenv</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span> <span class="o">|</span> <span class="n">bash</span></code></pre></div>
-
-
-
-
-
-		
-		<a href="/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
 </div>
 <nav id="pagenavi">
     
+    
+        <a href="2" class="next">Next</a>
     
     <div class="center"><a href="/blog/archives">Blog Archives</a></div>
 </nav></div>
