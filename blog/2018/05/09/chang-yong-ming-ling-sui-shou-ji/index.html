@@ -189,11 +189,11 @@ sed -i <span class="s1">&#39;/ swap / s/^\(.*\)$/#\1/g&#39;</span> /etc/fstab</c
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#创建一个大小为256M的文件</span>
-dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>/swapfile <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span> <span class="nv">count</span><span class="o">=</span>262144
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#创建一个大小为256M的文件</span>
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">of</span><span class="o">=/</span><span class="n">swapfile</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">262144</span>
 <span class="c">#测试硬盘的读写速度</span>
-dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">bs</span><span class="o">=</span><span class="m">1024</span> <span class="nv">count</span><span class="o">=</span><span class="m">1000000</span> <span class="nv">of</span><span class="o">=</span>/root/1Gb.file
-dd <span class="k">if</span><span class="o">=</span>/root/1Gb.file <span class="nv">bs</span><span class="o">=</span>64k <span class="p">|</span> dd <span class="nv">of</span><span class="o">=</span>/dev/null</code></pre></div>
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">1000000</span> <span class="n">of</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span>
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span> <span class="n">bs</span><span class="o">=</span><span class="mi">64</span><span class="n">k</span> <span class="o">|</span> <span class="n">dd</span> <span class="n">of</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">null</span></code></pre></div>
 
 
 <ul>
@@ -201,10 +201,10 @@ dd <span class="k">if</span><span class="o">=</span>/root/1Gb.file <span class="
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#安装</span>
-yum install sysstat
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#安装</span>
+<span class="n">yum</span> <span class="n">install</span> <span class="n">sysstat</span>
 <span class="c">#测试机器设备读写情况，所有设备，间隔1s，执行10次</span>
-iostat -d -x <span class="m">1</span> 10</code></pre></div>
+<span class="n">iostat</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">x</span> <span class="mi">1</span> <span class="mi">10</span></code></pre></div>
 
 
 <ul>
@@ -212,11 +212,11 @@ iostat -d -x <span class="m">1</span> 10</code></pre></div>
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#添加路由</span>
-route add default gw 192.168.1.1
-route add -net 10.20.30.40 netmask 255.255.255.248 eth0
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#添加路由</span>
+<span class="n">route</span> <span class="n">add</span> <span class="n">default</span> <span class="n">gw</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span>
+<span class="n">route</span> <span class="n">add</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.40</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">eth0</span>
 <span class="c">#删除路由</span>
-route del -net 10.20.30.48 netmask 255.255.255.248 gw 10.20.30.41</code></pre></div>
+<span class="n">route</span> <span class="k">del</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.48</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">gw</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.41</span></code></pre></div>
 
 
 <ul>
@@ -224,19 +224,19 @@ route del -net 10.20.30.48 netmask 255.255.255.248 gw 10.20.30.41</code></pre></
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis</span>
-alauda-redis-67d89d58db-2gqdd                 1/1       Running   <span class="m">0</span>          1d
-alauda-redis-cluster-1-56489c6c87-4nwdc       1/1       Running   <span class="m">0</span>          14d
-alauda-redis-cluster-2-75fb5cb78b-h5l82       1/1       Running   <span class="m">0</span>          14d
-alauda-redis-cluster-3-8697f4746f-645sj       1/1       Running   <span class="m">1</span>          14d
-alauda-redis-cluster-4-7677cbcd8d-z8pvb       1/1       Running   <span class="m">0</span>          14d
-alauda-redis-cluster-5-564b7444d7-8z5dh       1/1       Running   <span class="m">1</span>          63d
-alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m">1</span>          63d
-<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n1</span>
-alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m">1</span>          63d
-<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n2</span>
-alauda-redis-cluster-5-564b7444d7-8z5dh       1/1       Running   <span class="m">1</span>          63d
-alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m">1</span>          63d</code></pre></div>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="mi">67</span><span class="n">d89d58db</span><span class="o">-</span><span class="mi">2</span><span class="n">gqdd</span>                 <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">1</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">56489</span><span class="n">c6c87</span><span class="o">-</span><span class="mi">4</span><span class="n">nwdc</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="mi">75</span><span class="n">fb5cb78b</span><span class="o">-</span><span class="n">h5l82</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">3</span><span class="o">-</span><span class="mi">8697</span><span class="n">f4746f</span><span class="o">-</span><span class="mi">645</span><span class="n">sj</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">4</span><span class="o">-</span><span class="mi">7677</span><span class="n">cbcd8d</span><span class="o">-</span><span class="n">z8pvb</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n1</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n2</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span></code></pre></div>
 
 
 <ul>
@@ -244,10 +244,10 @@ alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#输出最后一行</span>
-<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;END{print $1}&#39;</span>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#输出最后一行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;END{print $1}&#39;</span>
 <span class="c">#输出指定行</span>
-<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;NR==1{print $1}&#39;</span></code></pre></div>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;NR==1{print $1}&#39;</span></code></pre></div>
 
 
 <ul>
@@ -255,32 +255,32 @@ alauda-redis-cluster-6-7955ffc758-cp59h       1/1       Running   <span class="m
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#删除前两行，输出剩下的行</span>
-<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed 1,2d</span>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#删除前两行，输出剩下的行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed 1,2d</span>
 <span class="c">#删除最后一行</span>
-<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed &#39;$&#39;d</span></code></pre></div>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed &#39;$&#39;d</span></code></pre></div>
 
 
 <ul>
 <li><h4>find</h4>
 
-<p><code>find</code>命令是根据文件的属性进行查找，如文件名，文件大小，所有者，所属组，是否为空，访问时间，修改时间等</p></li>
+<p>find命令是根据文件的属性进行查找，如文件名，文件大小，所有者，所属组，是否为空，访问时间，修改时间等</p></li>
 </ul>
 
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#在/tmp目录下查找大于10000字节并在最后2分钟内修改的文件</span>
-<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># find /tmp -size +10000c -and -mtime +2</span>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#在/tmp目录下查找大于10000字节并在最后2分钟内修改的文件</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find /tmp -size +10000c -and -mtime +2</span>
 
 <span class="c">#查找当前文件系统中的所有目录并排序</span>
-<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># find . -type d | sort</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find . -type d | sort</span>
 <span class="c">#查找`/var/log`目录下大于200M的以`.log`结尾的文件并删除掉</span>
-<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># find  /var/log/  -name  &quot;*.log&quot; -size +200M -type f -exec rm {} \;</span></code></pre></div>
+<span class="p">[</span><span class="n">root</span><span class="nd">@yxli</span><span class="o">-</span><span class="n">onebox</span> <span class="n">docker</span><span class="p">]</span><span class="c"># find  /var/log/  -name  &quot;*.log&quot; -size +200M -type f -exec rm {} \;</span></code></pre></div>
 
 
 <ul>
 <li><h4>grep</h4>
 
-<p><code>grep</code>是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找</p></li>
+<p>grep是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找</p></li>
 </ul>
 
 
