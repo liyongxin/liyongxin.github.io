@@ -283,22 +283,21 @@ find命令是根据文件的属性进行查找，如文件名，文件大小，�
 </ul>
 
 
-<h1>在/tmp目录下查找大于10000字节并在最后2分钟内修改的文件</h1>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#在/tmp目录下查找大于10000字节并在最后2分钟内修改的文件</span>
+<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># find /tmp -size +10000c -and -mtime +2</span>
 
-<p>[root@cloud-cn-ake ~]# find /tmp -size +10000c -and -mtime +2</p>
+<span class="c">#查找当前文件系统中的所有目录并排序</span>
+<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># find . -type d | sort</span></code></pre></div>
 
-<h1>查找当前文件系统中的所有目录并排序</h1>
-
-<p>[root@cloud-cn-ake ~]# find . -type d | sort</p>
 
 <ul>
 <li>grep
-grep是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找
-
-<h1>显示/usr/src目录下的文件(包含子目录)包含magic的行</h1>
-
-<p>[root@cloud-cn-ake ~]# grep -r magic /usr/src</p></li>
+grep是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找</li>
 </ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#显示/usr/src目录下的文件(包含子目录)包含magic的行</span>
+<span class="o">[</span>root@cloud-cn-ake ~<span class="o">]</span><span class="c"># grep -r magic /usr/src</span></code></pre></div>
 
 </div>
 
