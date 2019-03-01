@@ -9,8 +9,8 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="Ansible 随手记 task解析json并注册变量给其他task使用 # get config task stdout is json format
-- name: &quot;get_config&quot; shell: /usr/local/sbin/kubectl get cm &hellip;">
+	<meta name="description" content="Ansible 随手记 task解析json并注册变量给其他task使用 多个task涉及变量传递时，有时taskA取值是json格式，taskB若想使用json中的数据，可以通过如下方式： # get config task stdout is json format
+- name: & &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -103,7 +103,9 @@
 				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
 	<h1 class="title" itemprop="name">Ansible 随手记</h1>
 	<div class="entry-content" itemprop="articleBody"><ul>
-<li><h4>task解析json并注册变量给其他task使用</h4></li>
+<li><h4>task解析json并注册变量给其他task使用</h4>
+
+<p>多个task涉及变量传递时，有时taskA取值是json格式，taskB若想使用json中的数据，可以通过如下方式：</p></li>
 </ul>
 
 
@@ -112,6 +114,7 @@
   <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">kubectl</span> <span class="n">get</span> <span class="n">cm</span> <span class="k">global</span><span class="o">-</span><span class="n">var</span> <span class="o">-</span><span class="n">n</span> <span class="n">alauda</span><span class="o">-</span><span class="n">system</span> <span class="o">-</span><span class="n">o</span> <span class="n">json</span>
   <span class="n">register</span><span class="p">:</span> <span class="n">cms</span>
 
+<span class="c"># use from_json plugin</span>
 <span class="o">-</span> <span class="n">set_fact</span><span class="p">:</span> <span class="n">data</span><span class="o">=</span><span class="s">&quot;&quot;</span>
 
 <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;read_config&quot;</span>
@@ -120,14 +123,15 @@
 
 
 <ul>
-<li><h3>ansible自定义模块执行命令支持管道</h3>
+<li><h4>ansible自定义模块执行命令支持管道</h4>
 
 <p>自定义ansible module时，可以默认使用<code>AnsibleModule</code>的实例<code>run_command</code>来执行shell命令,可以指定use_unsafe_shell=True来让ansible支持管道。
-use_shell会和shell模块类似，若不指定，默认为False，则已command模块运行，command是比较安全的隧道连接，但是不支持管道</p></li>
+use_shell会和shell模块类似，若不指定，默认为False，则以command模块运行，command是比较安全的隧道连接，但是不支持管道</p></li>
 </ul>
 
 
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="sd">&quot;&quot;&quot;The main function.&quot;&quot;&quot;</span>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;The main function.&quot;&quot;&quot;</span>
     <span class="n">module</span> <span class="o">=</span> <span class="n">AnsibleModule</span><span class="p">(</span><span class="n">argument_spec</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span><span class="n">supports_check_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
     <span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="s">&quot;/usr/local/sbin/kubectl get po -n alauda-system |grep alauda-redis|awk </span><span class="se">\&#39;</span><span class="s">END{print $1}&quot;</span><span class="p">,</span> <span class="n">use_unsafe_shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
     <span class="n">redis</span> <span class="o">=</span> <span class="n">Redis</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>

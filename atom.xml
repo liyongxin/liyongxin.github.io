@@ -4,7 +4,7 @@
   <title><![CDATA[Earlene]]></title>
   <link href="http://liyongxin.github.io/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-02-28T18:09:38+08:00</updated>
+  <updated>2019-03-01T10:27:51+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -19,7 +19,9 @@
     <updated>2019-02-28T14:18:47+08:00</updated>
     <id>http://liyongxin.github.io/blog/2019/02/28/ansible-sui-shou-ji</id>
     <content type="html"><![CDATA[<ul>
-<li><h4>task解析json并注册变量给其他task使用</h4></li>
+<li><h4>task解析json并注册变量给其他task使用</h4>
+
+<p>多个task涉及变量传递时，有时taskA取值是json格式，taskB若想使用json中的数据，可以通过如下方式：</p></li>
 </ul>
 
 
@@ -28,6 +30,7 @@
   <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">kubectl</span> <span class="n">get</span> <span class="n">cm</span> <span class="k">global</span><span class="o">-</span><span class="n">var</span> <span class="o">-</span><span class="n">n</span> <span class="n">alauda</span><span class="o">-</span><span class="n">system</span> <span class="o">-</span><span class="n">o</span> <span class="n">json</span>
   <span class="n">register</span><span class="p">:</span> <span class="n">cms</span>
 
+<span class="c"># use from_json plugin</span>
 <span class="o">-</span> <span class="n">set_fact</span><span class="p">:</span> <span class="n">data</span><span class="o">=</span><span class="s">&quot;&quot;</span>
 
 <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;read_config&quot;</span>
@@ -36,14 +39,15 @@
 
 
 <ul>
-<li><h3>ansible自定义模块执行命令支持管道</h3>
+<li><h4>ansible自定义模块执行命令支持管道</h4>
 
 <p>自定义ansible module时，可以默认使用<code>AnsibleModule</code>的实例<code>run_command</code>来执行shell命令,可以指定use_unsafe_shell=True来让ansible支持管道。
-use_shell会和shell模块类似，若不指定，默认为False，则已command模块运行，command是比较安全的隧道连接，但是不支持管道</p></li>
+use_shell会和shell模块类似，若不指定，默认为False，则以command模块运行，command是比较安全的隧道连接，但是不支持管道</p></li>
 </ul>
 
 
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="sd">&quot;&quot;&quot;The main function.&quot;&quot;&quot;</span>
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;The main function.&quot;&quot;&quot;</span>
     <span class="n">module</span> <span class="o">=</span> <span class="n">AnsibleModule</span><span class="p">(</span><span class="n">argument_spec</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span><span class="n">supports_check_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
     <span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="s">&quot;/usr/local/sbin/kubectl get po -n alauda-system |grep alauda-redis|awk </span><span class="se">\&#39;</span><span class="s">END{print $1}&quot;</span><span class="p">,</span> <span class="n">use_unsafe_shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
     <span class="n">redis</span> <span class="o">=</span> <span class="n">Redis</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
@@ -2205,7 +2209,7 @@ hdfs dfs -rm -r hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$tmp_p
 
 <ul>
 <li>微博：<a href="http://weibo.com/u/2788354117">@马克飞象</a>，<a href="http://weibo.com/ggock" title="开发者个人账号">@GGock</a></li>
-<li>邮箱：<a href="&#109;&#97;&#105;&#108;&#x74;&#x6f;&#x3a;&#104;&#117;&#115;&#116;&#x67;&#x6f;&#x63;&#x6b;&#x40;&#103;&#x6d;&#97;&#x69;&#108;&#46;&#x63;&#x6f;&#109;">&#104;&#x75;&#115;&#116;&#x67;&#x6f;&#99;&#x6b;&#x40;&#103;&#109;&#97;&#105;&#108;&#x2e;&#99;&#111;&#109;</a></li>
+<li>邮箱：<a href="&#109;&#97;&#x69;&#108;&#x74;&#111;&#x3a;&#x68;&#x75;&#115;&#116;&#103;&#111;&#99;&#107;&#64;&#103;&#x6d;&#97;&#105;&#108;&#x2e;&#x63;&#x6f;&#109;">&#x68;&#117;&#x73;&#116;&#x67;&#111;&#99;&#107;&#64;&#x67;&#x6d;&#97;&#105;&#108;&#x2e;&#99;&#111;&#109;</a></li>
 </ul>
 
 
