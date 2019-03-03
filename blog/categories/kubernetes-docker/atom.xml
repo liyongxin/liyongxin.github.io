@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: kubernetes,docker | Earlene]]></title>
+  <link href="http://liyongxin.github.io/blog/categories/kubernetes-docker/atom.xml" rel="self"/>
+  <link href="http://liyongxin.github.io/"/>
+  <updated>2019-03-03T18:50:38+08:00</updated>
+  <id>http://liyongxin.github.io/</id>
+  <author>
+    <name><![CDATA[yxli@alauda.io]]></name>
+    <email><![CDATA[yxli@alauda.io]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[kubernetes 问题整理]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li/"/>
+    <updated>2018-08-31T10:36:27+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li</id>
+    <content type="html"><![CDATA[<p>本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～</p>
+
+<h2>kubernetes多网卡导致的问题</h2>
+
+<p>部署机器是阿里云，有两块网卡，<code>eth0</code>外网，<code>eth1 vpc</code>内网，集群的路由信息如下
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 src<span class="o">]</span><span class="c"># route</span>
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         gateway         0.0.0.0         UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+10.0.0.0        10.81.35.247    255.0.0.0       UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+10.81.32.0      0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+39.107.40.0     0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+100.64.0.0      10.81.35.247    255.192.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1002</span>   <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span>   <span class="m">0</span>        <span class="m">0</span> eth1
+172.16.0.0      10.81.35.247    255.240.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+192.168.0.0     0.0.0.0         255.255.255.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> cni0
+192.168.0.0     0.0.0.0         255.255.240.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> docker0
+192.168.1.0     192.168.1.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1
+192.168.2.0     192.168.2.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1</code></pre></div></p>
+
+<ul>
+<li><h4>docker0网段与cni0网段冲突问题</h4></li>
+</ul>
+
+
+<p>docker启动时没有指定bip，从上述路由规则发现，docker0使用了192.168的段,刚好给flannel设置的cidr段冲突，
+所以需要给docker修改默认的网段，解决方法是给docker配置bip网段,然后重启docker，观察docker0的route规则</p>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 ~<span class="o">]</span><span class="c"># cat /etc/docker/daemon.json</span>
+<span class="o">{</span>
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>insecure-registries<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[]</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>graph<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>/var/lib/docker<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>bip<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>172.17.0.1/16<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>registry-mirrors<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[</span><span class="p">&amp;</span>ldquo<span class="p">;</span>&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;https://registry.docker-cn.com&quot;</span>&gt;https://registry.docker-cn.com&lt;/a&gt;<span class="p">&amp;</span>rdquo<span class="p">;</span><span class="o">]</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>storage-driver<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>devicemapper<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>storage-opts<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[</span><span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_removal<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_deletion<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span><span class="o">]</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>storage-opts<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[</span>
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.thinpooldev<span class="o">=</span>/dev/mapper/docker-thinpool<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.min_free_space<span class="o">=</span>0%<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_deletion<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>,
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_removal<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>,
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.fs<span class="o">=</span>ext4<span class="p">&amp;</span>rdquo<span class="p">;</span>
+    <span class="o">]</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>log-driver<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>fluentd<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>log-opts<span class="p">&amp;</span>rdquo<span class="p">;</span>:
+    <span class="o">{</span>
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>fluentd-address<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>localhost:24224<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>tag<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>docker.<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>fluentd-async-connect<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div></p>
+
+<ul>
+<li><h4>集群初始化问题</h4></li>
+</ul>
+
+
+<p>使用<code>kubeadm</code>搭建，若未指定&ndash;advertise-address地址则k8s默认拿default网卡，
+而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
+时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  bindPort: 6443
+etcd:
+  endpoints:
+  <span class="c">#sed -i &amp;ldquo;/#ETCD_ENDPOINTS/a\  - &lt;a href=&quot;http://123.456:2379/g&quot;&gt;http://123.456:2379/g&lt;/a&gt;&amp;rdquo; ./abc.yml</span>
+  <span class="c">#ETCD ENDPOINTS</span>
+  - &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://10.81.32.150:2379&quot;</span>&gt;http://10.81.32.150:2379&lt;/a&gt;
+apiServerExtraArgs:
+  apiserver-count: <span class="p">&amp;</span>ldquo<span class="p">;</span>1<span class="p">&amp;</span>rdquo<span class="p">;</span>
+  insecure-port: <span class="p">&amp;</span>ldquo<span class="p">;</span>8080<span class="p">&amp;</span>rdquo<span class="p">;</span>
+  advertise-address<span class="o">=</span>10.81.32.150
+  service-node-port-range: <span class="p">&amp;</span>ldquo<span class="p">;</span>30000-32000<span class="p">&amp;</span>rdquo<span class="p">;</span>
+  admission-control: <span class="p">&amp;</span>ldquo<span class="p">;</span>Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota<span class="p">&amp;</span>rdquo<span class="p">;</span>
+  feature-gates: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">MountPropagation</span><span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
+  endpoint-reconciler-type: <span class="p">&amp;</span>ldquo<span class="p">;</span>lease<span class="p">&amp;</span>rdquo<span class="p">;</span>
+controllerManagerExtraArgs:
+  pod-eviction-timeout: <span class="p">&amp;</span>ldquo<span class="p">;</span>30s<span class="p">&amp;</span>rdquo<span class="p">;</span>
+  node-monitor-period: <span class="p">&amp;</span>ldquo<span class="p">;</span>2s<span class="p">&amp;</span>rdquo<span class="p">;</span>
+  node-monitor-grace-period: <span class="p">&amp;</span>ldquo<span class="p">;</span>16s<span class="p">&amp;</span>rdquo<span class="p">;</span>
+controllerManagerExtraVolumes:
+- name: k8s
+  hostPath: /etc/kubernetes
+  mountPath: /etc/kubernetes
+imageRepository: index.docker.cn/claas
+networking:
+  podSubnet: 192.168.0.0/16
+kubernetesVersion: v1.9.6
+token: 8d775a.8f70da6999842a27
+tokenTTL: <span class="p">&amp;</span>ldquo<span class="p">;</span>0<span class="p">&amp;</span>rdquo<span class="p">;</span>
+apiServerCertSANs:
+- 127.0.0.1
+- amazonaws.com.cn
+- amazonaws.com
+- 10.81.32.150
+- 10.81.32.150</code></pre></div>
+- ####flannel网络问题
+多网卡导致flannel网络选择网卡错误,flannel在初始化的时候会默认找defalut网卡，如果需要指定，则在flannel的
+初始化yaml文件中通过&ndash;iface指定网卡，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span>
+      containers:
+      - name: kube-flannel
+        image: index.alauda.cn/claas/flannel:v0.9.1
+        <span class="nb">command</span>: <span class="o">[</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>/opt/bin/flanneld<span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>ndash<span class="p">;</span>ip-masq<span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>ndash<span class="p">;</span>kube-subnet-mgr<span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>ndash<span class="p">;</span><span class="nv">iface</span><span class="o">=</span>eth0<span class="p">&amp;</span>rdquo<span class="p">;</span><span class="o">]</span>
+        securityContext:
+          privileged: <span class="nb">true</span>
+<span class="nb">        </span>env:
+  <span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
+]]></content>
+  </entry>
+  
+</feed>

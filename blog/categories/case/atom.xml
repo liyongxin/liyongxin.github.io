@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: case | Earlene]]></title>
+  <link href="http://liyongxin.github.io/blog/categories/case/atom.xml" rel="self"/>
+  <link href="http://liyongxin.github.io/"/>
+  <updated>2019-03-03T18:50:38+08:00</updated>
+  <id>http://liyongxin.github.io/</id>
+  <author>
+    <name><![CDATA[yxli@alauda.io]]></name>
+    <email><![CDATA[yxli@alauda.io]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[python多线程执行类方法]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/"/>
+    <updated>2019-03-03T16:56:27+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa</id>
+    <content type="html"><![CDATA[<h2>case概述</h2>
+
+<p>python可以使用多线程处理多个任务，最基本的处理思路如下：</p>
+
+<ul>
+<li>定义一个基类，然后基于该类实现多个子类完成业务功能；</li>
+<li>为每个子类的调用分配一个子线程，并调用子线程的业务入口；</li>
+<li>运行子线程，主线程实现任务结果处理；</li>
+</ul>
+
+
+<p>基于以上思路，做了基本的case，代码参考<a href="https://github.com/liyongxin/case-python/tree/master/thread_test">github地址</a>，项目结构如下：
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">.</span>
+<span class="err">└──</span> <span class="n">thread_test</span>
+    <span class="err">├──</span> <span class="o">&lt;</span><span class="n">strong</span><span class="o">&gt;</span><span class="n">init</span><span class="o">&lt;/</span><span class="n">strong</span><span class="o">&gt;.</span><span class="n">py</span>
+    <span class="err">├──</span> <span class="n">collector</span>
+    <span class="err">│  </span> <span class="err">├──</span> <span class="o">&lt;</span><span class="n">strong</span><span class="o">&gt;</span><span class="n">init</span><span class="o">&lt;/</span><span class="n">strong</span><span class="o">&gt;.</span><span class="n">py</span>
+    <span class="err">│  </span> <span class="err">├──</span> <span class="n">c1</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">│  </span> <span class="err">├──</span> <span class="n">c2</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">│  </span> <span class="err">└──</span> <span class="n">collector</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">├──</span> <span class="n">threads</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">└──</span> <span class="n">threads_queue</span><span class="o">.</span><span class="n">py</span></code></pre></div></p>
+
+<h2>代码简介</h2>
+
+<h4>定义一个基类，然后基于该类实现多个子类完成业务功能</h4>
+
+<p><code>collector</code>包下定义了<code>collector</code>这个基类，然后<code>c1.py与c2.py</code>分别是实现了该基类的子类，同时使用<code>get_data</code>模拟业务逻辑的入口，
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">from</span> <span class="o">.</span><span class="n">collector</span> <span class="n">import</span> <span class="no">Collector</span><span class="o">&lt;</span><span class="sr">/p&gt;</span>
+
+<span class="sr">&lt;p&gt;class C1(Collector):</span>
+<span class="sr">    @classmethod</span>
+<span class="sr">    def get_data(cls, msg):</span>
+<span class="sr">        print(&amp;ldquo;i am from &amp;rdquo;, msg)</span>
+<span class="sr">        return msg</span></code></pre></div></p>
+
+<h4>为每个子类的调用分配一个子线程，并调用子线程的业务入口</h4>
+
+<ul>
+<li>获取所有的业务子类</li>
+</ul>
+
+
+<p>为了给每个子类分配一个子线程，需要先获取所有的子类，使用递归的方式，根据基类名称来读取所有基类的实现类
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">def</span> <span class="nf">get_all_subclasses</span><span class="p">(</span><span class="n">mod</span><span class="p">):</span>
+    <span class="n">all_subclasses</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1">## collections</span>
+    <span class="k">for</span> <span class="n">subclass</span> <span class="k">in</span> <span class="o">.</span><span class="n">&lt;strong</span><span class="o">&gt;</span><span class="n">subclasses</span><span class="o">&lt;</span><span class="sr">/strong&gt;():</span>
+<span class="sr">        class_name = subclass.&lt;strong&gt;name&lt;/s</span><span class="n">trong</span><span class="o">&gt;.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_name</span> <span class="k">in</span> <span class="n">all_subclasses</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">all_subclasses</span><span class="o">[</span><span class="n">class_name</span><span class="o">]</span> <span class="o">=</span> <span class="n">subclass</span>
+        <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">subclass</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">all_subclasses</span></code></pre></div></p>
+
+<ul>
+<li>实现多线程类，并在默认的线程入口run方法中调用注册方法
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">from</span> <span class="nn">thread_test.collector.collector</span> <span class="kn">import</span> <span class="n">Collector</span><span class="o">&lt;/</span><span class="n">li</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">ul</span><span class="o">&gt;</span>
+
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">class</span> <span class="nc">GrabThread</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">()):</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">GrabThread</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="sd">&quot;&quot;&quot;run func registry by sub-class&quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">get_result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span></code></pre></div></p>
+
+<ul>
+<li><p>主线程注册子类到子线程中，并进行调用
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+  <span class="n">all_cls</span> <span class="o">=</span> <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">Collector</span><span class="p">)</span>
+  <span class="n">threads</span> <span class="o">=</span> <span class="p">[]</span>
+  <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">all_cls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+      <span class="n">fn_collect</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">get_data</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;,</span> <span class="bp">None</span><span class="p">)</span>
+      <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn_collect</span><span class="p">):</span>
+          <span class="n">p</span> <span class="o">=</span> <span class="n">GrabThread</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">fn_collect</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
+          <span class="n">threads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+          <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+          <span class="k">print</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="err">执行</span><span class="p">{</span><span class="mi">0</span><span class="p">}</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+  <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">threads</span><span class="p">:</span>
+      <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>  <span class="c">#&lt;/p&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="k">print</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">main</span> <span class="n">done</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;)</span></code></pre></div></p></li>
+</ul>
+
+
+<h2>执行结果</h2>
+
+<p>每个线程负责一个子任务，并行运行
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">Cellar</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="mf">3.7</span><span class="o">.</span><span class="mi">1</span><span class="o">/</span><span class="n">Frameworks</span><span class="o">/</span><span class="n">Python</span><span class="o">.</span><span class="n">framework</span><span class="o">/</span><span class="n">Versions</span><span class="o">/</span><span class="mf">3.7</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">python3</span><span class="o">.</span><span class="mi">7</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">liyongxin</span><span class="o">/</span><span class="n">PycharmProjects</span><span class="o">/</span><span class="n">case</span><span class="o">-</span><span class="n">python</span><span class="o">/</span><span class="n">thread_test</span><span class="o">/</span><span class="n">threads</span><span class="o">.</span><span class="n">py</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">i</span> <span class="n">am</span> <span class="kn">from</span>  <span class="nn">c1</span>
+<span class="err">执行</span><span class="n">c1</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span>
+<span class="n">i</span> <span class="n">am</span> <span class="kn">from</span>  <span class="nn">c2</span>
+<span class="err">执行</span><span class="n">c2</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span>
+<span class="n">main</span> <span class="n">done</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">Process</span> <span class="n">finished</span> <span class="k">with</span> <span class="nb">exit</span> <span class="n">code</span> <span class="mi">0</span></code></pre></div></p>
+]]></content>
+  </entry>
+  
+</feed>

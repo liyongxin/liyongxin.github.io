@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>http://liyongxin.github.io/blog/2019/03/03/pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi/</loc>
+<lastmod>2019-03-03T17:59:19+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/</loc>
+<lastmod>2019-03-03T16:56:27+08:00</lastmod>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/2019/02/28/ansible-sui-shou-ji/</loc>
 <lastmod>2019-02-28T14:18:47+08:00</lastmod>
 </url>
@@ -72,9 +80,24 @@
 <loc>http://liyongxin.github.io/blog/categories/k8s/</loc>
 </url>
 <url>
+<loc>http://liyongxin.github.io/blog/categories/kubernetes-docker/</loc>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/categories/ansible/</loc>
 </url>
 <url>
-<loc>http://liyongxin.github.io/posts/2/</loc>
+<loc>http://liyongxin.github.io/blog/categories/python/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/threads/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/case/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/ansible/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/python/</loc>
 </url>
 </urlset>
