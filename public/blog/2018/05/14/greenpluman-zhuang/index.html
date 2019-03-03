@@ -1,0 +1,522 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>GreenPlum安装 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="GreenPlum安装 GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下： 安装前准备 网络规划 Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。 &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2018/05/14/greenpluman-zhuang/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">GreenPlum安装</h1>
+	<div class="entry-content" itemprop="articleBody"><p>GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下：</p>
+
+<h3>安装前准备</h3>
+
+<h4>网络规划</h4>
+
+<p>Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。Master主机和Segment主机之间会组成一个内部网络（LAN）。
+为了充分发挥Greenplum数据库并行处理的性能，对网络带宽要求较高。服务器会配置多个网卡，内部网需要配置多个网段的IP。需要对外连接的服务器需配置外部IP。
+建议在Greenplum数据库系统安装之前，把网络配置规划好。
+<img src="/images/network.png" alt="" /></p>
+
+<h4>存储空间规划</h4>
+
+<p>首先，需要评估目标数据库数据所需要的空间容量。建议了解客户搭建Greenplum数据库的具体应用。举例：估计数据库所需空间为U，数据库需要启用Mirror，磁盘阵列总可用空间为D（Raid之后）。空间规划服务和如下公式：
+<code>2 * U + U / 3 = D * 70%</code>
+磁盘空间D平均分配到各个Segment服务器上。
+Master需要相应的空间。使用服务器内置硬盘的计算方式类似。</p>
+
+<h4>数据库实例规划</h4>
+
+<p>规划每个Segment服务器上建立的数据库实例的数量（instance数量），通常建议每2个CPU内核（core）对应一个数据库实例。
+如 ：<code>2*4</code>核CPU的服务器，可配置4个实例。</p>
+
+<!--more-->
+
+
+<h3>操作系统规划</h3>
+
+<h4>修改主机名</h4>
+
+<p>修改各台主机的主机名称。一般建议的命名规则如下：</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="ss">Master</span><span class="p">:</span> <span class="n">mdw</span>
+<span class="no">Standby</span> <span class="ss">Master</span><span class="p">:</span> <span class="n">smdw</span>
+<span class="no">Segment</span> <span class="ss">Host</span><span class="p">:</span> <span class="n">sdw1</span> <span class="n">sdw2</span> <span class="o">.</span><span class="n">.</span><span class="o">.</span><span class="n">sdwn</span></code></pre></div>
+
+
+<p>修改hostname:</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">hostnamectl <span class="nb">set</span>-hostname mdw</code></pre></div>
+
+
+<p>2、修改<code>/etc/hosts</code>文件</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="mi">21</span><span class="o">.</span><span class="mi">104</span><span class="o">.</span><span class="mi">138</span><span class="o">.</span><span class="mi">21</span>   <span class="n">mdw</span><span class="o">-</span><span class="n">ext1</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">1</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">1</span> <span class="n">mdw</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">2</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">2</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">3</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">3</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">4</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">4</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">5</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">5</span>
+<span class="mi">192</span><span class="o">.</span><span class="mi">168</span><span class="o">.</span><span class="mi">6</span><span class="o">.</span><span class="mi">254</span>   <span class="n">mdw</span><span class="o">-</span><span class="mi">6</span></code></pre></div>
+
+
+<h4>关闭相关服务</h4>
+
+<div class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="n">service</span> <span class="n">iptables</span> <span class="n">save</span>
+<span class="n">service</span> <span class="n">iptables</span> <span class="n">stop</span>
+<span class="n">chkconfig</span> <span class="n">iptables</span> <span class="k">off</span>
+<span class="n">service</span> <span class="n">ip6tables</span> <span class="n">save</span>
+<span class="n">service</span> <span class="n">ip6tables</span> <span class="n">stop</span>
+<span class="n">chkconfig</span> <span class="n">ip6tables</span> <span class="k">off</span></code></pre></div>
+
+
+<h4>修改系统参数</h4>
+
+<p>编辑系统文件<code>/etc/sysctl.conf</code>,Sysctl是一个允许您改变正在运行中的Linux系统的接口。它包含一些 TCP/IP 堆栈和虚拟内存系统的高级选项</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">kernel</span><span class="o">.</span><span class="n">shmmax</span> <span class="o">=</span> <span class="mi">500000000</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">shmmni</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">shmall</span> <span class="o">=</span> <span class="mi">4000000000</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">sem</span> <span class="o">=</span> <span class="mi">250</span> <span class="mi">512000</span> <span class="mi">100</span> <span class="mi">2048</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">sysrq</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">core_uses_pid</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">msgmnb</span> <span class="o">=</span> <span class="mi">65536</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">msgmax</span> <span class="o">=</span> <span class="mi">65536</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">tcp_syncookies</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">ip_forward</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">default</span><span class="o">.</span><span class="n">accept_source_route</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">tcp_tw_recycle</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">tcp_max_syn_backlog</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">all</span><span class="o">.</span><span class="n">arp_filter</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">conf</span><span class="o">.</span><span class="n">default</span><span class="o">.</span><span class="n">arp_filter</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">net</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">netdev_max_backlog</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">vm</span><span class="o">.</span><span class="n">overcommit_memory</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">kernel</span><span class="o">.</span><span class="n">msgmni</span> <span class="o">=</span> <span class="mi">2048</span>
+<span class="n">net</span><span class="o">.</span><span class="n">ipv4</span><span class="o">.</span><span class="n">ip_local_port_range</span> <span class="o">=</span> <span class="mi">1025</span> <span class="mi">65535</span></code></pre></div>
+
+
+<p>编辑系统文件<code>/etc/security/limits.conf</code></p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">*</span> <span class="n">soft</span> <span class="n">nofile</span> <span class="mi">65536</span>
+<span class="o">*</span> <span class="n">hard</span> <span class="n">nofile</span> <span class="mi">65536</span>
+<span class="o">*</span> <span class="n">soft</span> <span class="n">nproc</span> <span class="mi">131072</span>
+<span class="o">*</span> <span class="n">hard</span> <span class="n">nproc</span> <span class="mi">131072</span></code></pre></div>
+
+
+<h4>修改磁盘预读配置</h4>
+
+<p>在参数文件<code>/etc/rc.d/rc.local</code>中增加下列内容:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="no">DELL</span><span class="o">/</span><span class="ss">IBM</span><span class="p">:</span> <span class="n">blockdev</span> <span class="o">--</span><span class="n">setra</span> <span class="mi">16384</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">sd</span><span class="o">*</span>
+<span class="ss">HP</span><span class="p">:</span> <span class="n">blockdev</span> <span class="o">--</span><span class="n">setra</span> <span class="mi">16384</span> <span class="o">/</span><span class="n">dev</span><span class="o">/</span><span class="n">cciss</span><span class="o">/</span><span class="n">c?d?</span><span class="o">*</span></code></pre></div>
+
+
+<h4>修改系统引导文件</h4>
+
+<p>编辑<code>/boot/grub/menu.lst</code>,Deadline scheduler 用 deadline 算法保证对于既定的 IO 请求以最小的延迟时间，从这一点理解，对于 DSS 应用应该会是很适合的</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">elevator</span><span class="o">=</span><span class="n">deadline</span></code></pre></div>
+
+
+<h4>启动IPMI服务</h4>
+
+<p>IPMI（Intelligent Platform Management Interface）即智能平台管理接口是使硬件管理具备“智能化”的新一代通用接口标准。如果没有安装相关服务，建议安装</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">service</span> <span class="n">ipmi</span> <span class="n">start</span>
+<span class="n">chkconfig</span> <span class="n">ipmi</span> <span class="n">on</span></code></pre></div>
+
+
+<h4>修改启动配置</h4>
+
+<p>编辑<code>/etc/inittab</code>，修改运行级别为3，多用户命令行模式</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="nb">id</span><span class="p">:</span><span class="mi">3</span><span class="ss">:initdefault</span><span class="p">:</span></code></pre></div>
+
+
+<h4>关闭selinux并重启机器</h4>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">sed -i <span class="s1">&#39;s/SELINUX=enforcing/SELINUX=disabled/&#39;</span> /etc/selinux/config</code></pre></div>
+
+
+<p>如果临时关闭，使用</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">setenforce 0</code></pre></div>
+
+
+<h2>建立数据目录</h2>
+
+<h4>Master以及Standby Master主机</h4>
+
+<p>分区及格式化：</p>
+
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>  <span class="err">#</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span>
+<span class="nx">mkdir</span> <span class="o">-</span><span class="nx">p</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span> <span class="err">#</span> <span class="nx">Master数据目录</span></code></pre></div>
+
+
+<p>在/etc/fstab文件中增加</p>
+
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda3</span> <span class="o">/</span><span class="nx">data</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span></code></pre></div>
+
+
+<p>把/data/master 赋予777权限</p>
+
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">chmod</span> <span class="o">-</span><span class="nx">R</span> <span class="mi">777</span> <span class="o">/</span><span class="nx">data</span><span class="o">/</span><span class="nx">master</span></code></pre></div>
+
+
+<h4>Segment主机</h4>
+
+<p>分区及格式化：</p>
+
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>  <span class="err">#</span> <span class="nx">mkfs</span> <span class="o">-</span><span class="nx">t</span> <span class="nx">xfs</span> <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span>
+<span class="nx">mkfs</span><span class="p">.</span><span class="nx">xfs</span>  <span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sdb2</span>
+<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data1</span>  <span class="err">#</span> <span class="nx">Segment数据目录</span><span class="err">，</span><span class="nx">可根据实例和分配空间不同规划不同的目录</span>
+<span class="nx">mkdir</span> <span class="o">/</span><span class="nx">data2</span></code></pre></div>
+
+
+<p>在/etc/fstab文件中增加</p>
+
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sda2</span> <span class="o">/</span><span class="nx">data1</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span>
+<span class="o">/</span><span class="nx">dev</span><span class="o">/</span><span class="nx">sdb2</span> <span class="o">/</span><span class="nx">data2</span> <span class="nx">xfs</span> <span class="nx">rw</span><span class="p">,</span><span class="nx">noatime</span><span class="p">,</span><span class="nx">inode64</span><span class="p">,</span><span class="nx">allocsize</span><span class="p">=</span><span class="mi">16</span><span class="nx">m</span> <span class="mi">1</span> <span class="mi">1</span></code></pre></div>
+
+
+<p>把/data/master 赋予777权限</p>
+
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="nx">chmod</span> <span class="o">-</span><span class="nx">R</span> <span class="mi">777</span> <span class="o">/</span><span class="nx">data1</span>
+<span class="nx">chmod</span> <span class="o">-</span><span class="nx">R</span> <span class="mi">777</span> <span class="o">/</span><span class="nx">data2</span></code></pre></div>
+
+
+<h2>Master节点安装GreenPlum</h2>
+
+<h4>Master机器运行安装文件</h4>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">unzip greenplum-db-4.1.1.3-build-4-RHEL5-x86_64.zip
+/bin/bash greenplum-db-4.1.1.3-build-4-RHEL5-x86_64.bin</code></pre></div>
+
+
+<p>安装完成后修改root用户home的~/.bashrc配置文件，增加</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh</code></pre></div>
+
+
+<h4>配置hostname文件（用于建立多机信任）</h4>
+
+<p>建议在安装目录下新建gpconfigs目录,包含所有master和segment主机名和别名的文件
+多网卡可能如下,<code>hostfile_exkeys</code>:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">mdw</span>
+<span class="n">mdw</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">smdw</span>
+<span class="n">smdw</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">2</span></code></pre></div>
+
+
+<p>单网卡可能如下,<code>hostfile_exkeys</code>:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">mdw</span>
+<span class="n">smdw</span>
+<span class="n">sdw1</span>
+<span class="n">sdw2</span></code></pre></div>
+
+
+<p>建立<code>all_hosts_only</code>,只包含主机名，不包含各个网段对应的<code>hostname</code>，用于<code>gpssh</code>命令,all_hosts_only:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">mdw</span>
+<span class="n">smdw</span>
+<span class="n">sdw1</span>
+<span class="n">sdw2</span></code></pre></div>
+
+
+<h2>建立多机互信</h2>
+
+<p>root用户建立多机信任</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+gpssh-exkeys -f ./hostfile_exkeys</code></pre></div>
+
+
+<blockquote><p><strong>注意：</strong>对于<code>RHEL6.x</code>版本，建议先关闭<code>OPENSSL_CONF</code>环境变量并设置<code>selinux</code>为<code>disabled</code>再做多机互信
+如建立多机信任时出现<code>permission denied(publickey.gssapi-with-mic)</code>或者类似的错误，需要修改每台机器的<code>/etc/ssh/sshd_config</code>文件</p></blockquote>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile.ssh/authorized_keys</code></pre></div>
+
+
+<p>默认使用的22端口，如果22端口没开建议先打开22端口</p>
+
+<h4>建立用户以及用户组</h4>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpssh -f ./all_hosts_only
+<span class="o">=</span>&gt;groupadd -g <span class="m">3030</span> <span class="nv">gpadmin</span>
+<span class="o">=</span>&gt;groupadd -g <span class="m">3040</span> <span class="nv">gpmon</span>
+<span class="o">=</span>&gt;useradd -u <span class="m">3030</span> -g gpadmin -m -s /bin/bash <span class="nv">gpadmin</span>
+<span class="o">=</span>&gt;useradd -u <span class="m">3040</span> -g gpmon -m -s /bin/bash <span class="nv">gpmon</span>
+<span class="o">=</span>&gt;echo gpadmin <span class="p">|</span> passwd  gpadmin --stdin
+<span class="o">=</span>&gt;echo gpmon <span class="p">|</span> passwd  gpmon --stdin
+<span class="o">=</span>&gt;chown -R gpadmin:gpadmin /data</code></pre></div>
+
+
+<h4>修改gpadmin用户配置</h4>
+
+<p>使用<code>gpadmin</code>用户操作，对于Master和Standby Master主机，修改 <code>~/.bashrc</code>文件，添加如下内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh
+<span class="nv">MASTER_DATA_DIRECTORY</span><span class="o">=</span>/data/master/gpseg-1
+<span class="nb">export </span>MASTER_DATA_DIRECTORY  <span class="c"># gpstart默认启动的目录</span></code></pre></div>
+
+
+<p>对于Segment主机，修改 <code>~/.bashrc</code>文件，添加如下内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /usr/local/greenplum-db/greenplum_path.sh</code></pre></div>
+
+
+<h4>gpadmin用户建立多机信任</h4>
+
+<p>使用gpadmin用户在Master主机上操作,提示密码，输入<code>gpadmin</code></p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpssh-exkeys -f ./hostfile_exkeys</code></pre></div>
+
+
+<h2>时钟同步</h2>
+
+<p>所有涉及到的机器之间使用NTP做时钟同步</p>
+
+<h2>其他机器安装GP</h2>
+
+<h4>配置hostname文件</h4>
+
+<p>其他机器的安装主要操作时把安装在Master主机上的GP安装文件打包传到其他各台机器中。因此，需要配置一个hostname文件包含Standbymaster和各台Segment主机，配置文件stby_all_segs内容参考如下：</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">smdw</span>
+<span class="n">smdw</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">2</span></code></pre></div>
+
+
+<h4>并行安装</h4>
+
+<p>安装gzip，在Master主机上，使用root用户操作：</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">chmod</span> <span class="mi">777</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span>
+<span class="n">gpseginstall</span> <span class="o">-</span><span class="n">f</span> <span class="o">.</span><span class="n">/stby_all_segs</span> <span class="o">-</span><span class="nb">p</span> <span class="n">gpadmin</span></code></pre></div>
+
+
+<h2>系统检查</h2>
+
+<h4>配置检测</h4>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpcheck -f /usr/local/greenplum-db/gpconfigs/all_hosts_single -m mdw -s smdw</code></pre></div>
+
+
+<h4>网络性能检测</h4>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_1 -r N -d /tmp &gt; checknetwork.out
+gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_net_2 -r N -d /tmp &gt; checknetwork.out</code></pre></div>
+
+
+<h4>磁盘性能检测</h4>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpcheckperf -f /usr/local/greenplum-db/gpconfigs/all_hosts_single -r ds -D -d /data1/primary -d /data2/primary -d /data1/mirror -d /data2/mirror &gt; checkio.out</code></pre></div>
+
+
+<h2>初始化数据库</h2>
+
+<h4>获取初始化配置</h4>
+
+<p>请注意，Greenplum3.x版本和4.x版本的初始化配置文件格式存在差异，配置时建议从 $GPHOME/docs/cli_help/gpconfigs/ 目录中获取样例文件，然后进行修改。</p>
+
+<h4>配置样例</h4>
+
+<p>获取配置文件样例：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">cp <span class="nv">$GPHOME</span>/docs/cli_help/gpconfigs/gpinitsystem_config  <span class="nv">$GPHOME</span>/gpconfigs/</code></pre></div>
+
+
+<p>修改配置文件：</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ARRAY_NAME</span><span class="o">=</span><span class="s">&quot;EMC Greenplum DW&quot;</span>
+<span class="n">SEG_PREFIX</span><span class="o">=</span><span class="n">gpseg</span>
+<span class="n">PORT_BASE</span><span class="o">=</span><span class="mi">40000</span>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span> <span class="o">/</span><span class="n">data1</span><span class="p">)</span>   <span class="c"># 主实例</span>
+<span class="n">MASTER_HOSTNAME</span><span class="o">=</span><span class="n">mdw</span>    <span class="c"># 主机名</span>
+<span class="n">MASTER_DIRECTORY</span><span class="o">=/</span><span class="n">data</span><span class="o">/</span><span class="n">master</span>
+<span class="n">MASTER_PORT</span><span class="o">=</span><span class="mi">5432</span>
+<span class="n">TRUSTED</span> <span class="n">SHELL</span><span class="o">=</span><span class="n">ssh</span>
+<span class="n">CHECK_POINT_SEGMENT</span><span class="o">=</span><span class="mi">8</span>
+<span class="n">ENCODING</span><span class="o">=</span><span class="n">UNICODE</span>
+<span class="n">MIRROR_PORT_BASE</span><span class="o">=</span><span class="mi">50000</span>
+<span class="n">REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">41000</span>
+<span class="n">MIRROR_REPLICATION_PORT_BASE</span><span class="o">=</span><span class="mi">51000</span>
+<span class="n">declare</span> <span class="o">-</span><span class="n">a</span> <span class="n">MIRROR_DATA_DIRECTORY</span><span class="o">=</span><span class="p">(</span><span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span> <span class="o">/</span><span class="n">data2</span><span class="p">)</span>    <span class="c"># 备实例</span>
+<span class="n">MACHINE_LIST_FILE</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">all_segs</span>  <span class="c"># segment主机列表文件</span></code></pre></div>
+
+
+<h4>整理实例列表</h4>
+
+<p>只列出各个网段IP的主机名称，不能添加sdw1、sdw2等</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">sdw1</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw1</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw2</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw3</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw3</span><span class="o">-</span><span class="mi">2</span>
+<span class="n">sdw4</span><span class="o">-</span><span class="mi">1</span>
+<span class="n">sdw4</span><span class="o">-</span><span class="mi">2</span></code></pre></div>
+
+
+<h4>初始化</h4>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">gpinitsystem</span> <span class="o">-</span><span class="n">c</span> <span class="sr">/usr/</span><span class="n">local</span><span class="o">/</span><span class="n">greenplum</span><span class="o">-</span><span class="n">db</span><span class="o">/</span><span class="n">gpconfigs</span><span class="o">/</span><span class="n">gpinitsystem_config</span> <span class="o">-</span><span class="n">s</span> <span class="n">smdw</span></code></pre></div>
+
+
+<h4>修改访问权限</h4>
+
+<p>修改Master数据目录（MASTER_DATA_DIRECTORY）下<code>pg_hba.conf</code>文件。需要了解客户实际情况，有多少客户端的IP地址以及角色需要访问数据库。举例如下：</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">host</span>     <span class="n">all</span>         <span class="n">gpadmin</span>         <span class="mi">10</span><span class="o">.</span><span class="mi">32</span><span class="o">.</span><span class="mi">38</span><span class="o">.</span><span class="mi">0</span><span class="o">/</span><span class="mi">16</span>          <span class="n">trust</span></code></pre></div>
+
+
+<p>IP范围格式：IP 地址/CIDR，如：<code>10.32.38.0/16</code>；<code>255.0.0.0</code>表示 IPv4 CIDR 掩码长度 8，<code>255.255.255.0</code>表示 IPv4 CIDR 掩码长度 24，而 <code>255.255.255.255</code> 表示 CIDR 掩码长度 32；32就表示指定IP，24就表示小子网。
+修改完后数据库重载参数文件：</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">gpstop</span> <span class="o">-</span><span class="n">u</span></code></pre></div>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

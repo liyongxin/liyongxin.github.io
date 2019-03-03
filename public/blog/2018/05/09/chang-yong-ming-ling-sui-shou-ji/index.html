@@ -1,0 +1,330 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>常用命令随手记 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="常用命令随手记 统计系统各类连接数 netstat -n | awk &#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39; 结果类似如下格式： ESTABLISHED 23
+TIME_WAIT 707 ab命令简单压力测试 ab &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">常用命令随手记</h1>
+	<div class="entry-content" itemprop="articleBody"><ul>
+<li><h4>统计系统各类连接数</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">netstat</span> <span class="o">-</span><span class="n">n</span> <span class="o">|</span> <span class="n">awk</span> <span class="s">&#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39;</span></code></pre></div>
+
+
+<p>结果类似如下格式：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">ESTABLISHED 23
+TIME_WAIT 707</code></pre></div>
+
+
+<ul>
+<li><h4>ab命令简单压力测试</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ab</span> <span class="o">-</span><span class="n">n</span> <span class="mi">50000000</span> <span class="o">-</span><span class="n">c</span> <span class="mi">10</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="p">:</span><span class="mi">8080</span><span class="o">/</span></code></pre></div>
+
+
+<ul>
+<li><h4>uwsgi reload</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ps</span> <span class="n">afx</span><span class="p">;</span>
+<span class="n">kill</span> <span class="o">-</span><span class="n">HUP</span> <span class="err">$</span><span class="n">pid_of_uwsgi</span></code></pre></div>
+
+
+<ul>
+<li><h4>xargs相关</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">find . -type f -name <span class="s2">&quot;*.jpg&quot;</span> -print <span class="p">|</span> xargs tar -czvf images.tar.gz
+
+<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX
+name name name name
+
+<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX -n2
+name name
+name name</code></pre></div>
+
+
+<ul>
+<li><h4>多行输入单行输出：</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">cat test.txt <span class="p">|</span> xargs
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
+
+
+<ul>
+<li><h4>压缩加速</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar --use-compress-program<span class="o">=</span>pigz -xvpf PKG-20180627.tar.gz</code></pre></div>
+
+
+<ul>
+<li><h4>curl发送get或者post请求</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">curl -H <span class="s2">&quot;Content-Type:application/json&quot;</span> -X POST -d <span class="s1">&#39;{&quot;user&quot;: &quot;admin&quot;, &quot;passwd&quot;:&quot;12345678&quot;}&#39;</span> http://127.0.0.1:8000/login
+curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http://127.0.0.1:8080/login</code></pre></div>
+
+
+<ul>
+<li><h4>sed 匹配替换</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#/dev/mapper/centos-swap swap                    swap    defaults        0 0</span>
+sed -i <span class="s1">&#39;/ swap / s/^\(.*\)$/#\1/g&#39;</span> /etc/fstab</code></pre></div>
+
+
+<ul>
+<li><h4>dd命令</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#创建一个大小为256M的文件</span>
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">of</span><span class="o">=/</span><span class="n">swapfile</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">262144</span>
+<span class="c">#测试硬盘的读写速度</span>
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">1000000</span> <span class="n">of</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span>
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span> <span class="n">bs</span><span class="o">=</span><span class="mi">64</span><span class="n">k</span> <span class="o">|</span> <span class="n">dd</span> <span class="n">of</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">null</span></code></pre></div>
+
+
+<ul>
+<li><h4>iostat命令</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#安装</span>
+<span class="n">yum</span> <span class="n">install</span> <span class="n">sysstat</span>
+<span class="c">#测试机器设备读写情况，所有设备，间隔1s，执行10次</span>
+<span class="n">iostat</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">x</span> <span class="mi">1</span> <span class="mi">10</span></code></pre></div>
+
+
+<ul>
+<li><h4>route表操作</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#添加路由</span>
+<span class="n">route</span> <span class="n">add</span> <span class="n">default</span> <span class="n">gw</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span>
+<span class="n">route</span> <span class="n">add</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.40</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">eth0</span>
+<span class="c">#删除路由</span>
+<span class="n">route</span> <span class="k">del</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.48</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">gw</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.41</span></code></pre></div>
+
+
+<ul>
+<li><h4>tail 取输出结果的最后几行</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="mi">67</span><span class="n">d89d58db</span><span class="o">-</span><span class="mi">2</span><span class="n">gqdd</span>                 <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">1</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">56489</span><span class="n">c6c87</span><span class="o">-</span><span class="mi">4</span><span class="n">nwdc</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="mi">75</span><span class="n">fb5cb78b</span><span class="o">-</span><span class="n">h5l82</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">3</span><span class="o">-</span><span class="mi">8697</span><span class="n">f4746f</span><span class="o">-</span><span class="mi">645</span><span class="n">sj</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">4</span><span class="o">-</span><span class="mi">7677</span><span class="n">cbcd8d</span><span class="o">-</span><span class="n">z8pvb</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n1</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n2</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span></code></pre></div>
+
+
+<ul>
+<li><h4>awk 指定行号输出</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#输出最后一行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;END{print $1}&#39;</span>
+<span class="c">#输出指定行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;NR==1{print $1}&#39;</span></code></pre></div>
+
+
+<ul>
+<li><h4>sed 删除指定行</h4></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#删除前两行，输出剩下的行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed 1,2d</span>
+<span class="c">#删除最后一行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed &#39;$&#39;d</span></code></pre></div>
+
+
+<ul>
+<li><h4>find</h4>
+
+<p>find命令是根据文件的属性进行查找，如文件名，文件大小，所有者，所属组，是否为空，访问时间，修改时间等</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#在/tmp目录下查找大于10000字节并在最后2分钟内修改的文件</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find /tmp -size +10000c -and -mtime +2</span>
+
+<span class="c">#查找当前文件系统中的所有目录并排序</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find . -type d | sort</span>
+<span class="c">#查找`/var/log`目录下大于200M的以`.log`结尾的文件并删除掉</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@yxli</span><span class="o">-</span><span class="n">onebox</span> <span class="n">docker</span><span class="p">]</span><span class="c"># find  /var/log/  -name  &quot;*.log&quot; -size +200M -type f -exec rm {} \;</span></code></pre></div>
+
+
+<ul>
+<li><h4>grep</h4>
+
+<p>grep是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#显示/usr/src目录下的文件(包含子目录)包含magic的行</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># grep -r magic /usr/src</span>
+<span class="c">#正则表达式</span>
+<span class="n">grep</span> <span class="o">-</span><span class="n">E</span> <span class="s">&quot;\&lt;(root|gao|uer1)\&gt;&quot;</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span></code></pre></div>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

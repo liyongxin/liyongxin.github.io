@@ -1,0 +1,202 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>somethings about kubernetes - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="Somethings About Kubernetes k8s默认驱逐设置 // DefaultEvictionHard includes default options for hard eviction.
+var DefaultEvictionHard = map[string]string &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2019/02/28/k8sxiao-zhi-shi/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Somethings About Kubernetes</h1>
+	<div class="entry-content" itemprop="articleBody"><ul>
+<li>k8s默认驱逐设置</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">// DefaultEvictionHard includes default options <span class="k">for</span> hard eviction.
+var <span class="nv">DefaultEvictionHard</span> <span class="o">=</span> map<span class="o">[</span>string<span class="o">]</span>string<span class="o">{</span>
+        <span class="s2">&quot;memory.available&quot;</span>:  <span class="s2">&quot;100Mi&quot;</span>,
+        <span class="s2">&quot;nodefs.available&quot;</span>:  <span class="s2">&quot;10%&quot;</span>,
+        <span class="s2">&quot;nodefs.inodesFree&quot;</span>: <span class="s2">&quot;5%&quot;</span>,
+        <span class="s2">&quot;imagefs.available&quot;</span>: <span class="s2">&quot;15%&quot;</span>,
+<span class="o">}</span></code></pre></div>
+
+
+<ul>
+<li>kubernetes 滚动升级</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c"># run test deploy</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl run --image=nginx --port=80 --replicas=2 yxli-nginx</span>
+<span class="c"># scale replica</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl scale --replicas=1 deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl get deploy</span>
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+busybox      <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>            <span class="m">2</span>           39d
+busybox1     <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           39d
+yxli-nginx   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           2h
+<span class="c"># update image</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl set image  deploy/yxli-nginx yxli-nginx=nginx:alpine</span>
+<span class="c"># 查看升级历史</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">1</span>         &lt;none&gt;
+<span class="m">2</span>         &lt;none&gt;
+<span class="c"># 回顾至上次版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout undo deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">2</span>         &lt;none&gt;
+<span class="m">3</span>         &lt;none&gt;
+<span class="c"># 回滚至指定版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm --to-revision=2</span></code></pre></div>
+
+
+<ul>
+<li>查看docker使用的cpu核心数</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
+/sys/fs/cgroup/cpuset/docker
+<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># cat cpuset.cpus</span>
+0-7</code></pre></div>
+
+
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

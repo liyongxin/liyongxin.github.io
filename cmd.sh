@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 bundle exec rake "new_post[hhahah]"
 bundle exec rake generate
 git add .

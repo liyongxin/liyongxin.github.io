@@ -1,0 +1,284 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>javascript运行顺序详解 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="Javascript运行顺序详解 JavaScript是一种描述型脚本语言，它不同于java或C#等编译性语言,它不需要进行编译成中间语言,而是由浏览器进行动态地解析与执行。如果你不能理解javaScript语言的运行机制，或者简单地说，你不能掌握javascript的执行顺序， &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Javascript运行顺序详解</h1>
+	<div class="entry-content" itemprop="articleBody"><p>JavaScript是一种描述型脚本语言，它不同于java或C#等编译性语言,它不需要进行编译成中间语言,而是由浏览器进行动态地解析与执行。如果你不能理解javaScript语言的运行机制，或者简单地说，你不能掌握javascript的执行顺序，那你就犹如伯乐驾驭不了千里马，让千里马脱缰而出，四处乱窜。
+那么JavaScript是怎么来进行解析的吗？它的执行顺序又是如何的呢？在了解这些之前，我们先来认识几个重要的术语：</p>
+
+<h3>代码块</h3>
+
+<p><code>JavaScript</code>中的代码块是指由<code>&lt;script&gt;</code>标签分割的代码段。例如：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 示例代码</span>
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块一&quot;</span><span class="p">);</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块二&quot;</span><span class="p">);</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<p>JS是按照代码块来进行编译和执行的，代码块间相互独立，但变量和方法共享。什么意思呢? 举个例子，你就明白了：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>   <span class="c1">//因为没有定义str，所以浏览器会出错，下面的不能运行</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块一&quot;</span><span class="p">);</span>  <span class="c1">//没有运行到这里</span>
+    <span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="s2">&quot;我是代码块一变量&quot;</span><span class="p">;</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块二&quot;</span><span class="p">);</span>  <span class="c1">//这里有运行到</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="nx">test</span><span class="p">);</span>  <span class="c1">//弹出&quot;我是代码块一变量&quot;</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<p>上面的代码中代码块一中运行报错，但不影响代码块二的执行，这就是代码块间的独立性，而代码块二中能调用到代码一中的变量，则是块间共享性。</p>
+
+<!--more-->
+
+
+<h3>声明式函数与赋值式函数</h3>
+
+<p>JS中的函数定义分为两种：声明式函数与赋值式函数。</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="kd">function</span> <span class="nx">Fn</span><span class="p">(){</span>
+      <span class="c1">//声明式函数</span>
+    <span class="p">}</span>
+    <span class="kd">var</span> <span class="nx">Fn</span> <span class="o">=</span> <span class="kd">function</span><span class="p">{</span>
+      <span class="c1">//赋值式函数</span>
+    <span class="p">}</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<p>声明式函数与赋值式函数的区别在于：在JS的预编译期，声明式函数将会先被提取出来，然后才按顺序执行js代码。</p>
+
+<h3>预编译期与执行期</h3>
+
+<p>事实上，JS的解析过程分为两个阶段：预编译期(预处理)与执行期。
+预编译期JS会对本代码块中的所有声明的变量和函数进行处理（类似与C语言的编译），但需要注意的是此时处理函数的只是声明式函数，而且变量也只是进行了声明但未进行初始化以及赋值。</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="nx">Fn</span><span class="p">();</span>  <span class="c1">//执行结果：&quot;执行了函数2&quot;,同名函数后者会覆盖前者</span>
+      <span class="kd">function</span> <span class="nx">Fn</span><span class="p">(){</span> <span class="c1">//函数1</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;执行了函数1&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="kd">function</span> <span class="nx">Fn</span><span class="p">(){</span>  <span class="c1">//函数2</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;执行了函数2&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">Fn</span><span class="p">();</span>  <span class="c1">//执行了声明式函数,在预编译期声明函数及被处理了，所以即使Fn()调用函数放在声明函数前也能执行。</span>
+      <span class="kd">function</span> <span class="nx">Fn</span><span class="p">(){</span>
+         <span class="c1">//声明式函数</span>
+         <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;执行了声明式函数&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+
+      <span class="kd">var</span> <span class="nx">Fn</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+         <span class="c1">//赋值式函数</span>
+         <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;执行了赋值式函数&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<p>js在预处理期对变量进行了声明处理,但是并没有进行初始化与赋值，所以导致代码块二中的变量是unfiened的</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//代码块一</span>
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span><span class="c1">//浏览器报错,但并没有弹出信息窗</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+
+<span class="c1">//代码块二</span>
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span> <span class="c1">//弹窗&quot;undefined&quot;</span>
+      <span class="kd">var</span> <span class="nx">str</span> <span class="o">=</span> <span class="s2">&quot;aaa&quot;</span><span class="p">;</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<h3>执行顺序总结</h3>
+
+<p>理解了上面的几个术语，相信大家对JS的运行机制已经有了个大概的印象了，现在我们来看个例子：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">Fn</span><span class="p">();</span>  <span class="c1">//浏览器报错:&quot;undefined&quot;</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="kd">function</span> <span class="nx">Fn</span><span class="p">(){</span>
+          <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;执行了函数1&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<p>为什么运行上面的代码浏览器会报错呢？声明函数不是会在预处理期就会被处理了吗，怎么还会找不到Fn()函数呢？其实这是一个理解误点，
+我们上面说了JS引擎是按照代码块来顺序执行的，其实完整的说应该是按照代码块来进行预处理和执行的，也就是说预处理的只是执行到的代码块的声明函数和变量，而对于还未加载的代码块，是没法进行预处理的，这也是边编译边处理的核心所在。
+现在，让我们来总结整理下：</p>
+
+<ul>
+<li><strong>Step 1</strong> ：读入第一个代码块；</li>
+<li><strong>Step 2</strong> ：做语法分析，有错则报语法错误（比如括号不匹配等），并跳转到step5；</li>
+<li><strong>Step 3</strong> ：对var变量和function定义做“预编译处理”（永远不会报错的，因为只解析正确的声明）；</li>
+<li><strong>Step 4</strong> ：执行代码段，有错则报错（比如变量未定义）；</li>
+<li><strong>Step 5</strong> ：如果还有下一个代码段，则读入下一个代码段，重复step2；</li>
+<li><strong>Step 6</strong> ：结束；</li>
+</ul>
+
+
+<p>而根据HTML文档流的执行顺序，需要在页面元素渲染前执行的js代码应该放在<code>&lt;body&gt;</code>前面的<code>&lt;script&gt;</code>代码块中，而需要在页面元素加载完后的js放在</body>元素后面，body标签的onload事件是在最后执行的。</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;first&quot;</span><span class="p">);</span>
+    <span class="kd">function</span> <span class="nx">Fn</span><span class="p">(){</span>
+        <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;third&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+<span class="o">&lt;</span><span class="nx">body</span> <span class="nx">onload</span><span class="o">=</span><span class="s2">&quot;Fn()&quot;</span><span class="o">&gt;</span>
+    <span class="c1">//html content</span>
+<span class="o">&lt;</span><span class="err">/body&gt;</span>
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;second&quot;</span><span class="p">);</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -31,11 +31,41 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown" pinned="false" current-in-tab="true">
+      <file leaf-file-name="2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="358">
-              <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+            <state relative-caret-position="336">
+              <caret line="14" column="13" lean-forward="false" selection-start-line="14" selection-start-column="13" selection-end-line="14" selection-end-column="13" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2018-08-25-kubeletde-ren-zheng.markdown" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/_posts/2018-08-25-kubeletde-ren-zheng.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="120">
+              <caret line="5" column="8" lean-forward="false" selection-start-line="5" selection-start-column="8" selection-end-line="5" selection-end-column="8" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2018-08-31-kubernetes-wen-ti-zheng-li.markdown" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="247">
+              <caret line="100" column="14" lean-forward="false" selection-start-line="100" selection-start-column="14" selection-end-line="100" selection-end-column="14" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/_posts/2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="0">
+              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -64,7 +94,7 @@
       <file leaf-file-name="2018-05-17-javascriptyun-xing-shun-xu-xiang-jie.markdown" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/_posts/2018-05-17-javascriptyun-xing-shun-xu-xiang-jie.markdown">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2928">
+            <state relative-caret-position="727">
               <caret line="122" column="5" lean-forward="false" selection-start-line="122" selection-start-column="5" selection-end-line="122" selection-end-column="5" />
               <folding />
             </state>
@@ -94,6 +124,7 @@
         <option value="$PROJECT_DIR$/javascriptyun-xing-ji-zhi-zhi-xing-shun-xu-xiang-jie/index.markdown" />
         <option value="$PROJECT_DIR$/_posts/2018-05-17-javascriptyun-xing-shun-xu-xiang-jie.markdown" />
         <option value="$PROJECT_DIR$/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown" />
+        <option value="$PROJECT_DIR$/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown" />
       </list>
     </option>
   </component>
@@ -328,14 +359,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/_posts/2018-05-17-javascriptyun-xing-shun-xu-xiang-jie.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2928">
-          <caret line="122" column="5" lean-forward="false" selection-start-line="122" selection-start-column="5" selection-end-line="122" selection-end-column="5" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1656">
@@ -362,8 +385,40 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="358">
-          <caret line="24" column="0" lean-forward="false" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+        <state relative-caret-position="336">
+          <caret line="14" column="13" lean-forward="false" selection-start-line="14" selection-start-column="13" selection-end-line="14" selection-end-column="13" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="247">
+          <caret line="100" column="14" lean-forward="false" selection-start-line="100" selection-start-column="14" selection-end-line="100" selection-end-column="14" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/_posts/2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/_posts/2018-05-17-javascriptyun-xing-shun-xu-xiang-jie.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="727">
+          <caret line="122" column="5" lean-forward="false" selection-start-line="122" selection-start-column="5" selection-end-line="122" selection-end-column="5" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/_posts/2018-08-25-kubeletde-ren-zheng.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="120">
+          <caret line="5" column="8" lean-forward="false" selection-start-line="5" selection-start-column="8" selection-end-line="5" selection-end-column="8" />
           <folding />
         </state>
       </provider>

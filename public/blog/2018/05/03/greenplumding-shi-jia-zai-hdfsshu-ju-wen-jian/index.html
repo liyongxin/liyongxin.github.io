@@ -1,0 +1,373 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>CentOS使用GreenPlum定时加载HDFS数据文件 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="CentOS使用GreenPlum定时加载HDFS数据文件 最近有个场景，数据会定时写入hdfs，需要GP从hdfs中将数据载入。网上关于gp连接hdfs的介绍不是很多，实现的过程中走了很多弯路。
+整个过程大概分为4步： 安装JDK ：java必备；
+安装必要的PHD软件包 ： &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">CentOS使用GreenPlum定时加载HDFS数据文件</h1>
+	<div class="entry-content" itemprop="articleBody"><p>最近有个场景，数据会定时写入hdfs，需要GP从hdfs中将数据载入。网上关于gp连接hdfs的介绍不是很多，实现的过程中走了很多弯路。
+整个过程大概分为4步：</p>
+
+<ul>
+<li><strong>安装JDK</strong> ：java必备；</li>
+<li><strong>安装必要的PHD软件包</strong> ：安装phd中必要的组件，让GPDB主机作为Hadoop的client；</li>
+<li><strong>设置GPDB</strong> ：配置gpconfig；</li>
+<li><strong>定时任务</strong> ：利用cron任务实现定时加载数据文件；</li>
+</ul>
+
+
+<h3>安装JDK</h3>
+
+<p>推荐版本是1.7.x，注意需要在所有节点进行安装，安装完成后添加以下内容到<code>gpadmin</code>用户对应的<code>.bashrc</code>文件中</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">export</span> <span class="no">JAVA_HOME</span><span class="o">=</span><span class="sr">/opt/</span><span class="n">jdk1</span><span class="o">.</span><span class="mi">7</span><span class="o">.</span><span class="mo">0_45</span></code></pre></div>
+
+
+<p>如果还会提示找不到<code>Error: JAVA_HOME is not set and could not be found.</code>尝试将上述命令添加到<code>/etc/environment中</code>.
+编辑<code>/etc/profile</code>文件，添加如下内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/opt/jdk1.7.0_45
+<span class="nb">export </span><span class="nv">CLASSPATH</span><span class="o">=</span>.:<span class="nv">$JAVA_HOME</span>/jre/lib/rt.jar:<span class="nv">$JAVA_HOME</span>/lib/dt.jar:<span class="nv">$JAVA_HOME</span>/lib/tools.jar
+<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$JAVA_HOME</span>/bin</code></pre></div>
+
+
+<p>最后执行如下命令验证安装是否成功：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /etc/profile
+java -version</code></pre></div>
+
+
+<h3>安装必要的PHD软件包</h3>
+
+<p>默认安装完GP后，无法直接ipc连接远程hdfs，官方推荐安装phd的一些软件，当然拷贝一份hadoop的包到本地也可以，目的都是让GPDB中的主机作为hadoop的客户端，能进行hdfs的访问。
+所有的软件均可在phd的安装包中获得，我下载的是PHD-2.0.1.0-148版本，整个安装包大概805MB，以下rpm是需要顺序安装的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">bigtop</span><span class="o">-</span><span class="nx">jsvc</span><span class="o">-</span><span class="mf">1.0.15</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
+</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">bigtop</span><span class="o">-</span><span class="nx">utils</span><span class="o">-</span><span class="mf">0.4.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">noarch</span><span class="p">.</span><span class="nx">rpm</span>
+</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">zookeeper</span><span class="o">-</span><span class="mf">3.4.5</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">noarch</span><span class="p">.</span><span class="nx">rpm</span>
+</span><span class='line'><span class="nx">yum</span> <span class="o">-</span><span class="nx">y</span> <span class="nx">install</span> <span class="nx">nc</span>
+</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
+</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">yarn</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
+</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">mapreduce</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
+</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">hdfs</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>安装gphd的时候需要nc，所以先yum安装一下。</p>
+
+<blockquote><p><strong>注意：</strong>官方说所有的segment节点需要安装这些软件，实际过程中整个GPDB中的机器都需要安装才可以运行，否则会提示无法加载class的错误。</p></blockquote>
+
+<h3>设置GPDB</h3>
+
+<p>在gp中使用gpadmin用户进行设置以下两个配置项，具体的值需要根据官方的资料进行匹配</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpconfig -c gp_hadoop_home -v <span class="s2">&quot;&#39;/usr/lib/gphd&#39;&quot;</span>
+gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39;&quot;</span></code></pre></div>
+
+
+
+
+<!--more-->
+
+
+<p>其他hadoop版本以及target对应的值可参考下图：</p>
+
+<table>
+   <tr>
+      <td>Hadoop Distribution</td>
+      <td>Version</td>
+      <td>gp_hadoop_target_version</td>
+   </tr>
+   <tr>
+      <td>Pivotal HD</td>
+      <td>Pivotal HD 2.0Pivotal HD 1.01</td>
+      <td>gphd-2.0</td>
+   </tr>
+   <tr>
+      <td>Greenplum HD</td>
+      <td>Greenplum HD 1.2</td>
+      <td>gphd-1.2</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>Greenplum HD 1.1</td>
+      <td>gphd-1.1 (default)</td>
+   </tr>
+   <tr>
+      <td>Cloudera</td>
+      <td>CDH 5.2, 5.3</td>
+      <td>cdh5</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>CDH 5.0, 5.1</td>
+      <td>cdh4.1</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>CDH 4.12 - CDH 4.7</td>
+      <td>cdh4.1</td>
+   </tr>
+   <tr>
+      <td>Hortonworks Data Platform</td>
+      <td>HDP 2.1, 2.2</td>
+      <td>hdp2</td>
+   </tr>
+   <tr>
+      <td>MapR3</td>
+      <td>MapR 4.x</td>
+      <td>gpmr-1.2</td>
+   </tr>
+   <tr>
+      <td></td>
+      <td>MapR 1.x, 2.x, 3.x</td>
+      <td>gpmr-1.0</td>
+   </tr>
+   <tr>
+      <td></td>
+   </tr>
+</table>
+
+
+<blockquote><p><strong>注意：</strong>设置完成之后需要完全重启GPDB，官方提示只需gpstop -u重新load即可，实测中会报错找不到java command。
+测试hdfs命令</p></blockquote>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">hdfs</span> <span class="n">dfs</span> <span class="o">-</span><span class="n">ls</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span>
+<span class="no">Found</span> <span class="mi">13</span> <span class="n">items</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">19</span> <span class="mi">14</span><span class="p">:</span><span class="mi">53</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">hbase</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">08</span><span class="p">:</span><span class="mi">34</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">liyongxin</span>
+<span class="o">-</span><span class="n">rwxrwxrwx</span> <span class="mi">2</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">10</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">19</span> <span class="mi">14</span><span class="p">:</span><span class="mi">49</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">lyx</span><span class="o">.</span><span class="n">dat</span>
+<span class="o">-</span><span class="n">rwxrwxrwx</span> <span class="mi">3</span> <span class="n">gpadmin</span> <span class="n">supergroup</span> <span class="mi">16</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">19</span> <span class="mi">19</span><span class="p">:</span><span class="mi">54</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">lyx</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">16</span><span class="p">:</span><span class="mi">16</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">16</span><span class="p">:</span><span class="mi">16</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_tmp</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">20</span> <span class="mi">14</span><span class="p">:</span><span class="mi">20</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">tmp</span>
+<span class="n">drwxrwxrwx</span> <span class="o">-</span> <span class="n">root</span> <span class="n">supergroup</span> <span class="mi">0</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">09</span><span class="p">:</span><span class="mi">45</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">user</span></code></pre></div>
+
+
+<p>将数据文件put到hdfs</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">cat</span> <span class="n">lyx</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">east</span><span class="p">,</span><span class="mi">15</span>
+<span class="n">west</span><span class="p">,</span><span class="mi">25</span>
+<span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">hdfs</span> <span class="n">dfs</span> <span class="o">-</span><span class="n">put</span> <span class="n">lyx</span><span class="o">.</span><span class="n">txt</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span><span class="o">/</span><span class="mi">1</span><span class="o">.</span><span class="n">txt</span>
+<span class="o">[</span><span class="n">gpadmin</span><span class="vi">@mdw</span> <span class="n">opt</span><span class="o">]</span><span class="err">$</span> <span class="n">hdfs</span> <span class="n">dfs</span> <span class="o">-</span><span class="n">ls</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span><span class="o">/</span>
+<span class="no">Found</span> <span class="mi">1</span> <span class="n">items</span>
+<span class="o">-</span><span class="n">rw</span><span class="o">-</span><span class="n">r</span><span class="o">--</span><span class="n">r</span><span class="o">--</span> <span class="mi">3</span> <span class="n">gpadmin</span> <span class="n">supergroup</span> <span class="mi">16</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">01</span><span class="o">-</span><span class="mi">21</span> <span class="mi">17</span><span class="p">:</span><span class="mo">00</span> <span class="ss">hdfs</span><span class="p">:</span><span class="sr">//</span><span class="mi">10</span><span class="o">.</span><span class="mi">110</span><span class="o">.</span><span class="mi">17</span><span class="o">.</span><span class="mi">181</span><span class="p">:</span><span class="mi">8020</span><span class="o">/</span><span class="n">mpp_data</span><span class="o">/</span><span class="n">lyx</span><span class="o">.</span><span class="n">txt</span></code></pre></div>
+
+
+<p>建立外部表并测试,查询数据</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">lyx</span><span class="o">=</span><span class="c1"># select * from test_hdfs_ext1;</span>
+ <span class="n">age</span> <span class="o">|</span> <span class="nb">name</span>
+<span class="o">------+------</span>
+ <span class="n">east</span> <span class="o">|</span> <span class="mi">15</span>
+ <span class="n">west</span> <span class="o">|</span> <span class="mi">25</span>
+<span class="p">(</span><span class="mi">2</span> <span class="n">rows</span><span class="p">)</span></code></pre></div>
+
+
+<h3>脚本定时加载数据文件</h3>
+
+<p>由于文件会不定时的写入到hdfs目录中，建立外部表采用通配符匹配的方式，但如果在执行加载的过程中有文件写入到目录，会将该文件一并加载到gp中，这样就无法实现对已加载的文件的记录，所以脚本中先将当前已有文件剪切到一个临时目录，加载完成后全部删除临时目录中文件，大致内容如下：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">database</span><span class="o">=</span>postgres
+<span class="nv">tablename</span><span class="o">=</span>hdfs
+<span class="nv">columns</span><span class="o">=</span><span class="s1">&#39;age text, name text&#39;</span>
+<span class="c">#echo $hdfsurl$filepath</span>
+<span class="nv">hdfs_nns</span><span class="o">=(</span><span class="s1">&#39;10.110.17.181:8020&#39;</span> <span class="s1">&#39;10.110.17.182:8020&#39;</span><span class="o">)</span>
+<span class="nv">tmp_path</span><span class="o">=</span>mpp_tmp
+<span class="nv">data_path</span><span class="o">=</span>mpp_data
+<span class="k">function</span> get_hdfs_url<span class="o">(){</span>
+ <span class="nv">standby</span><span class="o">=</span><span class="s2">&quot;ls: Operation category READ is not supported in state standby&quot;</span><span class="p">;</span>
+ <span class="nv">res</span><span class="o">=</span>hdfs_nns<span class="o">[</span>0<span class="o">]</span>
+ <span class="k">for</span> var in <span class="k">${</span><span class="nv">hdfs_nns</span><span class="p">[@]</span><span class="k">}</span><span class="p">;</span>
+     <span class="k">do</span>
+         <span class="nv">res</span><span class="o">=</span><span class="sb">`</span>hdfs dfs -ls hdfs://<span class="nv">$var</span>/ 2&gt;<span class="p">&amp;</span>1<span class="sb">`</span><span class="p">;</span>
+         <span class="k">if</span> <span class="o">[</span> <span class="s2">&quot;$res&quot;</span> <span class="o">=</span> <span class="s2">&quot;$standby&quot;</span> <span class="o">]</span><span class="p">;</span><span class="k">then</span>
+            <span class="nv">res</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+         <span class="k">else</span>
+            <span class="nv">res</span><span class="o">=</span><span class="nv">$var</span>
+            <span class="nb">break</span>
+<span class="nb">         </span><span class="k">fi</span>
+     <span class="k">done</span>
+ <span class="nb">echo</span> <span class="nv">$res</span><span class="p">;</span>
+<span class="o">}</span>
+<span class="nv">hdfs_url</span><span class="o">=</span><span class="k">$(</span>get_hdfs_url<span class="k">)</span>
+
+<span class="k">function</span> is_file_exist<span class="o">(){</span>
+ hdfs dfs -ls hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$data_path</span>/ <span class="p">|</span> awk <span class="s1">&#39;$1 ~ /Found/ {print 1}&#39;</span>
+<span class="o">}</span>
+
+<span class="nv">fss</span><span class="o">=</span><span class="k">$(</span>is_file_exist<span class="k">)</span>
+<span class="k">if</span> <span class="o">[</span> <span class="s2">&quot;$fss&quot;</span> !<span class="o">=</span> <span class="s2">&quot;1&quot;</span> <span class="o">]</span><span class="p">;</span>
+ <span class="k">then</span>
+ <span class="nb">echo</span> <span class="s1">&#39;no data file&#39;</span>
+ <span class="nb">exit </span>1
+<span class="k">fi</span>
+hdfs dfs -mv hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$data_path</span>/*.txt hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$tmp_path</span>/
+psql -U gpadmin -d <span class="nv">$database</span> <span class="s">&lt;&lt; EOF</span>
+<span class="s">create external table hdfs_ext ($columns) location(&#39;gphdfs://$hdfs_url/$tmp_path/*.txt&#39;) format &#39;text&#39; (delimiter &#39;,&#39;);</span>
+<span class="s">insert into $tablename select * from hdfs_ext;</span>
+<span class="s">drop external table hdfs_ext;</span>
+<span class="s">EOF</span>
+<span class="c">#drop external table hdfs_ext;</span>
+hdfs dfs -rm -r hdfs://<span class="nv">$hdfs_url</span>/<span class="nv">$tmp_path</span>/*.txt
+
+<span class="c">#hdfs dfs -ls $hdfsurl$filepath | awk &#39;BEGIN{cur=0;filenames[cur]=0;all=0;}</span>
+<span class="c"># $1 ~ /Found/ {all=$2;print all;}</span>
+<span class="c"># $8 ~ /hdfs*/ {print $8;</span>
+<span class="c"># filenames[cur]=$8;cur++;print &quot;cur=&quot;+&#39;cur&#39;;</span>
+<span class="c"># if(all==cur){</span>
+ <span class="c">#external tables</span>
+ <span class="c"># psql -U gpadmin -d lyx &lt;&lt; EOF</span>
+ <span class="c"># CREATE SCHEMA ;</span>
+ <span class="c">#EOF</span>
+<span class="c"># print &quot;over,all=&quot;&#39;all&#39;}</span>
+<span class="c">#}&#39;</span></code></pre></div>
+
+
+<p>最后放入crontab中即可实现定时增量的处理</p>
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

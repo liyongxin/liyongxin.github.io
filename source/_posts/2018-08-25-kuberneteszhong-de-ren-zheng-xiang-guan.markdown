@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "kubernetes中的认证相关"
+title: "kubectl的认证与授权"
 date: 2018-08-25 14:41:00 +0800
 comments: true
 categories: kubernetes, k8s
@@ -17,7 +17,7 @@ Kubernetes集群的访问权限控制由`kube-apiserver`负责，`kube-apiserver
 和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
 ![](/images/k8s-apiserver-access-control-overview.svg)
 
-###身份验证（Authentication）
+#### 身份验证（Authentication）
 这个环节它面对的输入是整个`http request`，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
 `basic auth`、普通token以及`jwt token`(用于serviceaccount)。
 
@@ -30,7 +30,7 @@ APIServer启动时，可以指定一种Authentication方法，也可以指定多
 在这个环节，apiserver会通过client证书或
 `http header`中的字段(比如serviceaccount的`jwt token`)来识别出请求的`用户身份`，包括”user”、”group”等，这些信息将在后面的`authorization`环节用到。
 
-##授权（Authorization）
+#### 授权（Authorization）
 这个环节面对的输入是`http request context`中的各种属性，包括：`user`、`group`、`request path`（比如：`/api/v1`、`/healthz`、`/version`等）、
 `request verb`(比如：`get`、`list`、`create`等)。
 
@@ -61,7 +61,7 @@ To start using your cluster, you need to run the following as a regular user:
 - 当`kubectl`使用这种`kubeconfig`方式访问集群时，`Kubernetes`的`kube-apiserver`是如何对来自`kubectl`的访问进行身份验证(`authentication`)和授权(`authorization`)的呢？
 - 为什么来自`kubectl`的请求拥有最高的管理员权限呢？
 
-###kubectl的身份认证（authentication）
+####kubectl的身份认证（authentication）
 我们先从kubectl使用的`kubeconfig`入手。kubectl使用的kubeconfig文件实质上就是`kubeadm init`过程中生成的`/etc/kubernetes/admin.conf`，
 我们查看一下该kubeconfig文件的内容：
 {% highlight bash %}
@@ -155,8 +155,10 @@ Subject: O=system:masters, CN=kubernetes-admin
 {% endhighlight %}
 然后认证通过后，提取出签发证书时指定的CN(Common Name),`kubernetes-admin`，作为请求的用户名 (User Name),
 O(Organization)， 从证书中提取该字段作为请求用户所属的组 (Group)，`group = system:masters`，然后传递给后面的授权模块
+> X509 客户端证书
+通过将 --client-ca-file=SOMEFILE 选项传递给 API server 来启用客户端证书认证。引用的文件必须包含一个或多个证书颁发机构，用于验证提交给 API server 的客户端证书。如果客户端证书已提交并验证，则使用 subject 的 Common Name（CN）作为请求的用户名。从 Kubernetes 1.4开始，客户端证书还可以使用证书的 organization 字段来指示用户的组成员身份。
 
-###kubectl的授权
+####kubectl的授权
 kubeadm在init初始引导集群启动过程中，创建了许多`default`的`role、clusterrole、rolebinding`和`clusterrolebinding`，
 在k8s有关RBAC的官方文档中，我们看到下面一些`default clusterrole`列表:
 
@@ -221,10 +223,6 @@ rules:
 从rules列表中来看，cluster-admin这个角色对所有resources、verbs、apiGroups均有无限制的操作权限，
 即整个集群的root权限。于是kubectl的请求就可以操控和管理整个集群了。
 
-总结一下kubectl的认证过程：
-
-![](/images/how-kubectl-be-authorized.png)
-
 ###疑问
 使用kubeadm-1.11.2版本初始化集群，即使不配置.kube/config文件，也可以直接访问到kubernetes cluster,
 [官方文档](https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/)中对这块的记录如下：
@@ -244,50 +242,22 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 - 关于非root用户，尝试新建了用户，且没有配置kubeconfig文件的情况下，依然可以通过kubectl直接访问集群。
 - 关于`KUBECONFIG`环境变量，发现未设置该env，而且尝试把`/etc/kubernetes/admin.conf` 文件删除掉，重启apiserver的情况，依然可以访问
 
-##kubelet的授权认证
-研究完kubectl的认证与授权，使用相同的方式去找kubelet的访问，首先定位配置文件`/etc/kubernetes/kubelet.conf`，然后用相同的方式做base64解码，
-openssl查看crt证书，
+关于以上疑问已经弄明白，当我们在master节点中使用kubectl请求时，如果没有设置$HOME/.kube/config文件，则默认是通过本地的非安全端口来访问
+apiserver，
 {% highlight bash %}
-[root@k8s-master kubernetes]# openssl x509 -text -in kubelet.crt -noout
-Certificate:
-    Data:
-        Version: 3 (0x2)
-        Serial Number: 8126553944389053218 (0x70c751c18f5beb22)
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: CN=kubernetes
-        Validity
-            Not Before: Aug 20 05:50:39 2018 GMT
-            Not After : Aug 20 05:50:42 2019 GMT
-        Subject: O=system:nodes, CN=system:node:k8s-master
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-                Public-Key: (2048 bit)
-                Modulus:
-                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
-    ... ...
-{% endhighlight %}
+[root@ip-172-31-10-236 centos]# kubectl get no -v 7
+I0930 06:55:41.036661   13865 cached_discovery.go:72] returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/alauda.io/v3/serverresources.json
+I0930 06:55:41.037250   13865 cached_discovery.go:72] returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/v1/serverresources.json
+I0930 06:55:41.037484   13865 round_trippers.go:383] GET http://localhost:8080/api/v1/nodes
+I0930 06:55:41.037502   13865 round_trippers.go:390] Request Headers:
+I0930 06:55:41.037515   13865 round_trippers.go:393]     Accept: application/json
+I0930 06:55:41.037528   13865 round_trippers.go:393]     User-Agent: kubectl/v1.7.3 (linux/amd64) kubernetes/2c2fe6e
+I0930 06:55:41.046449   13865 round_trippers.go:408] Response Status: 200 OK in 8 milliseconds
+I0930 06:55:41.067926   13865 cached_discovery.go:119] returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/servergroups.json
+I0930 06:55:41.068015   13865 cached_discovery.go:72] returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/apiregistration.k8s.io/v1beta1/serverresources.json
+ {% endhighlight %}
+ 如果
+###小结
+总结一下kubectl的认证过程：
 
-得到我们期望的内容：
-{% highlight bash %}
-Subject: O=system:nodes, CN=system:node:k8s-master
-{% endhighlight %}
-
-然后我尝试去k8s中找到一些关于`system:nodes`的RoleBindings或者ClusterRoleBindings,
-{% highlight bash %}
-[root@k8s-master kubernetes]# for bd in `kubectl get clusterrolebindings |awk '{print $1}'`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep 'system:nodes';done
-NAME
-Error from server (NotFound): clusterrolebindings.rbac.authorization.k8s.io "NAME" not found
-cluster-admin
-flannel
-kubeadm:kubelet-bootstrap
-kubeadm:node-autoapprove-bootstrap
-kubeadm:node-autoapprove-certificate-rotation
-  name: system:nodes
-kubeadm:node-proxier
-system:aws-cloud-provider
-system:basic-user
-... ...
-{% endhighlight %}
-
-结局有点意外，除了`kubeadm:node-autoapprove-certificate-rotation`外，没有找到system相关的rolebindings，显然和我们的理解不一样。
-尝试去找资料，
+![](/images/how-kubectl-be-authorized.png)
