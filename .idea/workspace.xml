@@ -2,246 +2,24 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a12d460b-0139-4ce6-b61e-9fff8bbcbef3" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_archive.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_article.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_comment.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_footer.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_header.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_index.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_post.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_syntax.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/012b76000ab56d1454da146603a2d792e013a4c2/_twitter.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_animation.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_appearance.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_background-clip.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_background-origin.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_background-size.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_border-radius.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_box-shadow.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_box-sizing.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_columns.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_deprecated-support.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_filter.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_flexbox.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_font-face.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_hyphenation.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_images.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_inline-block.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_opacity.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_regions.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_text-shadow.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_transform.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_transition.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/0dc6ce13c2a02b5a6384d1ff8e0d38dfb5db5c25/_user-interface.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/14bcf6e7c1fd407ebb05d213e797264f54635dbf/_color.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/14bcf6e7c1fd407ebb05d213e797264f54635dbf/_font.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/14bcf6e7c1fd407ebb05d213e797264f54635dbf/_layout.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/14bcf6e7c1fd407ebb05d213e797264f54635dbf/_solarized.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/14bcf6e7c1fd407ebb05d213e797264f54635dbf/_theme.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/14bcf6e7c1fd407ebb05d213e797264f54635dbf/_typography.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/14bcf6e7c1fd407ebb05d213e797264f54635dbf/_utilities.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/179177dfdbafadf32d326adc6fdf0b8ebdba3a7a/_fancybox.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/188b1310d836fc1b702a83c595cd56d26a5a0427/_base.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/188b1310d836fc1b702a83c595cd56d26a5a0427/_delicious.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/188b1310d836fc1b702a83c595cd56d26a5a0427/_googleplus.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/188b1310d836fc1b702a83c595cd56d26a5a0427/_pinboard.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1a88db8245608f1bdd3f7dd93134396a8c6be636/_base.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1a88db8245608f1bdd3f7dd93134396a8c6be636/_greyshade.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1a88db8245608f1bdd3f7dd93134396a8c6be636/_partials.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1a88db8245608f1bdd3f7dd93134396a8c6be636/_parts.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1a88db8245608f1bdd3f7dd93134396a8c6be636/_plugins.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1a88db8245608f1bdd3f7dd93134396a8c6be636/screen.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1bcb4635e73b161cf09490c9e784e16318214639/_base.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/1bcb4635e73b161cf09490c9e784e16318214639/_sprite-img.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c3461b85f50339024d99380b408617925426403/_ellipsis.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c3461b85f50339024d99380b408617925426403/_force-wrap.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c3461b85f50339024d99380b408617925426403/_nowrap.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c3461b85f50339024d99380b408617925426403/_replacement.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c4ef1685cc7a2320c3e3296769f54f39f82eb72/_css3.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c4ef1685cc7a2320c3e3296769f54f39f82eb72/_support.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c4ef1685cc7a2320c3e3296769f54f39f82eb72/_typography.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/2c4ef1685cc7a2320c3e3296769f54f39f82eb72/_utilities.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/3f6fa9eb32cf927b85f4f5137efddcefdde77434/_plugins.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/42a5e1493f5fdef6694c80923532777675928746/_links.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/42a5e1493f5fdef6694c80923532777675928746/_lists.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/42a5e1493f5fdef6694c80923532777675928746/_text.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/42a5e1493f5fdef6694c80923532777675928746/_units.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/42a5e1493f5fdef6694c80923532777675928746/_vertical_rhythm.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/44e9b342df80d716b90f93b378e7893826976c8f/_colors.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/44e9b342df80d716b90f93b378e7893826976c8f/_fonts.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/44e9b342df80d716b90f93b378e7893826976c8f/_layout.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/44e9b342df80d716b90f93b378e7893826976c8f/_styles.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/5388550d6e05f42f4aac2734cd5cf1aaeea717ff/_alternating-rows-and-columns.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/5388550d6e05f42f4aac2734cd5cf1aaeea717ff/_borders.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/5388550d6e05f42f4aac2734cd5cf1aaeea717ff/_scaffolding.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/56835fb6bdab479bad5c8d28592ece31442b761d/_hover-link.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/56835fb6bdab479bad5c8d28592ece31442b761d/_link-colors.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/56835fb6bdab479bad5c8d28592ece31442b761d/_unstyled-link.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/667b624c2dcad9294fdd55406fd986acadeb8b27/_grid-background.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/801d6c451b1fb43e162d8160a43c4e8c3697ece8/screen.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/81d8bae3bffecdcb5ba722e87c86752becd12bbb/_bullets.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/81d8bae3bffecdcb5ba722e87c86752becd12bbb/_horizontal-list.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/81d8bae3bffecdcb5ba722e87c86752becd12bbb/_inline-block-list.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/81d8bae3bffecdcb5ba722e87c86752becd12bbb/_inline-list.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_archive.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_blog.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_footer.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_header.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_navigation.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_sharing.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_sidebar.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/87e02f88a24005a1cb585579e0d6dcfde4e83957/_syntax.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/8b783f68212ee63401c2640a1f334424e0aa7ba4/_brightness.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/8b783f68212ee63401c2640a1f334424e0aa7ba4/_contrast.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/b1d04090904e2d6b59f5f3e4a60594ee61530594/_color.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/b1d04090904e2d6b59f5f3e4a60594ee61530594/_general.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/b1d04090904e2d6b59f5f3e4a60594ee61530594/_sprites.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/b1d04090904e2d6b59f5f3e4a60594ee61530594/_tables.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/d22ebdd73e16e712e55dd7c6a569a1b209a4d447/_utilities.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/d54eee1108b3c6914278d6da831cb574317ad482/_clearfix.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/d54eee1108b3c6914278d6da831cb574317ad482/_float.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/d54eee1108b3c6914278d6da831cb574317ad482/_hacks.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/d54eee1108b3c6914278d6da831cb574317ad482/_min.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/d54eee1108b3c6914278d6da831cb574317ad482/_reset.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/d54eee1108b3c6914278d6da831cb574317ad482/_tag-cloud.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.sass-cache/fcd43a3eb981c923ab223ca6c1f1c051a6e11207/_compass.scssc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/_deploy" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/background.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/blankButton.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/divider.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/fullscreenButton.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/fullscreenButtonOver.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/muteButton.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/muteButtonOver.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/normalscreenButton.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/normalscreenButtonOver.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/pauseButton.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/pauseButtonOver.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/playButton.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/playButtonOver.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/timeSliderBuffer.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/timeSliderCapLeft.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/timeSliderCapRight.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/timeSliderProgress.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/timeSliderRail.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/unmuteButton.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/controlbar/unmuteButtonOver.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/display/background.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/display/bufferIcon.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/display/muteIcon.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/display/playIcon.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/dock/button.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/playlist/item.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/playlist/itemOver.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/playlist/sliderCapBottom.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/playlist/sliderCapTop.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/playlist/sliderRail.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/playlist/sliderThumb.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/sharing/embedIcon.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/sharing/embedScreen.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/sharing/shareIcon.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/glow/sharing/shareScreen.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/assets/jwplayer/player.swf" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/favicon.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/font/fontawesome-webfont.eot" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/font/fontawesome-webfont.svgz" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/font/fontawesome-webfont.ttf" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/font/fontawesome-webfont.woff" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/avatar.jpeg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/avatar2.jpeg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/bird_32_gray.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/bird_32_gray_fail.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/code_bg.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/dotted-border.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/email.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/fancybox/blank.gif" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/fancybox/fancybox_loading.gif" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/fancybox/fancybox_sprite.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/how-kubectl-be-authorized.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/hsq1.jpg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/hsq2.jpg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/hsq3.jpg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/hsq4.jpg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/kubeadm-default-clusterrole-list.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/line-tile.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/loading_gray.gif" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/loading_pacman.gif" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/network.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/noise.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/rbac.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/rss.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/search.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/behance.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/coderwall.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/delicious.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/douban.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/email.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/facebook.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/github.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/google.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/instagram.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/linkedin.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/pinboard.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/pinterest.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/quora.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/rss.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/stackoverflow.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/social/twitter.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/source/images/rbac.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/c-4ba13426cc7d31a46c95d79730e365b6.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/go-7f35a35ae4f399f106d0ac99b3b76f29.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/js-3fdf59e382fad422f6f8566e53e02673.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/js-8a2479924e57491a43ffecf5a6879449.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/python-7f35a35ae4f399f106d0ac99b3b76f29.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/python-96718178fd5c4bcef26a37551a96c81f.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/ruby-6fd5abf41571610ede341e9a9416b345.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.pygments-cache/ruby-7f35a35ae4f399f106d0ac99b3b76f29.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/Gemfile.lock" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/about/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/05/14/greenpluman-zhuang/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/08/25/kubeletde-ren-zheng/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/2018/08/31/kubernetes-wen-ti-zheng-li/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/archives/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/categories/greenplum/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/categories/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/categories/javascript/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/categories/k8s/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/blog/categories/kubernetes/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/font/fontawesome-webfont.svg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/images/k8s-apiserver-access-control-overview.svg" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/index.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/github.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/jquery.fancybox.pack.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/jquery.min.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/libs/jXHR.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/libs/jquery.min.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/libs/swfobject-dynamic.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/md5.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/modernizr-2.0.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/octopress.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/pinboard.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/slash.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/javascripts/twitter.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/robots.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/stylesheets/font-awesome.min.css" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/public/stylesheets/screen.css" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/source/_posts/2018-08-25-kubeletde-ren-zheng.markdown" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/source/stylesheets/screen.css" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.themes/greyshade" afterPath="$PROJECT_DIR$/.themes/greyshade" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/cmd.sh" afterPath="$PROJECT_DIR$/cmd.sh" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/.idea/workspace.xml" afterPath="$PROJECT_DIR$/source/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown" afterPath="$PROJECT_DIR$/source/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown" afterPath="$PROJECT_DIR$/source/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown" afterPath="$PROJECT_DIR$/source/_posts/2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/_config.yml" afterPath="$PROJECT_DIR$/_config.yml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/about/index.html" afterPath="$PROJECT_DIR$/public/about/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/index.html" afterPath="$PROJECT_DIR$/public/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/index.html" afterPath="$PROJECT_DIR$/public/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/2018/08/25/kubeletde-ren-zheng/index.html" afterPath="$PROJECT_DIR$/public/blog/2018/08/25/kubeletde-ren-zheng/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/index.html" afterPath="$PROJECT_DIR$/public/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/2018/08/31/kubernetes-wen-ti-zheng-li/index.html" afterPath="$PROJECT_DIR$/public/blog/2018/08/31/kubernetes-wen-ti-zheng-li/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/2019/02/28/ansible-sui-shou-ji/index.html" afterPath="$PROJECT_DIR$/public/blog/2019/02/28/ansible-sui-shou-ji/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/2019/02/28/k8sxiao-zhi-shi/index.html" afterPath="$PROJECT_DIR$/public/blog/2019/02/28/k8sxiao-zhi-shi/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/archives/index.html" afterPath="$PROJECT_DIR$/public/blog/archives/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/categories/ansible/index.html" afterPath="$PROJECT_DIR$/public/blog/categories/ansible/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/blog/categories/index.html" afterPath="$PROJECT_DIR$/public/blog/categories/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/index.html" afterPath="$PROJECT_DIR$/public/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/public/posts/2/index.html" afterPath="$PROJECT_DIR$/public/posts/2/index.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown" afterPath="$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/source/_posts/2019-02-28-ansible-sui-shou-ji.markdown" afterPath="$PROJECT_DIR$/source/_posts/2019-02-28-ansible-sui-shou-ji.markdown" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -252,106 +30,71 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Rakefile" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Rakefile">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="15" column="0" lean-forward="true" selection-start-line="15" selection-start-column="0" selection-end-line="15" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="header.html" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/.themes/greyshade/source/_includes/custom/header.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="144">
-              <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="head.html" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/.themes/greyshade/source/_includes/custom/head.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="footer.html" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/.themes/greyshade/source/_includes/custom/footer.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="144">
-              <caret line="6" column="0" lean-forward="true" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
-              <folding>
-                <element signature="e#10#16#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="after_footer.html" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/.themes/greyshade/source/_includes/custom/after_footer.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="README.md" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/.themes/greyshade/README.md">
-          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-            <state split_layout="SPLIT">
-              <first_editor relative-caret-position="356">
-                <caret line="21" column="0" lean-forward="true" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
-                <folding />
-              </first_editor>
-              <second_editor />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="header.html" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/.themes/classic/source/_includes/custom/header.html">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="README.markdown" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/README.markdown">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="48">
-              <caret line="2" column="79" lean-forward="false" selection-start-line="2" selection-start-column="41" selection-end-line="2" selection-end-column="79" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="_config.yml" pinned="false" current-in-tab="true">
+      <file leaf-file-name="_config.yml" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/_config.yml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="576">
-              <caret line="24" column="0" lean-forward="true" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+            <state relative-caret-position="250">
+              <caret line="34" column="16" lean-forward="false" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="config.rb" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/config.rb">
+      <file leaf-file-name="2019-02-28-k8sxiao-zhi-shi.markdown" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/source/_posts/2019-02-28-k8sxiao-zhi-shi.markdown">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+            <state relative-caret-position="1320">
+              <caret line="55" column="0" lean-forward="false" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2019-02-28-ansible-sui-shou-ji.markdown" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/source/_posts/2019-02-28-ansible-sui-shou-ji.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="528">
+              <caret line="22" column="0" lean-forward="false" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="18" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2019-03-03-pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi.markdown" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/source/_posts/2019-03-03-pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="709">
+              <caret line="115" column="32" lean-forward="false" selection-start-line="115" selection-start-column="32" selection-end-line="115" selection-end-column="32" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2019-03-03-pythonduo-xian-cheng-zhi-xing-lei-fang-fa.markdown" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/source/_posts/2019-03-03-pythonduo-xian-cheng-zhi-xing-lei-fang-fa.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1387">
+              <caret line="80" column="0" lean-forward="false" selection-start-line="80" selection-start-column="0" selection-end-line="80" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/source/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="142">
+              <caret line="28" column="16" lean-forward="false" selection-start-line="28" selection-start-column="16" selection-end-line="28" selection-end-column="16" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="2018-08-31-kubernetes-wen-ti-zheng-li.markdown" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="120">
+              <caret line="5" column="29" lean-forward="false" selection-start-line="5" selection-start-column="29" selection-end-line="5" selection-end-column="29" />
               <folding />
             </state>
           </provider>
@@ -368,6 +111,11 @@
       <find>stickie</find>
       <find>categories</find>
       <find>greyshade</find>
+      <find>date_format</find>
+      <find>them</find>
+      <find>paginate</find>
+      <find>pagenavi</find>
+      <find>next_page</find>
     </findStrings>
     <replaceStrings>
       <replace />
@@ -380,14 +128,18 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/source/_posts/2018-08-25-kubeletde-ren-zheng.markdown" />
-        <option value="$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown" />
         <option value="$PROJECT_DIR$/cmd.sh" />
         <option value="$PROJECT_DIR$/source/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown" />
         <option value="$PROJECT_DIR$/source/_posts/2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown" />
         <option value="$PROJECT_DIR$/source/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown" />
         <option value="$PROJECT_DIR$/source/_posts/2019-02-28-k8sxiao-zhi-shi.markdown" />
-        <option value="$PROJECT_DIR$/source/_posts/2019-02-28-ansible-sui-shou-ji.markdown" />
         <option value="$PROJECT_DIR$/.themes/greyshade/source/_includes/custom/header.html" />
+        <option value="$PROJECT_DIR$/sass/custom/_colors.scss" />
+        <option value="$PROJECT_DIR$/_config.yml" />
+        <option value="$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown" />
+        <option value="$PROJECT_DIR$/source/_posts/2019-03-03-pythonduo-xian-cheng-zhi-xing-lei-fang-fa.markdown" />
+        <option value="$PROJECT_DIR$/source/_posts/2019-02-28-ansible-sui-shou-ji.markdown" />
+        <option value="$PROJECT_DIR$/source/_posts/2019-03-03-pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi.markdown" />
       </list>
     </option>
   </component>
@@ -508,108 +260,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-17-javascriptyun-xing-shun-xu-xiang-jie.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1704">
-          <caret line="71" column="32" lean-forward="false" selection-start-line="71" selection-start-column="32" selection-end-line="71" selection-end-column="32" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-07-greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5880">
-          <caret line="245" column="10" lean-forward="false" selection-start-line="245" selection-start-column="10" selection-end-line="245" selection-end-column="10" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="10" column="20" lean-forward="false" selection-start-line="10" selection-start-column="20" selection-end-line="10" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-08-25-kubeletde-ren-zheng.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1200">
-          <caret line="50" column="20" lean-forward="false" selection-start-line="50" selection-start-column="20" selection-end-line="50" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/bak">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="552">
-          <caret line="23" column="0" lean-forward="false" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="2" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3096">
-          <caret line="129" column="43" lean-forward="false" selection-start-line="129" selection-start-column="5" selection-end-line="129" selection-end-column="43" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-14-greenpluman-zhuang.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="312">
-          <caret line="13" column="0" lean-forward="false" selection-start-line="13" selection-start-column="0" selection-end-line="13" selection-end-column="24" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-15-greenplumjiao-ben-hua-an-zhuang.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-17-javascriptyun-xing-shun-xu-xiang-jie.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="480">
-          <caret line="20" column="0" lean-forward="false" selection-start-line="20" selection-start-column="0" selection-end-line="20" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-07-greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/source/_posts/2018-05-09-chang-yong-ming-ling-sui-shou-ji.markdown">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2160">
@@ -740,22 +390,22 @@
         <state relative-caret-position="840">
           <caret line="35" column="0" lean-forward="false" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
           <folding>
-            <marker date="1551594592661" expanded="true" signature="13161:13162" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:13176" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:13691" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:13703" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:13964" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:13974" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:14227" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:14235" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13161:14255" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13334:13683" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13360:13670" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13651:13658" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13725:13955" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="13779:13845" ph="..." />
-            <marker date="1551594592661" expanded="true" signature="14012:14218" ph="..." />
-            <marker date="1551594592661" expanded="false" signature="14023:14029" ph="©" />
+            <marker date="1551610098124" expanded="true" signature="13159:13160" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:13174" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:13689" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:13701" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:13962" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:13972" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:14225" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:14233" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13159:14253" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13332:13681" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13358:13668" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13649:13656" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13723:13953" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="13777:13843" ph="..." />
+            <marker date="1551610098124" expanded="true" signature="14010:14216" ph="..." />
+            <marker date="1551610098124" expanded="false" signature="14021:14027" ph="©" />
           </folding>
         </state>
       </provider>
@@ -784,42 +434,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="590">
-          <caret line="59" column="6" lean-forward="false" selection-start-line="59" selection-start-column="2" selection-end-line="59" selection-end-column="6" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="168">
-          <caret line="7" column="0" lean-forward="true" selection-start-line="7" selection-start-column="0" selection-end-line="7" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/source/_posts/2018-08-25-kuberneteszhong-de-ren-zheng-xiang-guan.markdown">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="94">
           <caret line="210" column="6" lean-forward="false" selection-start-line="210" selection-start-column="6" selection-end-line="210" selection-end-column="6" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2019-02-28-k8sxiao-zhi-shi.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="432">
-          <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/source/_posts/2019-02-28-ansible-sui-shou-ji.markdown">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="214">
-          <caret line="11" column="0" lean-forward="false" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -891,9 +509,9 @@
     <entry file="file://$PROJECT_DIR$/.themes/greyshade/source/_includes/custom/footer.html">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="144">
-          <caret line="6" column="0" lean-forward="true" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
+          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
           <folding>
-            <element signature="e#10#16#0" expanded="true" />
+            <element signature="e#10#16#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -906,29 +524,165 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Rakefile">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="15" column="0" lean-forward="false" selection-start-line="15" selection-start-column="0" selection-end-line="15" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sass/_greyshade.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-7133">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/sass/custom/_colors.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="18" lean-forward="true" selection-start-line="0" selection-start-column="18" selection-end-line="0" selection-end-column="18" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/_includes/post/date.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="24">
+          <caret line="1" column="65" lean-forward="false" selection-start-line="1" selection-start-column="65" selection-end-line="1" selection-end-column="65" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.themes/classic/sass/custom/_colors.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="384">
+          <caret line="16" column="0" lean-forward="true" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.themes/greyshade/sass/custom/_colors.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="20" lean-forward="true" selection-start-line="0" selection-start-column="20" selection-end-line="0" selection-end-column="20" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.themes/greyshade/sass/screen.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="264">
+          <caret line="11" column="20" lean-forward="false" selection-start-line="11" selection-start-column="20" selection-end-line="11" selection-end-column="20" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.themes/greyshade/sass/_plugins.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.themes/greyshade/sass/_base.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="96">
+          <caret line="4" column="9" lean-forward="false" selection-start-line="4" selection-start-column="9" selection-end-line="4" selection-end-column="9" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.themes/classic/.editorconfig">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="312">
+          <caret line="13" column="0" lean-forward="false" selection-start-line="13" selection-start-column="0" selection-end-line="13" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/.themes/greyshade/README.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor relative-caret-position="356">
-            <caret line="21" column="0" lean-forward="true" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
+          <first_editor relative-caret-position="325">
+            <caret line="19" column="0" lean-forward="false" selection-start-line="19" selection-start-column="0" selection-end-line="19" selection-end-column="0" />
             <folding />
           </first_editor>
           <second_editor />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Rakefile">
+    <entry file="file://$PROJECT_DIR$/.themes/greyshade/sass/_greyshade.scss">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="15" column="0" lean-forward="true" selection-start-line="15" selection-start-column="0" selection-end-line="15" selection-end-column="0" />
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.themes/classic/sass/_base.scss">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="120">
+          <caret line="5" column="0" lean-forward="false" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/_config.yml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="576">
-          <caret line="24" column="0" lean-forward="true" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
+        <state relative-caret-position="250">
+          <caret line="34" column="16" lean-forward="false" selection-start-line="34" selection-start-column="16" selection-end-line="34" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/_posts/2018-08-31-kubernetes-wen-ti-zheng-li.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="120">
+          <caret line="5" column="29" lean-forward="false" selection-start-line="5" selection-start-column="29" selection-end-line="5" selection-end-column="29" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/_posts/2019-02-28-k8sxiao-zhi-shi.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1320">
+          <caret line="55" column="0" lean-forward="false" selection-start-line="55" selection-start-column="0" selection-end-line="55" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/_posts/2018-04-24-qs-sheng-ji-zu-jian-liu-cheng.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="142">
+          <caret line="28" column="16" lean-forward="false" selection-start-line="28" selection-start-column="16" selection-end-line="28" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/_posts/2019-03-03-pythonduo-xian-cheng-zhi-xing-lei-fang-fa.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1387">
+          <caret line="80" column="0" lean-forward="false" selection-start-line="80" selection-start-column="0" selection-end-line="80" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/_posts/2019-02-28-ansible-sui-shou-ji.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="528">
+          <caret line="22" column="0" lean-forward="false" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="18" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/_posts/2019-03-03-pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi.markdown">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="709">
+          <caret line="115" column="32" lean-forward="false" selection-start-line="115" selection-start-column="32" selection-end-line="115" selection-end-column="32" />
           <folding />
         </state>
       </provider>

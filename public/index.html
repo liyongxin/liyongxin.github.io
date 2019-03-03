@@ -9,7 +9,7 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="ansible Somethings About Ansible task解析json并注册变量给其他task使用 多个task涉及变量传递时，有时taskA取值是json格式，taskB若想使用json中的数据，可以通过如下方式： # get config task stdout is &hellip;">
+	<meta name="description" content="ansible,, python python调用ansible任务并获取返回值 背景 项目中需要使用python执行ansible的任务，每项任务均需要获取执行结果并做解析，为了方便调用，对ansible的api调用做了封装并对返回结果做了友好处理，特做记录。 理想中的调用方式 &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -117,6 +117,365 @@
   
 
 
+<time datetime="2019-03-03T17:59:19+08:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/ansible/'>ansible,</a>, <a class='category' href='/blog/categories/python/'>python</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/03/03/pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi/" itemprop="url">python调用ansible任务并获取返回值</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<h2>背景</h2>
+
+<p>项目中需要使用python执行ansible的任务，每项任务均需要获取执行结果并做解析，为了方便调用，对ansible的api调用做了封装并对返回结果做了友好处理，特做记录。</p>
+
+<h2>理想中的调用方式</h2>
+
+<p>先不考虑封装逻辑，个人作为使用者，希望的一种使用方式如下(伪代码)：</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">host_list</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;192.168.8.33&#39;</span><span class="p">,</span> <span class="s">&#39;192.168.8.35&#39;</span><span class="p">]</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">AnsibleApi</span><span class="p">(</span><span class="n">host_list</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
+    <span class="c"># 传递playbook的path，执行playbook task</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">run_playbook</span><span class="p">([</span><span class="s">&quot;playbook_path&quot;</span><span class="p">])</span>
+    <span class="c"># 得到执行结果</span>
+    <span class="k">return</span> <span class="n">api</span><span class="o">.</span><span class="n">get_playbook_result</span><span class="p">()</span></code></pre></div>
+
+
+<p>即我告诉api，我想在host_list所在的机器上执行playbook_path这个playbook指定的任务，然后我得到一个友好的执行结果</p>
+
+<h2>理想中的友好返回</h2>
+
+<p>因为ansible会在多个机器执行多个任务，每个机器上的每个任务的执行情况都需要收集，于是作为开发者，更期望得到如下结构的返回结果：</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    return data</span>
+<span class="sd">    {</span>
+<span class="sd">            &quot;task_name1&quot;: {</span>
+<span class="sd">                &quot;success&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.33&quot;: {</span>
+<span class="sd">                        {&quot;changed&quot;: &quot;true&quot;, &quot;end&quot;: &quot;2019-01-17 02:31:58.519839&quot;, &quot;stdout&quot;: &quot;{}&quot; ...}</span>
+<span class="sd">                    },</span>
+<span class="sd">                    &quot;192.168.8.34&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;failed&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.35&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;unreachable&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.36&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;skipped&quot;: {</span>
+<span class="sd">                }</span>
+<span class="sd">            },</span>
+<span class="sd">            &quot;task_name2&quot;: {</span>
+<span class="sd">                &quot;success&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.33&quot;: {</span>
+<span class="sd">                        {&quot;changed&quot;: &quot;true&quot;, &quot;end&quot;: &quot;2019-01-17 02:31:58.519839&quot;, &quot;stdout&quot;: &quot;{}&quot; ...}</span>
+<span class="sd">                    },</span>
+<span class="sd">                    &quot;192.168.8.35&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                    &quot;192.168.8.34&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;failed&quot;: {</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;unreachable&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.36&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;skipped&quot;: {</span>
+<span class="sd">                }</span>
+<span class="sd">            },</span>
+<span class="sd">        }</span>
+<span class="sd">    &quot;&quot;&quot;</span></code></pre></div>
+
+
+<p>即以我的playbook中的每个task为核心(key值)，告诉我每个task的执行结果，结果包含了该task在哪些机器上执行成功了，哪些机器上执行失败了，并且无论
+成功还是失败，输出结果告知我情况。
+那么因为task_name是可以传递到playbook中的，所以开发者很容易就可以获取任何一个task的执行情况，进而做后续的逻辑处理。</p>
+
+<h2>如何针对上述调用方式和返回结果进行封装</h2>
+
+<p>主要说明如何对playbook的调用结果做收集，对于直接调用ansible的模块的结果收集比较简单，代码中有实现，不做额外的说明了。
+<a href="https://github.com/liyongxin/case-python/blob/master/ansible/api.py">代码地址</a>，下面只对ansible执行后对callback做说明，其他部分参考代码即可。</p>
+
+<ul>
+<li>自定义callback类，注册给ansible</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">run_playbook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">playbook_path</span><span class="p">,</span> <span class="n">ip</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c">#print(&#39;self_ips_run_playbook:&#39;,self.ips)</span>
+        <span class="c"># self.variable_manager.extra_vars = {&#39;ansible_ssh_pass&#39;: self.default_password, &#39;disabled&#39;: &#39;yes&#39;}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="o">.</span><span class="n">extra_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span>
+        <span class="n">playbook</span> <span class="o">=</span> <span class="n">PlaybookExecutor</span><span class="p">(</span><span class="n">playbooks</span><span class="o">=</span><span class="n">playbook_path</span><span class="p">,</span>
+                                    <span class="n">inventory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="p">,</span>
+                                    <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="p">,</span>
+                                    <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span>
+                                    <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
+                                    <span class="n">passwords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+        <span class="c"># 注册callback</span>
+        <span class="n">playbook</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stdout_callback</span> <span class="o">=</span> <span class="n">PlaybookResultCallback</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">playbook</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></code></pre></div>
+
+
+<ul>
+<li>实现自定义callback类</li>
+</ul>
+
+
+<p><code>ansible</code>的<code>plugins</code>中定义了<code>CallbackBase</code>，只需要实现该基础类即可。
+大致的逻辑是按照上述期望的理想的返回结果进行数据拼装，实际使用过程中，发现如果有台机器是unreachable的，那么无论有多少task，如果遇到了unreachable
+的情况，那么后续的task就不会在unreachable的机器上执行，因为在实现中做了人工补救<code>__fix_unreachable_result</code>，即对每个task来说，只要有unreachable
+的机器，那么都会注册到task的返回结果中。</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">class</span> <span class="nc">PlaybookResultCallback</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PlaybookResultCallback</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__init_result_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">KEYS_SUCCESS</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="n">KEYS_FAILED</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="n">KEYS_UNREACHABLE</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="n">KEYS_SKIPPED</span><span class="p">:</span> <span class="p">{}</span>
+            <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__set_ansi_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="nb">type</span><span class="p">][</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span>
+
+    <span class="k">def</span> <span class="nf">__fix_unreachable_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">task_unreachable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="p">:</span>
+                <span class="n">unreachable_host</span> <span class="o">=</span> <span class="n">task_unreachable</span><span class="p">[</span><span class="s">&quot;host&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">unreachable_host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">KEYS_UNREACHABLE</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">KEYS_UNREACHABLE</span><span class="p">][</span><span class="n">unreachable_host</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_unreachable</span><span class="p">[</span><span class="s">&quot;msg&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_unreachable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;unreachable task {} on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="n">task_unreachable</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&quot;host&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span>
+            <span class="s">&quot;msg&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_unreachable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_UNREACHABLE</span><span class="p">)</span>
+        <span class="c">#self.result[result._task.name][result._host] = result._result</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;playbook task {} ok on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_SUCCESS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c"># self.result[result._task.name][&quot;success&quot;][result._host] = result._result</span>
+        <span class="c">## add unreachable</span>
+        <span class="sd">&quot;&quot;&quot;if self.task_unreachable:</span>
+<span class="sd">            for task_unreachable in self.task_unreachable:</span>
+<span class="sd">                unreachable_host = task_unreachable[&quot;host&quot;]</span>
+<span class="sd">                if not unreachable_host in self.result[result._task.name]:</span>
+<span class="sd">                    self.result[result._task.name][unreachable_host] = task_unreachable[&quot;msg&quot;]&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;failed task {} on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_FAILED</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_skipped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;unreachable task {}  on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_SKIPPED</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></code></pre></div>
+
+
+		
+		
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-03-03T16:56:27+08:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/case/'>case</a>, <a class='category' href='/blog/categories/python/'>python,</a>, <a class='category' href='/blog/categories/threads/'>threads,</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/" itemprop="url">python多线程执行类方法</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<h2>case概述</h2>
+
+<p>python可以使用多线程处理多个任务，最基本的处理思路如下：</p>
+
+<ul>
+<li>定义一个基类，然后基于该类实现多个子类完成业务功能；</li>
+<li>为每个子类的调用分配一个子线程，并调用子线程的业务入口；</li>
+<li>运行子线程，主线程实现任务结果处理；</li>
+</ul>
+
+
+<p>基于以上思路，做了基本的case，代码参考<a href="https://github.com/liyongxin/case-python/tree/master/thread_test">github地址</a>，项目结构如下：</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">.</span>
+<span class="err">└──</span> <span class="n">thread_test</span>
+    <span class="err">├──</span> <span class="n">__init__</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">├──</span> <span class="n">collector</span>
+    <span class="err">│  </span> <span class="err">├──</span> <span class="n">__init__</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">│  </span> <span class="err">├──</span> <span class="n">c1</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">│  </span> <span class="err">├──</span> <span class="n">c2</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">│  </span> <span class="err">└──</span> <span class="n">collector</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">├──</span> <span class="n">threads</span><span class="o">.</span><span class="n">py</span>
+    <span class="err">└──</span> <span class="n">threads_queue</span><span class="o">.</span><span class="n">py</span></code></pre></div>
+
+
+<h2>代码简介</h2>
+
+<h4>定义一个基类，然后基于该类实现多个子类完成业务功能</h4>
+
+<p><code>collector</code>包下定义了<code>collector</code>这个基类，然后<code>c1.py与c2.py</code>分别是实现了该基类的子类，同时使用<code>get_data</code>模拟业务逻辑的入口，</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">from</span> <span class="o">.</span><span class="n">collector</span> <span class="n">import</span> <span class="no">Collector</span>
+
+<span class="k">class</span> <span class="nc">C1</span><span class="p">(</span><span class="no">Collector</span><span class="p">):</span>
+    <span class="vi">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_data</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;i am from &quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span></code></pre></div>
+
+
+<h4>为每个子类的调用分配一个子线程，并调用子线程的业务入口</h4>
+
+<ul>
+<li>获取所有的业务子类</li>
+</ul>
+
+
+<p>为了给每个子类分配一个子线程，需要先获取所有的子类，使用递归的方式，根据基类名称来读取所有基类的实现类</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">def</span> <span class="nf">get_all_subclasses</span><span class="p">(</span><span class="n">mod</span><span class="p">):</span>
+    <span class="n">all_subclasses</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1">## collections</span>
+    <span class="k">for</span> <span class="n">subclass</span> <span class="k">in</span> <span class="o">.</span><span class="n">__subclasses__</span><span class="p">():</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="n">subclass</span><span class="o">.</span><span class="n">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_name</span> <span class="k">in</span> <span class="n">all_subclasses</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">all_subclasses</span><span class="o">[</span><span class="n">class_name</span><span class="o">]</span> <span class="o">=</span> <span class="n">subclass</span>
+        <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">subclass</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">all_subclasses</span></code></pre></div>
+
+
+<ul>
+<li>实现多线程类，并在默认的线程入口run方法中调用注册方法</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">from</span> <span class="nn">thread_test.collector.collector</span> <span class="kn">import</span> <span class="n">Collector</span>
+
+<span class="k">class</span> <span class="nc">GrabThread</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">()):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GrabThread</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;run func registry by sub-class&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></code></pre></div>
+
+
+<ul>
+<li>主线程注册子类到子线程中，并进行调用</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">all_cls</span> <span class="o">=</span> <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">Collector</span><span class="p">)</span>
+    <span class="n">threads</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">all_cls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">fn_collect</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;get_data&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn_collect</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">GrabThread</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">fn_collect</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
+            <span class="n">threads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;执行{0}的collect 方法&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">threads</span><span class="p">:</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>  <span class="c">#</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;main done&quot;</span><span class="p">)</span></code></pre></div>
+
+
+<h2>执行结果</h2>
+
+<p>每个线程负责一个子任务，并行运行</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#/usr/local/Cellar/python/3.7.1/Frameworks/Python.framework/Versions/3.7/bin/python3.7 /Users/liyongxin/PycharmProjects/case-python/thread_test/threads.py</span>
+<span class="n">i</span> <span class="n">am</span> <span class="kn">from</span>  <span class="nn">c1</span>
+<span class="err">执行</span><span class="n">c1</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span>
+<span class="n">i</span> <span class="n">am</span> <span class="kn">from</span>  <span class="nn">c2</span>
+<span class="err">执行</span><span class="n">c2</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span>
+<span class="n">main</span> <span class="n">done</span>
+
+<span class="n">Process</span> <span class="n">finished</span> <span class="k">with</span> <span class="nb">exit</span> <span class="n">code</span> <span class="mi">0</span></code></pre></div>
+
+
+		
+		
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
 <time datetime="2019-02-28T14:18:47+08:00" data-updated="true" itemprop="datePublished"></time></div>
 		<div class="tags">
 
@@ -127,7 +486,7 @@
 </div>
 		
 	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/ansible-sui-shou-ji/" itemprop="url">Somethings About Ansible</a></h1>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/ansible-sui-shou-ji/" itemprop="url">somethings about ansible</a></h1>
 	<div class="entry-content" itemprop="articleBody">
 		<ul>
 <li><h4>task解析json并注册变量给其他task使用</h4>
@@ -169,8 +528,28 @@ use_shell会和shell模块类似，若不指定，默认为False，则以command
 <ul>
 <li><h4>多进程执行ansible任务</h4>
 
-<p>实现故障定位工具时为提高执行效率，打算采用多线程方式同时执行多个任务，</p></li>
+<p>实现故障定位工具时为提高执行效率，打算采用多线程方式同时执行多个任务，使用<a href="http://localhost:4000/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/">python多线程执行类方法</a>,
+发现由于ansible自身已经实现了多线程执行，如果在多线程中再次包裹ansible的多线程的话，会遇到各种诡异的问题(非线程安全)，于是多线程调用多个ansible任务基本上行不通。
+于是尝试使用多进程的方式，发现多进程下包裹ansible的多进程是可以正常运行的，与多线程方式不同的是，多线程需要使用multiprocessing的Manager管理共享数据，即需要在
+主进程中传递Manager的变量到每个子进程中，否则主进程无法获取各子进程的数据。</p></li>
 </ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">all_cls</span> <span class="o">=</span> <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">Collector</span><span class="p">)</span>
+    <span class="n">manager</span> <span class="o">=</span> <span class="n">Manager</span><span class="p">()</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>  <span class="c"># 多进程共享数据</span>
+    <span class="n">processes</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># 进程id</span>
+    <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">all_cls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">fn_collect</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;grab&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn_collect</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">fn_collect</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">results</span><span class="p">))</span>
+            <span class="n">processes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">print</span><span class="p">(</span><span class="s">&quot;执行{0}的collect 方法&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">processes</span><span class="p">:</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>  <span class="c">#</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&quot;main done&quot;</span><span class="p">)</span></code></pre></div>
 
 
 		
@@ -204,7 +583,7 @@ use_shell会和shell模块类似，若不指定，默认为False，则以command
 </div>
 		
 	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/k8sxiao-zhi-shi/" itemprop="url">Somethings About Kubernetes</a></h1>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/k8sxiao-zhi-shi/" itemprop="url">somethings about kubernetes</a></h1>
 	<div class="entry-content" itemprop="articleBody">
 		<ul>
 <li>k8s默认驱逐设置</li>
@@ -290,10 +669,14 @@ REVISION  CHANGE-CAUSE
 <time datetime="2018-08-31T10:36:27+08:00" data-updated="true" itemprop="datePublished"></time></div>
 		<div class="tags">
 
+
+	<a class='category' href='/blog/categories/kubernetes-docker/'>kubernetes,docker</a>
+
+
 </div>
 		
 	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/08/31/kubernetes-wen-ti-zheng-li/" itemprop="url">Kubernetes 问题整理</a></h1>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/08/31/kubernetes-wen-ti-zheng-li/" itemprop="url">kubernetes 问题整理</a></h1>
 	<div class="entry-content" itemprop="articleBody">
 		<p>本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～</p>
 
@@ -420,932 +803,6 @@ apiServerCertSANs:
 
 		
 		
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-08-25T18:17:17+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/k8s/'>k8s</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes,</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/08/25/kubeletde-ren-zheng/" itemprop="url">Kubelet的认证</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>研究完<a href="../kuberneteszhong-de-ren-zheng-xiang-guan">kubectl的认证与授权</a>，使用相同的方式去找kubelet的访问，
-首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式对<code>client-key-data</code>做base64解码，保存为kubelet.crt文件。</p>
-
-<p>openssl查看crt证书，</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
-Certificate:
-    Data:
-        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
-        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
-        Validity
-            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
-            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
-        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
-                Modulus:
-                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
-    ... ...</code></pre></div>
-
-
-<p>得到我们期望的内容：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div>
-
-
-<blockquote><p>关于Subject，在k8s中可以理解为角色绑定主体，RoleBinding或者ClusterRoleBinding可以将角色绑定到角色绑定主体（Subject）。
-角色绑定主体可以是用户组（Group）、用户（User）或者服务账户（Service Accounts）</p></blockquote>
-
-<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in `kubectl get clusterrolebindings |awk &#39;{print $1}&#39;`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &#39;system:nodes&#39;;done</span>
-NAME
-Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="s2">&quot;NAME&quot;</span> not found
-cluster-admin
-flannel
-kubeadm:kubelet-bootstrap
-kubeadm:node-autoapprove-bootstrap
-kubeadm:node-autoapprove-certificate-rotation
-  name: system:nodes
-kubeadm:node-proxier
-system:aws-cloud-provider
-system:basic-user
-... ...</code></pre></div>
-
-
-<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
-尝试去找<a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">资料</a>，发现了这么一段</p>
-
-<p><img src="/images/rbac.png" alt="" /></p>
-
-<p>Kubernetes 1.7开始, apiserver的启动中默认增加了<code>--authorization-mode=Node,RBAC</code>,也就是说，除了RBAC外，还有Node这种特殊的授权方式，</p>
-
-<p>继续查找<a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">kubernetes官方的信息</a>,得知</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">Node authorization is a special-purpose authorization mode that specifically authorizes API requests made by kubelets.</code></pre></div>
-
-
-
-
-		
-		
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-08-25T14:41:00+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/k8s/'>k8s</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes,</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/" itemprop="url">Kubectl的认证与授权</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章：</p>
-
-<ul>
-<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/">Controlling Access to the Kubernetes API</a></li>
-<li><a href="https://jimmysong.io/posts/user-authentication-in-kubernetes/">Kubernetes 中的用户与身份认证授权</a></li>
-<li><a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">Kubernetes RBAC - 基于角色的访问控制</a></li>
-</ul>
-
-
-<h2>Kubernetes API的访问控制原理回顾</h2>
-
-<p>Kubernetes集群的访问权限控制由<code>kube-apiserver</code>负责，<code>kube-apiserver</code>的访问权限控制由身份验证(authentication)、授权(authorization)
-和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
-<img src="/images/k8s-apiserver-access-control-overview.svg" alt="" /></p>
-
-<h4>身份验证（Authentication）</h4>
-
-<p>这个环节它面对的输入是整个<code>http request</code>，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
-<code>basic auth</code>、普通token以及<code>jwt token</code>(用于serviceaccount)。</p>
-
-<p>APIServer启动时，可以指定一种Authentication方法，也可以指定多种方法。如果指定了多种方法，那么APIServer将会逐个使用这些方法对客户端请求进行验证，
-只要请求数据通过其中一种方法的验证，APIServer就会认为Authentication成功；</p>
-
-<p>在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，默认支持<code>client证书</code>验证和<code>serviceaccount</code>两种身份验证方式。
-证书认证通过设置<code>--client-ca-file</code>根证书以及<code>--tls-cert-file</code>和<code>--tls-private-key-file</code>来开启。</p>
-
-<p>在这个环节，apiserver会通过client证书或
-<code>http header</code>中的字段(比如serviceaccount的<code>jwt token</code>)来识别出请求的<code>用户身份</code>，包括”user”、”group”等，这些信息将在后面的<code>authorization</code>环节用到。</p>
-
-<h4>授权（Authorization）</h4>
-
-<p>这个环节面对的输入是<code>http request context</code>中的各种属性，包括：<code>user</code>、<code>group</code>、<code>request path</code>（比如：<code>/api/v1</code>、<code>/healthz</code>、<code>/version</code>等）、
-<code>request verb</code>(比如：<code>get</code>、<code>list</code>、<code>create</code>等)。</p>
-
-<p>APIServer会将这些属性值与事先配置好的访问策略(<code>access policy</code>）相比较。APIServer支持多种<code>authorization mode</code>，包括<code>Node、RBAC、Webhook</code>等。</p>
-
-<p>APIServer启动时，可以指定一种<code>authorization mode</code>，也可以指定多种<code>authorization mode</code>，如果是后者，只要Request通过了其中一种mode的授权，
-那么该环节的最终结果就是授权成功。在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，<code>authorization-mode</code>的默认配置是<code>”Node,RBAC”</code>。</p>
-
-<p>Node授权器主要用于各个node上的kubelet访问apiserver时使用的，其他一般均由RBAC授权器来授权。</p>
-
-<h2>kubectl的授权认证</h2>
-
-<p><code>kubeadm init</code>启动完master节点后，会默认输出类似下面的提示内容：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">... ...
-Your Kubernetes master has initialized successfully!
-
-To start using your cluster, you need to run the following as a regular user:
-  mkdir -p <span class="nv">$HOME</span>/.kube
-  sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
-  sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config
-... ...</code></pre></div>
-
-
-<p>这些信息是在告知我们如何配置<code>kubeconfig</code>文件。按照上述命令配置后，master节点上的<code>kubectl</code>就可以直接使用<code>$HOME/.kube/config</code>的信息访问<code>k8s cluster</code>了。
-并且，通过这种配置方式，<code>kubectl</code>也拥有了整个集群的管理员(root)权限。</p>
-
-<p>很多K8s初学者在这里都会有疑问：</p>
-
-<ul>
-<li>当<code>kubectl</code>使用这种<code>kubeconfig</code>方式访问集群时，<code>Kubernetes</code>的<code>kube-apiserver</code>是如何对来自<code>kubectl</code>的访问进行身份验证(<code>authentication</code>)和授权(<code>authorization</code>)的呢？</li>
-<li>为什么来自<code>kubectl</code>的请求拥有最高的管理员权限呢？</li>
-</ul>
-
-
-<h4>kubectl的身份认证（authentication）</h4>
-
-<p>我们先从kubectl使用的<code>kubeconfig</code>入手。kubectl使用的kubeconfig文件实质上就是<code>kubeadm init</code>过程中生成的<code>/etc/kubernetes/admin.conf</code>，
-我们查看一下该kubeconfig文件的内容：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl config view</span>
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: REDACTED
-    server: https://192.168.8.33:6443
-  name: kubernetes
-contexts:
-- context:
-    cluster: kubernetes
-    user: kubernetes-admin
-  name: kubernetes-admin@kubernetes
-current-context: kubernetes-admin@kubernetes
-kind: Config
-preferences: <span class="o">{}</span>
-users:
-- name: kubernetes-admin
-  user:
-    client-certificate-data: REDACTED
-    client-key-data: REDACTED</code></pre></div>
-
-
-<p>关于kubeconfig文件的解释，可以在<a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/">这里</a>自行脑补。在这些输出信息中，我们着重提取到两个信息：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">user name: kubernetes-admin
-client-certificate-data: XXXX</code></pre></div>
-
-
-<p>前面提到过apiserver的authentication支持通过<code>tls client certificate、basic auth、token</code>等方式对客户端发起的请求进行身份校验，
-从kubeconfig信息来看，kubectl显然在请求中使用了<code>tls client certificate</code>的方式，即客户端的证书。另外我们知道Kubernetes是没有user这种资源的，
-通过k8s API也无法创建user。</p>
-
-<p>那么kubectl的身份信息就应该“隐藏”在<code>client-certificate</code>的数据中，我们来查看一下。</p>
-
-<p>首先把<code>/etc/kubernetes/kubelet.conf</code>中的<code>client-key-data</code>内容保存在<code>admin-client-certificate.txt</code>中</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt</span>
-<span class="nv">LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBbjVLRFNhck1VZzdldmErbS9lOCswQ0tSaUl4ajY4a1lwazBYbFBEcEN4WmtLVWhpCkt2K0lqZG80RUFvWG5SWThHRUEvaUpVbmUyNzJBU3ZIeXB0OGFwOWtha3l6ZEZ1bXlKbmV2TjBuWldYeEFkQXMKUTlmcUZyVGcyTTFpTjJPYjFPb3VnR2pHenJ6bEw3Wm5xc3hQcHppOEtCeEVsM0dUVGFLVG5hSzFRWDUwNkt2aApIVkdXMTdkazZLWEltZDZhYWo0VmNNOXJaeEZ5bCs3SzFyQ2hPWXBhNzJUYWpqdEtuZm9FdzNxV0tmb0JXclBkCjJCRDhSaW4vcmlEbGNKTy9GRUt3azJQb1ZrcWx4bzdObWtld0Zma2txTVJrOHY3WTZVUTNvT1lhVDdsMFV0bEUKVzdCaEw1U0lkcTZIbGVzVU1CQkk4NDZEMnFZNk4zdGlndTFES3dJREFRQUJBb0lCQUFjMlJmekVYV3V3QkYwcQpYUy9JNmx2WjFCNEp5bEpUeW10cHZKRWN1a3VuL1dyb1BKZVk2UUVRUmN4anlHRnZLZFFtd3poWEZXdTh2aDJiCmJ2STNTTTVBMmZiNzlIaGoxQXZvK0dvc3pLVUdrSGYyZ3FtbVRvd3NMS1ZmMHZxUjQrOGhqbXg3VDlEME5KK04KYk80SlFlaGE1aFlpQU8rZlVIc0h5QWd0M0dkVFQ0eEh6elBzYjd0dXAxd1hJUVp5SnRkSTR1MGdaMmJFcUw2dQpGdm12RlF2RzY0S1dtQ0Eydk9zclNpb1QxTGpFMDJuZk11dWhvbEhxRVoxNEx4Lzk0elI4MXlYMjV2MnBCVE9yCitvOFBYNGhtUEprckJCVUNvQVZrSmlCYmVqMUh4TW1iQXlhM2ZlaXZBR01LcXh6b2wrVkltUmUwVE8xNk1WbWoKT1dzRGJYRUNnWUVBeW84aUNRR05iQ0p3QzIvOEkzaXU2TktGc2ZYZ08waC9RT0xhbGlReWlzbEx3anBadXNrVQpsaE1zR0xkQUFoZDVrZmVpTUF1UHRPbHNxb1NjeE80eDh1RUFqcUtndklVMHR1NjFjYWFPV29BTnczMkt2bDRnCk05UmxRbFVDMXRRT0htdFRsdURrSmRUQWFGQSswYjFMeVBnZFNlamV1eFl3dlR1MHV1R1BXNlVDZ1lFQXlhd0wKNEcyN05VT0JpSmpGalNPdGEvcjJtVHpEbFNPVUl6NlpyandVd1ZHbTQvRXdPZmx6czROYWd3R0RHK0tvM2lDagpySVJnUkhaMktCWXNjQUlKQk4xWVNpVjZxVzgvaEUzT3k0Y0EySFVZd1NmTktXNXZQSUNMcnVaMGxZWTJlcHFlClZLZXZUNUJWMlJvK3gxZFo2TE4vcXk0c3RHTzhTYWp0b1FxUUtvOENnWUFiQmNOTm5rWm1vYVYrOFI2YkFOT2MKdmRFV0w2NE5XcHVYWld3eDBYeG9wWGdVM2tId09Ea2wyRUx1dlN1dDI4SGRKa01kMDcwRkxvclBxTWRkUWtXcAptRGpCenBKUTlCaFhPenM3Z1RQR2dRVFZDcCtDeS8zUnpFa0I4Mk5nazRPYXJVakdmUlFTcy9KRE9FbFpJNzdECmZjNHllUDJWeWQwUXNiRm5xUVc5L1FLQmdRQzhZblU1c09jV2F6ZStCSTlOTjAyUk4zNVJTRnllblB5Tks3WGMKOXd5Z1JRaXpscUpwRldjS0FpSnppOThRRmx1T0cwa3BKd0xTRVNKd2NiNFM1eVBMb29RTnh4TGM0U21oQ2htcApMelFQL3RvZjNIRWVTYVdwQzU3dnd5Q1dhQ2ZOd1U4elh1dzVVMmVPQktFdURwL1M2cEhRc3JKWjAyeVlGaS9iCnBnVmphd0tCZ1FDbS9sejBRWXFUUFlQcG93RHpSZE84K1VaUmNVRHFKcFZ4TmdpRVdWN0pUN09qaENxVDdMUFAKQkZMYzdCY2hYTElMaElxOGhHNmJrL2dvNWt1TzhuMWpOTjFPTlNMaHh6RVp2VVgva000RE5FYjRaLzVON1JxWAp0Q0hMeFNDZXFUZVJ6K1FXRGRFL2pXaklEcU9McEdUVjdVbXJKN2kvU04rcE02dHZTWVFSUlE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo</span><span class="o">=</span></code></pre></div>
-
-
-<p>然后对上述内容base64解密，然后存储在<code>admin.crt</code>文件中</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt |base64 -d &gt; admin.crt</span>
-<span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin.crt</span>
------BEGIN CERTIFICATE-----
-MIIC8jCCAdqgAwIBAgIIQD98S9X+SVUwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
-AxMKa3ViZXJuZXRlczAeFw0xODA4MjAwNTUwMzlaFw0xOTA4MjAwNTUwNDFaMDQx
-FzAVBgNVBAoTDnN5c3RlbTptYXN0ZXJzMRkwFwYDVQQDExBrdWJlcm5ldGVzLWFk
-bWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs5Rpnr5a68Cp4/EC
-1IeebFl1z3ixDVT3pwR5YZgfy5E98IYB42c3fFrgV6fOuewOaW3bwrS9SZ4NMqB9
-6TYXlZYkwxeQIp1HE+VSdbAHww7XE8zizv9/BSEynSqDglodmmDres0Cs9/3PG2F
-B9OcAVycRzvxx87iecSzRwVF5DoopFbYkPJY/OjTQMeO8LX8YvoBYCD0ZpHxu7NE
-b9qdUhPKH7ExbgSsSVZ75npjNtdDzlFzD4+tyYkvpBIYttOWHMFMQhipOyG+t1Af
-ydVHzzsiAxgA/00ulxNCvhx1WXN+mL3PeDeBYMSFWo6cg60ih0nnNPk3rezrHoAg
-294QxwIDAQABoycwJTAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUH
-AwIwDQYJKoZIhvcNAQELBQADggEBAFQ9ZvPCQsQQVR1kszsHip3qqcmIwUlkJiF6
-YUVRzeG/QG15dIid5i87q5ZyK+NZhsuBrROnNUDSlg77jD61iHw+jREWd1pYAoK3
-OyLcFd5q73xp+0aP1yEsRDnTmb7gzvKAYnFwKue7OZOVfpzWk0qakWkaPrzx6Bzp
-G62X6p6701sL+9Gru56M8+tp+3/z635Z+56VjAFErzs5Sv5Pw5eAYxA12ebigNeh
-0fIpVyPSZtA1MYgkbtqvjR6qxpgQUBvTCL7unNOGmdrvZI73fDLl+tTvlcgFDWcm
-jlt8d2/5x/55BAfH/6LfqzfbDfOqlicKYvogLa7QE/A0uquVjLg<span class="o">=</span>
------END CERTIFICATE-----</code></pre></div>
-
-
-<p>然后用openssl工具查看crt证书内容</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in admin.crt -noout</span>
-Certificate:
-    Data:
-        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
-        Serial Number: <span class="m">4629555607114762581</span> <span class="o">(</span>0x403f7c4bd5fe4955<span class="o">)</span>
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
-        Validity
-            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
-            Not After : Aug <span class="m">20</span> 05:50:41 <span class="m">2019</span> GMT
-        Subject: <span class="nv">O</span><span class="o">=</span>system:masters, <span class="nv">CN</span><span class="o">=</span>kubernetes-admin
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-            ... ...</code></pre></div>
-
-
-<p>从证书输出的信息中，我们看到了下面这行：</p>
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">Subject</span><span class="p">:</span> <span class="n">O</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">masters</span><span class="p">,</span> <span class="n">CN</span><span class="o">=</span><span class="n">kubernetes</span><span class="o">-</span><span class="n">admin</span></code></pre></div>
-
-
-<p>说明在认证阶段，<code>apiserver</code>会首先使用<code>--client-ca-file</code>配置的CA证书去验证kubectl提供的证书的有效性,基本的方式</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl verify -CAfile /etc/kubernetes/pki/ca.crt /etc/kubernetes/admin.crt</span>
-/etc/kubernetes/admin.crt: OK</code></pre></div>
-
-
-<p>然后认证通过后，提取出签发证书时指定的CN(Common Name),<code>kubernetes-admin</code>，作为请求的用户名 (User Name),
-O(Organization)， 从证书中提取该字段作为请求用户所属的组 (Group)，<code>group = system:masters</code>，然后传递给后面的授权模块</p>
-
-<blockquote><p>X509 客户端证书
-通过将 &ndash;client-ca-file=SOMEFILE 选项传递给 API server 来启用客户端证书认证。引用的文件必须包含一个或多个证书颁发机构，用于验证提交给 API server 的客户端证书。如果客户端证书已提交并验证，则使用 subject 的 Common Name（CN）作为请求的用户名。从 Kubernetes 1.4开始，客户端证书还可以使用证书的 organization 字段来指示用户的组成员身份。</p></blockquote>
-
-<h4>kubectl的授权</h4>
-
-<p>kubeadm在init初始引导集群启动过程中，创建了许多<code>default</code>的<code>role、clusterrole、rolebinding</code>和<code>clusterrolebinding</code>，
-在k8s有关RBAC的官方文档中，我们看到下面一些<code>default clusterrole</code>列表:</p>
-
-<p><img src="/images/kubeadm-default-clusterrole-list.png" alt="" />
-其中第一个cluster-admin这个cluster role binding绑定了system:masters group，这和authentication环节传递过来的身份信息不谋而合。
-沿着system:masters group对应的cluster-admin clusterrolebinding“追查”下去，真相就会浮出水面。</p>
-
-<p>我们查看一下这一binding：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrolebinding/cluster-admin -n kube-system -o yaml</span>
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: <span class="s2">&quot;true&quot;</span>
-  creationTimestamp: 2018-08-20T05:51:30Z
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cluster-admin
-  resourceVersion: <span class="s2">&quot;93&quot;</span>
-  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterrolebindings/cluster-admin
-  uid: 163adc34-a43d-11e8-89a4-000c2948e532
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: Group
-  name: system:masters</code></pre></div>
-
-
-<p> 我们看到在kube-system名字空间中，一个名为cluster-admin的clusterrolebinding将cluster-admin cluster role与system:masters Group绑定到了一起，
- 赋予了所有归属于system:masters Group中用户cluster-admin角色所拥有的权限。</p>
-
-<p> 我们再来查看一下cluster-admin这个role的具体权限信息：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrole/cluster-admin -n kube-system -o yaml</span>
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: <span class="s2">&quot;true&quot;</span>
-  creationTimestamp: 2018-08-20T05:51:30Z
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cluster-admin
-  resourceVersion: <span class="s2">&quot;40&quot;</span>
-  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterroles/cluster-admin
-  uid: 15f71927-a43d-11e8-89a4-000c2948e532
-rules:
-- apiGroups:
-  - <span class="s1">&#39;*&#39;</span>
-  resources:
-  - <span class="s1">&#39;*&#39;</span>
-  verbs:
-  - <span class="s1">&#39;*&#39;</span>
-- nonResourceURLs:
-  - <span class="s1">&#39;*&#39;</span>
-  verbs:
-  - <span class="s1">&#39;*&#39;</span></code></pre></div>
-
-
-<p>从rules列表中来看，cluster-admin这个角色对所有resources、verbs、apiGroups均有无限制的操作权限，
-即整个集群的root权限。于是kubectl的请求就可以操控和管理整个集群了。</p>
-
-<h3>疑问</h3>
-
-<p>使用kubeadm-1.11.2版本初始化集群，即使不配置.kube/config文件，也可以直接访问到kubernetes cluster,
-<a href="https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/">官方文档</a>中对这块的记录如下：</p>
-
-<p>To make kubectl work for your non-root user, run these commands, which are also part of the kubeadm init output:</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir -p <span class="nv">$HOME</span>/.kube
-sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
-sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config</code></pre></div>
-
-
-<p>Alternatively, if you are the root user, you can run:</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">KUBECONFIG</span><span class="o">=</span>/etc/kubernetes/admin.conf</code></pre></div>
-
-
-<ul>
-<li>关于非root用户，尝试新建了用户，且没有配置kubeconfig文件的情况下，依然可以通过kubectl直接访问集群。</li>
-<li>关于<code>KUBECONFIG</code>环境变量，发现未设置该env，而且尝试把<code>/etc/kubernetes/admin.conf</code> 文件删除掉，重启apiserver的情况，依然可以访问</li>
-</ul>
-
-
-<p>关于以上疑问已经弄明白，当我们在master节点中使用kubectl请求时，如果没有设置$HOME/.kube/config文件，则默认是通过本地的非安全端口来访问
-apiserver，</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@ip-172-31-10-236 centos<span class="o">]</span><span class="c"># kubectl get no -v 7</span>
-I0930 06:55:41.036661   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/alauda.io/v3/serverresources.json
-I0930 06:55:41.037250   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/v1/serverresources.json
-I0930 06:55:41.037484   <span class="m">13865</span> round_trippers.go:383<span class="o">]</span> GET http://localhost:8080/api/v1/nodes
-I0930 06:55:41.037502   <span class="m">13865</span> round_trippers.go:390<span class="o">]</span> Request Headers:
-I0930 06:55:41.037515   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     Accept: application/json
-I0930 06:55:41.037528   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     User-Agent: kubectl/v1.7.3 <span class="o">(</span>linux/amd64<span class="o">)</span> kubernetes/2c2fe6e
-I0930 06:55:41.046449   <span class="m">13865</span> round_trippers.go:408<span class="o">]</span> Response Status: <span class="m">200</span> OK in <span class="m">8</span> milliseconds
-I0930 06:55:41.067926   <span class="m">13865</span> cached_discovery.go:119<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/servergroups.json
-I0930 06:55:41.068015   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/apiregistration.k8s.io/v1beta1/serverresources.json</code></pre></div>
-
-
-<p> 如果</p>
-
-<h3>小结</h3>
-
-<p>总结一下kubectl的认证过程：</p>
-
-<p><img src="/images/how-kubectl-be-authorized.png" alt="" /></p>
-
-		
-		
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-17T20:30:37+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/javascript/'>javascript</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/" itemprop="url">Javascript运行顺序详解</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>JavaScript是一种描述型脚本语言，它不同于java或C#等编译性语言,它不需要进行编译成中间语言,而是由浏览器进行动态地解析与执行。如果你不能理解javaScript语言的运行机制，或者简单地说，你不能掌握javascript的执行顺序，那你就犹如伯乐驾驭不了千里马，让千里马脱缰而出，四处乱窜。
-那么JavaScript是怎么来进行解析的吗？它的执行顺序又是如何的呢？在了解这些之前，我们先来认识几个重要的术语：</p>
-
-<h3>代码块</h3>
-
-<p><code>JavaScript</code>中的代码块是指由<code>&lt;script&gt;</code>标签分割的代码段。例如：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 示例代码</span>
-<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块一&quot;</span><span class="p">);</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span>
-
-<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块二&quot;</span><span class="p">);</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
-
-
-<p>JS是按照代码块来进行编译和执行的，代码块间相互独立，但变量和方法共享。什么意思呢? 举个例子，你就明白了：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>   <span class="c1">//因为没有定义str，所以浏览器会出错，下面的不能运行</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块一&quot;</span><span class="p">);</span>  <span class="c1">//没有运行到这里</span>
-    <span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="s2">&quot;我是代码块一变量&quot;</span><span class="p">;</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span>
-
-<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块二&quot;</span><span class="p">);</span>  <span class="c1">//这里有运行到</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="nx">test</span><span class="p">);</span>  <span class="c1">//弹出&quot;我是代码块一变量&quot;</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
-
-
-<p>上面的代码中代码块一中运行报错，但不影响代码块二的执行，这就是代码块间的独立性，而代码块二中能调用到代码一中的变量，则是块间共享性。</p>
-
-
-		
-		<a href="/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-15T20:02:51+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" itemprop="url">GreenPlum脚本化安装</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>由于手动安装<code>Greenplum</code>过于繁琐，考虑对安装过程进行自动化，针对手动安装的过程，大致整理了几个脚本，简化安装程序，安装过程中必要的交互操作可以通过<code>expect</code>来实现，比如多机互信环节、<code>master</code>安装<code>GreenPlum</code>过程等。
-大致过程如下：</p>
-
-<h2>准备脚本</h2>
-
-<p><code>root</code>用户登录<code>master</code>节点，创建<code>/opt/gp</code>目录</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir /opt/gp</code></pre></div>
-
-
-<p>拷贝<code>gp.tar</code>到<code>/opt/gp</code>目录，解压</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar -xvf gp.tar -C /opt/gp
-chmod -R <span class="m">777</span> /opt/gp</code></pre></div>
-
-
-<h2>master安装GP</h2>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">cd</span> /opt/gp
-./greenplum-db-4.3.0.0-build-3-RHEL5-x86_64.bin</code></pre></div>
-
-
-<h2>关闭相关服务，执行脚本拷贝</h2>
-
-<h4>配置hosts文件,内容参照如下</h4>
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">222</span> <span class="n">mdw</span>
-<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">223</span> <span class="n">smdw</span>
-<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">224</span> <span class="n">sdw1</span>
-<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">225</span> <span class="n">sdw2</span></code></pre></div>
-
-
-
-
-
-		
-		<a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-14T20:24:55+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/14/greenpluman-zhuang/" itemprop="url">GreenPlum安装</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下：</p>
-
-<h3>安装前准备</h3>
-
-<h4>网络规划</h4>
-
-<p>Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。Master主机和Segment主机之间会组成一个内部网络（LAN）。
-为了充分发挥Greenplum数据库并行处理的性能，对网络带宽要求较高。服务器会配置多个网卡，内部网需要配置多个网段的IP。需要对外连接的服务器需配置外部IP。
-建议在Greenplum数据库系统安装之前，把网络配置规划好。
-<img src="/images/network.png" alt="" /></p>
-
-<h4>存储空间规划</h4>
-
-<p>首先，需要评估目标数据库数据所需要的空间容量。建议了解客户搭建Greenplum数据库的具体应用。举例：估计数据库所需空间为U，数据库需要启用Mirror，磁盘阵列总可用空间为D（Raid之后）。空间规划服务和如下公式：
-<code>2 * U + U / 3 = D * 70%</code>
-磁盘空间D平均分配到各个Segment服务器上。
-Master需要相应的空间。使用服务器内置硬盘的计算方式类似。</p>
-
-<h4>数据库实例规划</h4>
-
-<p>规划每个Segment服务器上建立的数据库实例的数量（instance数量），通常建议每2个CPU内核（core）对应一个数据库实例。
-如 ：<code>2*4</code>核CPU的服务器，可配置4个实例。</p>
-
-
-		
-		<a href="/blog/2018/05/14/greenpluman-zhuang/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-09T16:33:42+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/" itemprop="url">常用命令随手记</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<ul>
-<li><h4>统计系统各类连接数</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">netstat</span> <span class="o">-</span><span class="n">n</span> <span class="o">|</span> <span class="n">awk</span> <span class="s">&#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39;</span></code></pre></div>
-
-
-<p>结果类似如下格式：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">ESTABLISHED 23
-TIME_WAIT 707</code></pre></div>
-
-
-<ul>
-<li><h4>ab命令简单压力测试</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ab</span> <span class="o">-</span><span class="n">n</span> <span class="mi">50000000</span> <span class="o">-</span><span class="n">c</span> <span class="mi">10</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="p">:</span><span class="mi">8080</span><span class="o">/</span></code></pre></div>
-
-
-<ul>
-<li><h4>uwsgi reload</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ps</span> <span class="n">afx</span><span class="p">;</span>
-<span class="n">kill</span> <span class="o">-</span><span class="n">HUP</span> <span class="err">$</span><span class="n">pid_of_uwsgi</span></code></pre></div>
-
-
-<ul>
-<li><h4>xargs相关</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">find . -type f -name <span class="s2">&quot;*.jpg&quot;</span> -print <span class="p">|</span> xargs tar -czvf images.tar.gz
-
-<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX
-name name name name
-
-<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX -n2
-name name
-name name</code></pre></div>
-
-
-<ul>
-<li><h4>多行输入单行输出：</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">cat test.txt <span class="p">|</span> xargs
-
-a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
-
-
-<ul>
-<li><h4>压缩加速</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar --use-compress-program<span class="o">=</span>pigz -xvpf PKG-20180627.tar.gz</code></pre></div>
-
-
-<ul>
-<li><h4>curl发送get或者post请求</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">curl -H <span class="s2">&quot;Content-Type:application/json&quot;</span> -X POST -d <span class="s1">&#39;{&quot;user&quot;: &quot;admin&quot;, &quot;passwd&quot;:&quot;12345678&quot;}&#39;</span> http://127.0.0.1:8000/login
-curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http://127.0.0.1:8080/login</code></pre></div>
-
-
-<ul>
-<li><h4>sed 匹配替换</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#/dev/mapper/centos-swap swap                    swap    defaults        0 0</span>
-sed -i <span class="s1">&#39;/ swap / s/^\(.*\)$/#\1/g&#39;</span> /etc/fstab</code></pre></div>
-
-
-<ul>
-<li><h4>dd命令</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#创建一个大小为256M的文件</span>
-<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">of</span><span class="o">=/</span><span class="n">swapfile</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">262144</span>
-<span class="c">#测试硬盘的读写速度</span>
-<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">1000000</span> <span class="n">of</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span>
-<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span> <span class="n">bs</span><span class="o">=</span><span class="mi">64</span><span class="n">k</span> <span class="o">|</span> <span class="n">dd</span> <span class="n">of</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">null</span></code></pre></div>
-
-
-<ul>
-<li><h4>iostat命令</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#安装</span>
-<span class="n">yum</span> <span class="n">install</span> <span class="n">sysstat</span>
-<span class="c">#测试机器设备读写情况，所有设备，间隔1s，执行10次</span>
-<span class="n">iostat</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">x</span> <span class="mi">1</span> <span class="mi">10</span></code></pre></div>
-
-
-<ul>
-<li><h4>route表操作</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#添加路由</span>
-<span class="n">route</span> <span class="n">add</span> <span class="n">default</span> <span class="n">gw</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span>
-<span class="n">route</span> <span class="n">add</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.40</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">eth0</span>
-<span class="c">#删除路由</span>
-<span class="n">route</span> <span class="k">del</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.48</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">gw</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.41</span></code></pre></div>
-
-
-<ul>
-<li><h4>tail 取输出结果的最后几行</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="mi">67</span><span class="n">d89d58db</span><span class="o">-</span><span class="mi">2</span><span class="n">gqdd</span>                 <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">1</span><span class="n">d</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">56489</span><span class="n">c6c87</span><span class="o">-</span><span class="mi">4</span><span class="n">nwdc</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="mi">75</span><span class="n">fb5cb78b</span><span class="o">-</span><span class="n">h5l82</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">3</span><span class="o">-</span><span class="mi">8697</span><span class="n">f4746f</span><span class="o">-</span><span class="mi">645</span><span class="n">sj</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">14</span><span class="n">d</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">4</span><span class="o">-</span><span class="mi">7677</span><span class="n">cbcd8d</span><span class="o">-</span><span class="n">z8pvb</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n1</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |tail -n2</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
-<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span></code></pre></div>
-
-
-<ul>
-<li><h4>awk 指定行号输出</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#输出最后一行</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;END{print $1}&#39;</span>
-<span class="c">#输出指定行</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &#39;NR==1{print $1}&#39;</span></code></pre></div>
-
-
-<ul>
-<li><h4>sed 删除指定行</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#删除前两行，输出剩下的行</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed 1,2d</span>
-<span class="c">#删除最后一行</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># `which kubectl` get po -n alauda-system |grep alauda-redis |sed &#39;$&#39;d</span></code></pre></div>
-
-
-<ul>
-<li><h4>find</h4>
-
-<p>find命令是根据文件的属性进行查找，如文件名，文件大小，所有者，所属组，是否为空，访问时间，修改时间等</p></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#在/tmp目录下查找大于10000字节并在最后2分钟内修改的文件</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find /tmp -size +10000c -and -mtime +2</span>
-
-<span class="c">#查找当前文件系统中的所有目录并排序</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find . -type d | sort</span>
-<span class="c">#查找`/var/log`目录下大于200M的以`.log`结尾的文件并删除掉</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@yxli</span><span class="o">-</span><span class="n">onebox</span> <span class="n">docker</span><span class="p">]</span><span class="c"># find  /var/log/  -name  &quot;*.log&quot; -size +200M -type f -exec rm {} \;</span></code></pre></div>
-
-
-<ul>
-<li><h4>grep</h4>
-
-<p>grep是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找</p></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#显示/usr/src目录下的文件(包含子目录)包含magic的行</span>
-<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># grep -r magic /usr/src</span>
-<span class="c">#正则表达式</span>
-<span class="n">grep</span> <span class="o">-</span><span class="n">E</span> <span class="s">&quot;\&lt;(root|gao|uer1)\&gt;&quot;</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span></code></pre></div>
-
-
-		
-		
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-03T14:08:00+08:00" data-updated="true" itemprop="datePublished"></time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/" itemprop="url">CentOS使用GreenPlum定时加载HDFS数据文件</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>最近有个场景，数据会定时写入hdfs，需要GP从hdfs中将数据载入。网上关于gp连接hdfs的介绍不是很多，实现的过程中走了很多弯路。
-整个过程大概分为4步：</p>
-
-<ul>
-<li><strong>安装JDK</strong> ：java必备；</li>
-<li><strong>安装必要的PHD软件包</strong> ：安装phd中必要的组件，让GPDB主机作为Hadoop的client；</li>
-<li><strong>设置GPDB</strong> ：配置gpconfig；</li>
-<li><strong>定时任务</strong> ：利用cron任务实现定时加载数据文件；</li>
-</ul>
-
-
-<h3>安装JDK</h3>
-
-<p>推荐版本是1.7.x，注意需要在所有节点进行安装，安装完成后添加以下内容到<code>gpadmin</code>用户对应的<code>.bashrc</code>文件中</p>
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">export</span> <span class="no">JAVA_HOME</span><span class="o">=</span><span class="sr">/opt/</span><span class="n">jdk1</span><span class="o">.</span><span class="mi">7</span><span class="o">.</span><span class="mo">0_45</span></code></pre></div>
-
-
-<p>如果还会提示找不到<code>Error: JAVA_HOME is not set and could not be found.</code>尝试将上述命令添加到<code>/etc/environment中</code>.
-编辑<code>/etc/profile</code>文件，添加如下内容：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/opt/jdk1.7.0_45
-<span class="nb">export </span><span class="nv">CLASSPATH</span><span class="o">=</span>.:<span class="nv">$JAVA_HOME</span>/jre/lib/rt.jar:<span class="nv">$JAVA_HOME</span>/lib/dt.jar:<span class="nv">$JAVA_HOME</span>/lib/tools.jar
-<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$JAVA_HOME</span>/bin</code></pre></div>
-
-
-<p>最后执行如下命令验证安装是否成功：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /etc/profile
-java -version</code></pre></div>
-
-
-<h3>安装必要的PHD软件包</h3>
-
-<p>默认安装完GP后，无法直接ipc连接远程hdfs，官方推荐安装phd的一些软件，当然拷贝一份hadoop的包到本地也可以，目的都是让GPDB中的主机作为hadoop的客户端，能进行hdfs的访问。
-所有的软件均可在phd的安装包中获得，我下载的是PHD-2.0.1.0-148版本，整个安装包大概805MB，以下rpm是需要顺序安装的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">bigtop</span><span class="o">-</span><span class="nx">jsvc</span><span class="o">-</span><span class="mf">1.0.15</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">bigtop</span><span class="o">-</span><span class="nx">utils</span><span class="o">-</span><span class="mf">0.4.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">noarch</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">zookeeper</span><span class="o">-</span><span class="mf">3.4.5</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">noarch</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">yum</span> <span class="o">-</span><span class="nx">y</span> <span class="nx">install</span> <span class="nx">nc</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">yarn</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">mapreduce</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">hdfs</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>安装gphd的时候需要nc，所以先yum安装一下。</p>
-
-<blockquote><p><strong>注意：</strong>官方说所有的segment节点需要安装这些软件，实际过程中整个GPDB中的机器都需要安装才可以运行，否则会提示无法加载class的错误。</p></blockquote>
-
-<h3>设置GPDB</h3>
-
-<p>在gp中使用gpadmin用户进行设置以下两个配置项，具体的值需要根据官方的资料进行匹配</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpconfig -c gp_hadoop_home -v <span class="s2">&quot;&#39;/usr/lib/gphd&#39;&quot;</span>
-gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39;&quot;</span></code></pre></div>
-
-
-
-
-
-		
-		<a href="/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>

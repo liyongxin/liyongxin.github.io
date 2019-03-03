@@ -1,0 +1,312 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>python调用ansible任务并获取返回值 - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="python调用ansible任务并获取返回值 背景 项目中需要使用python执行ansible的任务，每项任务均需要获取执行结果并做解析，为了方便调用，对ansible的api调用做了封装并对返回结果做了友好处理，特做记录。 理想中的调用方式 先不考虑封装逻辑，个人作为使用者， &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2019/03/03/pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">python调用ansible任务并获取返回值</h1>
+	<div class="entry-content" itemprop="articleBody"><h2>背景</h2>
+
+<p>项目中需要使用python执行ansible的任务，每项任务均需要获取执行结果并做解析，为了方便调用，对ansible的api调用做了封装并对返回结果做了友好处理，特做记录。</p>
+
+<h2>理想中的调用方式</h2>
+
+<p>先不考虑封装逻辑，个人作为使用者，希望的一种使用方式如下(伪代码)：</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">host_list</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;192.168.8.33&#39;</span><span class="p">,</span> <span class="s">&#39;192.168.8.35&#39;</span><span class="p">]</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">AnsibleApi</span><span class="p">(</span><span class="n">host_list</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">root</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
+    <span class="c"># 传递playbook的path，执行playbook task</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">run_playbook</span><span class="p">([</span><span class="s">&quot;playbook_path&quot;</span><span class="p">])</span>
+    <span class="c"># 得到执行结果</span>
+    <span class="k">return</span> <span class="n">api</span><span class="o">.</span><span class="n">get_playbook_result</span><span class="p">()</span></code></pre></div>
+
+
+<p>即我告诉api，我想在host_list所在的机器上执行playbook_path这个playbook指定的任务，然后我得到一个友好的执行结果</p>
+
+<h2>理想中的友好返回</h2>
+
+<p>因为ansible会在多个机器执行多个任务，每个机器上的每个任务的执行情况都需要收集，于是作为开发者，更期望得到如下结构的返回结果：</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    return data</span>
+<span class="sd">    {</span>
+<span class="sd">            &quot;task_name1&quot;: {</span>
+<span class="sd">                &quot;success&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.33&quot;: {</span>
+<span class="sd">                        {&quot;changed&quot;: &quot;true&quot;, &quot;end&quot;: &quot;2019-01-17 02:31:58.519839&quot;, &quot;stdout&quot;: &quot;{}&quot; ...}</span>
+<span class="sd">                    },</span>
+<span class="sd">                    &quot;192.168.8.34&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;failed&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.35&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;unreachable&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.36&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;skipped&quot;: {</span>
+<span class="sd">                }</span>
+<span class="sd">            },</span>
+<span class="sd">            &quot;task_name2&quot;: {</span>
+<span class="sd">                &quot;success&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.33&quot;: {</span>
+<span class="sd">                        {&quot;changed&quot;: &quot;true&quot;, &quot;end&quot;: &quot;2019-01-17 02:31:58.519839&quot;, &quot;stdout&quot;: &quot;{}&quot; ...}</span>
+<span class="sd">                    },</span>
+<span class="sd">                    &quot;192.168.8.35&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                    &quot;192.168.8.34&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;failed&quot;: {</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;unreachable&quot;: {</span>
+<span class="sd">                    &quot;192.168.8.36&quot;: {</span>
+<span class="sd">                    }</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;skipped&quot;: {</span>
+<span class="sd">                }</span>
+<span class="sd">            },</span>
+<span class="sd">        }</span>
+<span class="sd">    &quot;&quot;&quot;</span></code></pre></div>
+
+
+<p>即以我的playbook中的每个task为核心(key值)，告诉我每个task的执行结果，结果包含了该task在哪些机器上执行成功了，哪些机器上执行失败了，并且无论
+成功还是失败，输出结果告知我情况。
+那么因为task_name是可以传递到playbook中的，所以开发者很容易就可以获取任何一个task的执行情况，进而做后续的逻辑处理。</p>
+
+<h2>如何针对上述调用方式和返回结果进行封装</h2>
+
+<p>主要说明如何对playbook的调用结果做收集，对于直接调用ansible的模块的结果收集比较简单，代码中有实现，不做额外的说明了。
+<a href="https://github.com/liyongxin/case-python/blob/master/ansible/api.py">代码地址</a>，下面只对ansible执行后对callback做说明，其他部分参考代码即可。</p>
+
+<ul>
+<li>自定义callback类，注册给ansible</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">run_playbook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">playbook_path</span><span class="p">,</span> <span class="n">ip</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c">#print(&#39;self_ips_run_playbook:&#39;,self.ips)</span>
+        <span class="c"># self.variable_manager.extra_vars = {&#39;ansible_ssh_pass&#39;: self.default_password, &#39;disabled&#39;: &#39;yes&#39;}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="o">.</span><span class="n">extra_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span>
+        <span class="n">playbook</span> <span class="o">=</span> <span class="n">PlaybookExecutor</span><span class="p">(</span><span class="n">playbooks</span><span class="o">=</span><span class="n">playbook_path</span><span class="p">,</span>
+                                    <span class="n">inventory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="p">,</span>
+                                    <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="p">,</span>
+                                    <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span>
+                                    <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
+                                    <span class="n">passwords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+        <span class="c"># 注册callback</span>
+        <span class="n">playbook</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stdout_callback</span> <span class="o">=</span> <span class="n">PlaybookResultCallback</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">playbook</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></code></pre></div>
+
+
+<ul>
+<li>实现自定义callback类</li>
+</ul>
+
+
+<p><code>ansible</code>的<code>plugins</code>中定义了<code>CallbackBase</code>，只需要实现该基础类即可。
+大致的逻辑是按照上述期望的理想的返回结果进行数据拼装，实际使用过程中，发现如果有台机器是unreachable的，那么无论有多少task，如果遇到了unreachable
+的情况，那么后续的task就不会在unreachable的机器上执行，因为在实现中做了人工补救<code>__fix_unreachable_result</code>，即对每个task来说，只要有unreachable
+的机器，那么都会注册到task的返回结果中。</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">class</span> <span class="nc">PlaybookResultCallback</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PlaybookResultCallback</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__init_result_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">KEYS_SUCCESS</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="n">KEYS_FAILED</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="n">KEYS_UNREACHABLE</span><span class="p">:</span> <span class="p">{},</span>
+                <span class="n">KEYS_SKIPPED</span><span class="p">:</span> <span class="p">{}</span>
+            <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">__set_ansi_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="nb">type</span><span class="p">][</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span>
+
+    <span class="k">def</span> <span class="nf">__fix_unreachable_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">task_unreachable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="p">:</span>
+                <span class="n">unreachable_host</span> <span class="o">=</span> <span class="n">task_unreachable</span><span class="p">[</span><span class="s">&quot;host&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">unreachable_host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">KEYS_UNREACHABLE</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">KEYS_UNREACHABLE</span><span class="p">][</span><span class="n">unreachable_host</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_unreachable</span><span class="p">[</span><span class="s">&quot;msg&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_unreachable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;unreachable task {} on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="n">task_unreachable</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&quot;host&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span>
+            <span class="s">&quot;msg&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_unreachable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_UNREACHABLE</span><span class="p">)</span>
+        <span class="c">#self.result[result._task.name][result._host] = result._result</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;playbook task {} ok on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_SUCCESS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c"># self.result[result._task.name][&quot;success&quot;][result._host] = result._result</span>
+        <span class="c">## add unreachable</span>
+        <span class="sd">&quot;&quot;&quot;if self.task_unreachable:</span>
+<span class="sd">            for task_unreachable in self.task_unreachable:</span>
+<span class="sd">                unreachable_host = task_unreachable[&quot;host&quot;]</span>
+<span class="sd">                if not unreachable_host in self.result[result._task.name]:</span>
+<span class="sd">                    self.result[result._task.name][unreachable_host] = task_unreachable[&quot;msg&quot;]&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;failed task {} on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_FAILED</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">v2_runner_on_skipped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&quot;unreachable task {}  on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_SKIPPED</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></code></pre></div>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
