@@ -71,6 +71,9 @@
 <loc>http://liyongxin.github.io/blog/categories/greenplum/</loc>
 </url>
 <url>
+<loc>http://liyongxin.github.io/blog/categories/shell/</loc>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/categories/javascript/</loc>
 </url>
 <url>
@@ -80,7 +83,7 @@
 <loc>http://liyongxin.github.io/blog/categories/k8s/</loc>
 </url>
 <url>
-<loc>http://liyongxin.github.io/blog/categories/kubernetes-docker/</loc>
+<loc>http://liyongxin.github.io/blog/categories/docker/</loc>
 </url>
 <url>
 <loc>http://liyongxin.github.io/blog/categories/ansible/</loc>
@@ -93,17 +96,5 @@
 </url>
 <url>
 <loc>http://liyongxin.github.io/blog/categories/case/</loc>
-</url>
-<url>
-<loc>http://liyongxin.github.io/blog/categories/ansible/</loc>
-</url>
-<url>
-<loc>http://liyongxin.github.io/blog/categories/python/</loc>
-</url>
-<url>
-<loc>http://liyongxin.github.io/posts2/</loc>
-</url>
-<url>
-<loc>http://liyongxin.github.io/posts3/</loc>
 </url>
 </urlset>

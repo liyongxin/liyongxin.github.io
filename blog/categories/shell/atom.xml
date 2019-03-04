@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: shell | Earlene]]></title>
+  <link href="http://liyongxin.github.io/blog/categories/shell/atom.xml" rel="self"/>
+  <link href="http://liyongxin.github.io/"/>
+  <updated>2019-03-04T11:19:27+08:00</updated>
+  <id>http://liyongxin.github.io/</id>
+  <author>
+    <name><![CDATA[yxli@alauda.io]]></name>
+    <email><![CDATA[yxli@alauda.io]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[常用命令随手记]]></title>
+    <link href="http://liyongxin.github.io/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/"/>
+    <updated>2018-05-09T16:33:42+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji</id>
+    <content type="html"><![CDATA[<ul>
+<li><h4>统计系统各类连接数</h4>
+
+<p><div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">netstat</span> <span class="o">-</span><span class="n">n</span> <span class="o">|</span> <span class="n">awk</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="o">/^</span><span class="n">tcp</span><span class="o">/</span> <span class="p">{</span><span class="o">++</span><span class="n">S</span><span class="p">[</span><span class="err">$</span><span class="n">NF</span><span class="p">]}</span> <span class="n">END</span> <span class="p">{</span><span class="k">for</span><span class="p">(</span><span class="n">a</span> <span class="ow">in</span> <span class="n">S</span><span class="p">)</span> <span class="k">print</span> <span class="n">a</span><span class="p">,</span> <span class="n">S</span><span class="p">[</span><span class="n">a</span><span class="p">]}</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span></code></pre></div>
+结果类似如下格式：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">ESTABLISHED 23
+TIME_WAIT 707</code></pre></div></p></li>
+<li><h4>ab命令简单压力测试</h4>
+
+<p><div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ab</span> <span class="o">-</span><span class="n">n</span> <span class="mi">50000000</span> <span class="o">-</span><span class="n">c</span> <span class="mi">10</span> <span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s">&quot;http://127.0.0.1:8080/&quot;</span><span class="o">&gt;</span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="p">:</span><span class="mi">8080</span><span class="o">/&lt;/</span><span class="n">a</span><span class="o">&gt;</span></code></pre></div></p></li>
+<li><h4>uwsgi reload</h4>
+
+<p><div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ps</span> <span class="n">afx</span><span class="p">;</span>
+<span class="n">kill</span> <span class="o">-</span><span class="n">HUP</span> <span class="err">$</span><span class="n">pid_of_uwsgi</span></code></pre></div></p></li>
+<li><h4>xargs相关</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">find . -type f -name <span class="p">&amp;</span>ldquo<span class="p">;</span>*.jpg<span class="p">&amp;</span>rdquo<span class="p">;</span> -print <span class="p">|</span> xargs tar -czvf images.tar.gz&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;p&gt;echo <span class="p">&amp;</span>ldquo<span class="p">;</span>nameXnameXnameXname<span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="p">|</span> xargs -dX
+name name name name&lt;/p&gt;
+
+&lt;p&gt;echo <span class="p">&amp;</span>ldquo<span class="p">;</span>nameXnameXnameXname<span class="p">&amp;</span>rdquo<span class="p">;</span> <span class="p">|</span> xargs -dX -n2
+name name
+name name</code></pre></div></p>
+
+<ul>
+<li><h4>多行输入单行输出：</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">cat test.txt <span class="p">|</span> xargs&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;p&gt;a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div></p>
+
+<ul>
+<li><h4>压缩加速</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">tar <span class="p">&amp;</span>ndash<span class="p">;</span>use-compress-program<span class="o">=</span>pigz -xvpf PKG-20180627.tar.gz</code></pre></div></p></li>
+<li><h4>curl发送get或者post请求</h4>
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">curl -H <span class="p">&amp;</span>ldquo<span class="p">;</span>Content-Type:application/json<span class="p">&amp;</span>rdquo<span class="p">;</span> -X POST -d <span class="p">&amp;</span>lsquo<span class="p">;</span><span class="o">{</span><span class="p">&amp;</span>ldquo<span class="p">;</span>user<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>admin<span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;</span>passwd<span class="p">&amp;</span>rdquo<span class="p">;</span>:<span class="p">&amp;</span>ldquo<span class="p">;</span>12345678<span class="p">&amp;</span>rdquo<span class="p">;</span><span class="o">}</span><span class="p">&amp;</span>rsquo<span class="p">;</span> &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://127.0.0.1:8000/login&quot;</span>&gt;http://127.0.0.1:8000/login&lt;/a&gt;
+curl -d <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">user</span><span class="o">=</span>admin<span class="p">&amp;</span>amp<span class="p">;</span><span class="nv">passwd</span><span class="o">=</span>12345678<span class="p">&amp;</span>rdquo<span class="p">;</span> &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://127.0.0.1:8080/login&quot;</span>&gt;http://127.0.0.1:8080/login&lt;/a&gt;</code></pre></div></p></li>
+</ul>
+
+
+<!--more-->
+
+
+<ul>
+<li><h4>sed 匹配替换</h4>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;h1&gt;/dev/mapper/centos-swap swap                    swap    defaults        <span class="m">0</span> 0&lt;/h1&gt;
+
+&lt;p&gt;sed -i <span class="p">&amp;</span>lsquo<span class="p">;</span>/ swap / s/^<span class="o">(</span>.*<span class="o">)</span><span class="nv">$/</span><span class="c">#\1/g&amp;rsquo; /etc/fstab</span></code></pre></div></p></li>
+<li><h4>dd命令</h4>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">创建一个大小为</span><span class="mi">256</span><span class="n">M</span><span class="err">的文件</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">of</span><span class="o">=/</span><span class="n">swapfile</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">262144</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">测试硬盘的读写速度</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">zero</span> <span class="n">bs</span><span class="o">=</span><span class="mi">1024</span> <span class="n">count</span><span class="o">=</span><span class="mi">1000000</span> <span class="n">of</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span>
+<span class="n">dd</span> <span class="k">if</span><span class="o">=/</span><span class="n">root</span><span class="o">/</span><span class="mi">1</span><span class="n">Gb</span><span class="o">.</span><span class="n">file</span> <span class="n">bs</span><span class="o">=</span><span class="mi">64</span><span class="n">k</span> <span class="o">|</span> <span class="n">dd</span> <span class="n">of</span><span class="o">=/</span><span class="n">dev</span><span class="o">/</span><span class="n">null</span></code></pre></div></p></li>
+<li><h4>iostat命令</h4>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">安装</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="n">yum</span> <span class="n">install</span> <span class="n">sysstat</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">测试机器设备读写情况，所有设备，间隔</span><span class="mi">1</span><span class="n">s</span><span class="err">，执行</span><span class="mi">10</span><span class="err">次</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">iostat</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">x</span> <span class="mi">1</span> <span class="mi">10</span></code></pre></div></p></li>
+<li><h4>route表操作</h4>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">添加路由</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="n">route</span> <span class="n">add</span> <span class="n">default</span> <span class="n">gw</span> <span class="mf">192.168</span><span class="o">.</span><span class="mf">1.1</span>
+<span class="n">route</span> <span class="n">add</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.40</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">eth0</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">删除路由</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">route</span> <span class="k">del</span> <span class="o">-</span><span class="n">net</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.48</span> <span class="n">netmask</span> <span class="mf">255.255</span><span class="o">.</span><span class="mf">255.248</span> <span class="n">gw</span> <span class="mf">10.20</span><span class="o">.</span><span class="mf">30.41</span></code></pre></div></p></li>
+<li><h4>tail 取输出结果的最后几行</h4>
+
+<p><div class="highlight"><pre><code class="language-python" data-lang="python"><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># &lt;code&gt;which kubectl&lt;/code&gt; get po -n alauda-system |grep alauda-redis</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="mi">67</span><span class="n">d89d58db</span><span class="o">-</span><span class="mi">2</span><span class="n">gqdd</span>                 <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">1</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">56489</span><span class="n">c6c87</span><span class="o">-</span><span class="mi">4</span><span class="n">nwdc</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="mi">75</span><span class="n">fb5cb78b</span><span class="o">-</span><span class="n">h5l82</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">3</span><span class="o">-</span><span class="mi">8697</span><span class="n">f4746f</span><span class="o">-</span><span class="mi">645</span><span class="n">sj</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">4</span><span class="o">-</span><span class="mi">7677</span><span class="n">cbcd8d</span><span class="o">-</span><span class="n">z8pvb</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">0</span>          <span class="mi">14</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># &lt;code&gt;which kubectl&lt;/code&gt; get po -n alauda-system |grep alauda-redis |tail -n1</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># &lt;code&gt;which kubectl&lt;/code&gt; get po -n alauda-system |grep alauda-redis |tail -n2</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">5</span><span class="o">-</span><span class="mi">564</span><span class="n">b7444d7</span><span class="o">-</span><span class="mi">8</span><span class="n">z5dh</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span>
+<span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">-</span><span class="n">cluster</span><span class="o">-</span><span class="mi">6</span><span class="o">-</span><span class="mi">7955</span><span class="n">ffc758</span><span class="o">-</span><span class="n">cp59h</span>       <span class="mi">1</span><span class="o">/</span><span class="mi">1</span>       <span class="n">Running</span>   <span class="mi">1</span>          <span class="mi">63</span><span class="n">d</span></code></pre></div></p></li>
+<li><h4>awk 指定行号输出</h4>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">输出最后一行</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &amp;lsquo;END{print $1}&amp;rsquo;</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">输出指定行</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># kubectl get po -n alauda-system |grep alauda-redis |awk &amp;lsquo;NR==1{print $1}&amp;rsquo;</span></code></pre></div></p></li>
+<li><h4>sed 删除指定行</h4>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">删除前两行，输出剩下的行</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># &lt;code&gt;which kubectl&lt;/code&gt; get po -n alauda-system |grep alauda-redis |sed 1,2d</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">删除最后一行</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># &lt;code&gt;which kubectl&lt;/code&gt; get po -n alauda-system |grep alauda-redis |sed &amp;lsquo;$&amp;rsquo;d</span></code></pre></div></p></li>
+<li><h4>find</h4>
+
+find命令是根据文件的属性进行查找，如文件名，文件大小，所有者，所属组，是否为空，访问时间，修改时间等
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">在</span><span class="o">/</span><span class="n">tmp</span><span class="err">目录下查找大于</span><span class="mi">10000</span><span class="err">字节并在最后</span><span class="mi">2</span><span class="err">分钟内修改的文件</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find /tmp -size +10000c -and -mtime +2&lt;/p&gt;&lt;/li&gt;</span>
+<span class="o">&lt;/</span><span class="n">ul</span><span class="o">&gt;</span>
+
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">查找当前文件系统中的所有目录并排序</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># find . -type d | sort&lt;/p&gt;</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">查找</span><span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;/</span><span class="n">var</span><span class="o">/</span><span class="n">log</span><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;</span><span class="err">目录下大于</span><span class="mi">200</span><span class="n">M</span><span class="err">的以</span><span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;.</span><span class="n">log</span><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;</span><span class="err">结尾的文件并删除掉</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">[</span><span class="n">root</span><span class="nd">@yxli</span><span class="o">-</span><span class="n">onebox</span> <span class="n">docker</span><span class="p">]</span><span class="c"># find  /var/log/  -name  &amp;ldquo;*.log&amp;rdquo; -size +200M -type f -exec rm {} \;</span></code></pre></div></p>
+
+<ul>
+<li><h4>grep</h4>
+
+grep是根据文件的内容进行查找，会对文件的每一行按照给定的模式(patter)进行匹配查找
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">显示</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">src</span><span class="err">目录下的文件</span><span class="p">(</span><span class="err">包含子目录</span><span class="p">)</span><span class="err">包含</span><span class="n">magic</span><span class="err">的行</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">ake</span> <span class="o">~</span><span class="p">]</span><span class="c"># grep -r magic /usr/src</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">正则表达式</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">grep</span> <span class="o">-</span><span class="n">E</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span>\<span class="o">&amp;</span><span class="n">lt</span><span class="p">;(</span><span class="n">root</span><span class="o">|</span><span class="n">gao</span><span class="o">|</span><span class="n">uer1</span><span class="p">)</span><span class="o">&gt;&amp;</span><span class="n">rdquo</span><span class="p">;</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span></code></pre></div></p></li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

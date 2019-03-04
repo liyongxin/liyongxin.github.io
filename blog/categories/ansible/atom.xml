@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: ansible, | Earlene]]></title>
+  <title><![CDATA[Category: ansible | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/ansible/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-03-04T11:12:14+08:00</updated>
+  <updated>2019-03-04T11:19:27+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -184,6 +184,75 @@
     <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_SKIPPED</span><span class="p">)</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span></code></pre></div></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[somethings about ansible]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/02/28/ansible-sui-shou-ji/"/>
+    <updated>2019-02-28T14:18:47+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/02/28/ansible-sui-shou-ji</id>
+    <content type="html"><![CDATA[<ul>
+<li><h4>task解析json并注册变量给其他task使用</h4>
+
+多个task涉及变量传递时，有时taskA取值是json格式，taskB若想使用json中的数据，可以通过如下方式：
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="n">get</span> <span class="n">config</span> <span class="n">task</span> <span class="n">stdout</span> <span class="ow">is</span> <span class="n">json</span> <span class="n">format</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;&lt;/</span><span class="n">li</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">li</span><span class="o">&gt;</span><span class="n">name</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">get_config</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span>
+<span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">kubectl</span> <span class="n">get</span> <span class="n">cm</span> <span class="k">global</span><span class="o">-</span><span class="n">var</span> <span class="o">-</span><span class="n">n</span> <span class="n">alauda</span><span class="o">-</span><span class="n">system</span> <span class="o">-</span><span class="n">o</span> <span class="n">json</span>
+<span class="n">register</span><span class="p">:</span> <span class="n">cms</span><span class="o">&lt;/</span><span class="n">li</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">ul</span><span class="o">&gt;</span>
+
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="n">use</span> <span class="n">from_json</span> <span class="n">plugin</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">ul</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">li</span><span class="o">&gt;&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">set_fact</span><span class="p">:</span> <span class="n">data</span><span class="o">=&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;&lt;/</span><span class="n">li</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">li</span><span class="o">&gt;&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">name</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">read_config</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span>
+<span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">redis</span><span class="o">-</span><span class="n">cli</span> <span class="o">-</span><span class="n">a</span>
+<span class="n">when</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">kind</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;]</span> <span class="o">==</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">ConfigMap</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;</span></code></pre></div></p></li>
+<li><h4>ansible自定义模块执行命令支持管道</h4>
+
+<p>自定义ansible module时，可以默认使用<code>AnsibleModule</code>的实例<code>run_command</code>来执行shell命令,可以指定use_unsafe_shell=True来让ansible支持管道。
+use_shell会和shell模块类似，若不指定，默认为False，则以command模块运行，command是比较安全的隧道连接，但是不支持管道
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+  <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">The</span> <span class="n">main</span> <span class="n">function</span><span class="o">.&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span>
+  <span class="n">module</span> <span class="o">=</span> <span class="n">AnsibleModule</span><span class="p">(</span><span class="n">argument_spec</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span><span class="n">supports_check_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+  <span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">kubectl</span> <span class="n">get</span> <span class="n">po</span> <span class="o">-</span><span class="n">n</span> <span class="n">alauda</span><span class="o">-</span><span class="n">system</span> <span class="o">|</span><span class="n">grep</span> <span class="n">alauda</span><span class="o">-</span><span class="n">redis</span><span class="o">|</span><span class="n">awk</span> \<span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">END</span><span class="p">{</span><span class="k">print</span> <span class="err">$</span><span class="mi">1</span><span class="p">}</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;,</span> <span class="n">use_unsafe_shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+  <span class="n">redis</span> <span class="o">=</span> <span class="n">Redis</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+  <span class="n">rst</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">get_redis_status</span><span class="p">()</span>
+  <span class="n">module</span><span class="o">.</span><span class="n">exit_json</span><span class="p">(</span><span class="o">**</span><span class="n">rst</span><span class="p">)</span></code></pre></div></p></li>
+</ul>
+
+
+<!--more-->
+
+
+<ul>
+<li><h4>多进程执行ansible任务</h4>
+
+<p>实现故障定位工具时为提高执行效率，打算采用多线程方式同时执行多个任务，使用<a href="http://localhost:4000/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/">python多线程执行类方法</a>,
+发现由于ansible自身已经实现了多线程执行，如果在多线程中再次包裹ansible的多线程的话，会遇到各种诡异的问题(非线程安全)，于是多线程调用多个ansible任务基本上行不通。
+于是尝试使用多进程的方式，发现多进程下包裹ansible的多进程是可以正常运行的，与多线程方式不同的是，多线程需要使用multiprocessing的Manager管理共享数据，即需要在
+主进程中传递Manager的变量到每个子进程中，否则主进程无法获取各子进程的数据。
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+  <span class="n">all_cls</span> <span class="o">=</span> <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">Collector</span><span class="p">)</span>
+  <span class="n">manager</span> <span class="o">=</span> <span class="n">Manager</span><span class="p">()</span>
+  <span class="n">results</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>  <span class="c"># 多进程共享数据</span>
+  <span class="n">processes</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># 进程id</span>
+  <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">all_cls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+      <span class="n">fn_collect</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">lsquo</span><span class="p">;</span><span class="n">grab</span><span class="o">&amp;</span><span class="n">rsquo</span><span class="p">;,</span> <span class="bp">None</span><span class="p">)</span>
+      <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn_collect</span><span class="p">):</span>
+          <span class="n">p</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">fn_collect</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">results</span><span class="p">))</span>
+          <span class="n">processes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+          <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+          <span class="k">print</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="err">执行</span><span class="p">{</span><span class="mi">0</span><span class="p">}</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+  <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">processes</span><span class="p">:</span>
+      <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>  <span class="c">#</span>
+  <span class="k">print</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">main</span> <span class="n">done</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;)</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;&lt;/</span><span class="n">li</span><span class="o">&gt;</span>
+<span class="o">&lt;/</span><span class="n">ul</span><span class="o">&gt;</span>
+
 
 <span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span></code></pre></div></p>
 ]]></content>
