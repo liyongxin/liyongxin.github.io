@@ -3,7 +3,7 @@ layout: post
 title: "kubelet的认证"
 date: 2018-08-25 18:17:17 +0800
 comments: true
-categories: kubernetes, k8s
+categories: kubernetes k8s
 ---
 研究完[kubectl的认证与授权](../kuberneteszhong-de-ren-zheng-xiang-guan)，使用相同的方式去找kubelet的访问，
 首先定位配置文件`/etc/kubernetes/kubelet.conf`，然后用相同的方式对`client-key-data`做base64解码，保存为kubelet.crt文件。

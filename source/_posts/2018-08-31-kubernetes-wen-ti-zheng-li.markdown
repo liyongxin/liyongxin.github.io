@@ -3,7 +3,7 @@ layout: post
 title: "kubernetes 问题整理"
 date: 2018-08-31 10:36:27 +0800
 comments: true
-categories: kubernetes,docker
+categories: kubernetes docker
 ---
 本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～
 ## kubernetes多网卡导致的问题

@@ -3,7 +3,7 @@ layout: post
 title: "kubectl的认证与授权"
 date: 2018-08-25 14:41:00 +0800
 comments: true
-categories: kubernetes, k8s
+categories: kubernetes k8s
 ---
 
 关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章：

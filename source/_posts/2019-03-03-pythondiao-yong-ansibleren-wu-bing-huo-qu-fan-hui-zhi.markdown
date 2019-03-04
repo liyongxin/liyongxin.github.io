@@ -3,7 +3,7 @@ layout: post
 title: "python调用ansible任务并获取返回值"
 date: 2019-03-03 17:59:19 +0800
 comments: true
-categories: ansible, python
+categories: ansible python
 ---
 
 ## 背景

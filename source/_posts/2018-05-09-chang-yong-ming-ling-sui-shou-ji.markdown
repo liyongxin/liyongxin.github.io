@@ -3,7 +3,7 @@ layout: post
 title: "常用命令随手记"
 date: 2018-05-09 16:33:42 +0800
 comments: true
-categories: 
+categories: shell
 ---
 - ####统计系统各类连接数
 {% highlight python %}

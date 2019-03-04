@@ -3,7 +3,7 @@ layout: post
 title: "somethings about kubernetes"
 date: 2019-02-28 11:12:56 +0800
 comments: true
-categories: kubernetes, k8s
+categories: kubernetes k8s
 ---
 
 - k8s默认驱逐设置

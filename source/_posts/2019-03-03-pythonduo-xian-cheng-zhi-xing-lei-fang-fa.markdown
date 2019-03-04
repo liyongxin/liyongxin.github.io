@@ -3,7 +3,7 @@ layout: post
 title: "python多线程执行类方法"
 date: 2019-03-03 16:56:27 +0800
 comments: true
-categories: python, threads, case
+categories: python threads case
 ---
 
 ## case概述
