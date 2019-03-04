@@ -62,6 +62,7 @@ docker启动时没有指定bip，从上述路由规则发现，docker0使用了1
 使用`kubeadm`搭建，若未指定--advertise-address地址则k8s默认拿default网卡，
 而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
 时候指定--advertise-address为内网地址,下面为kubeadm init使用的conf文件
+<!--more-->
 {% highlight bash %}
 apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration

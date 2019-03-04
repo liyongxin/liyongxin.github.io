@@ -46,6 +46,7 @@ REVISION  CHANGE-CAUSE
 # 回滚至指定版本
 [root@k8s-master ~]# kubectl rolloutundo deployment/lykops-dpm --to-revision=2
 {% endhighlight %}
+<!--more-->
 - 查看docker使用的cpu核心数
 {% highlight bash %}
 [root@yxli-onebox docker]# pwd

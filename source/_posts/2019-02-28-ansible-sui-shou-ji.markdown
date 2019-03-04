@@ -34,7 +34,7 @@ def main():
     rst = redis.get_redis_status()
     module.exit_json(**rst)
 {% endhighlight %}
-
+<!--more-->
 - ####多进程执行ansible任务
 实现故障定位工具时为提高执行效率，打算采用多线程方式同时执行多个任务，使用[python多线程执行类方法](http://localhost:4000/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/),
 发现由于ansible自身已经实现了多线程执行，如果在多线程中再次包裹ansible的多线程的话，会遇到各种诡异的问题(非线程安全)，于是多线程调用多个ansible任务基本上行不通。

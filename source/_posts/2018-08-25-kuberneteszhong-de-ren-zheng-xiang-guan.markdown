@@ -40,7 +40,7 @@ APIServer启动时，可以指定一种`authorization mode`，也可以指定多
 那么该环节的最终结果就是授权成功。在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，`authorization-mode`的默认配置是`”Node,RBAC”`。
 
 Node授权器主要用于各个node上的kubelet访问apiserver时使用的，其他一般均由RBAC授权器来授权。
-
+<!--more-->
 ##kubectl的授权认证
 `kubeadm init`启动完master节点后，会默认输出类似下面的提示内容：
 {% highlight bash %}

@@ -152,156 +152,9 @@
 
 <p>因为ansible会在多个机器执行多个任务，每个机器上的每个任务的执行情况都需要收集，于是作为开发者，更期望得到如下结构的返回结果：</p>
 
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    return data</span>
-<span class="sd">    {</span>
-<span class="sd">            &quot;task_name1&quot;: {</span>
-<span class="sd">                &quot;success&quot;: {</span>
-<span class="sd">                    &quot;192.168.8.33&quot;: {</span>
-<span class="sd">                        {&quot;changed&quot;: &quot;true&quot;, &quot;end&quot;: &quot;2019-01-17 02:31:58.519839&quot;, &quot;stdout&quot;: &quot;{}&quot; ...}</span>
-<span class="sd">                    },</span>
-<span class="sd">                    &quot;192.168.8.34&quot;: {</span>
-<span class="sd">                    }</span>
-<span class="sd">                },</span>
-<span class="sd">                &quot;failed&quot;: {</span>
-<span class="sd">                    &quot;192.168.8.35&quot;: {</span>
-<span class="sd">                    }</span>
-<span class="sd">                },</span>
-<span class="sd">                &quot;unreachable&quot;: {</span>
-<span class="sd">                    &quot;192.168.8.36&quot;: {</span>
-<span class="sd">                    }</span>
-<span class="sd">                },</span>
-<span class="sd">                &quot;skipped&quot;: {</span>
-<span class="sd">                }</span>
-<span class="sd">            },</span>
-<span class="sd">            &quot;task_name2&quot;: {</span>
-<span class="sd">                &quot;success&quot;: {</span>
-<span class="sd">                    &quot;192.168.8.33&quot;: {</span>
-<span class="sd">                        {&quot;changed&quot;: &quot;true&quot;, &quot;end&quot;: &quot;2019-01-17 02:31:58.519839&quot;, &quot;stdout&quot;: &quot;{}&quot; ...}</span>
-<span class="sd">                    },</span>
-<span class="sd">                    &quot;192.168.8.35&quot;: {</span>
-<span class="sd">                    }</span>
-<span class="sd">                    &quot;192.168.8.34&quot;: {</span>
-<span class="sd">                    }</span>
-<span class="sd">                },</span>
-<span class="sd">                &quot;failed&quot;: {</span>
-<span class="sd">                },</span>
-<span class="sd">                &quot;unreachable&quot;: {</span>
-<span class="sd">                    &quot;192.168.8.36&quot;: {</span>
-<span class="sd">                    }</span>
-<span class="sd">                },</span>
-<span class="sd">                &quot;skipped&quot;: {</span>
-<span class="sd">                }</span>
-<span class="sd">            },</span>
-<span class="sd">        }</span>
-<span class="sd">    &quot;&quot;&quot;</span></code></pre></div>
-
-
-<p>即以我的playbook中的每个task为核心(key值)，告诉我每个task的执行结果，结果包含了该task在哪些机器上执行成功了，哪些机器上执行失败了，并且无论
-成功还是失败，输出结果告知我情况。
-那么因为task_name是可以传递到playbook中的，所以开发者很容易就可以获取任何一个task的执行情况，进而做后续的逻辑处理。</p>
-
-<h2>如何针对上述调用方式和返回结果进行封装</h2>
-
-<p>主要说明如何对playbook的调用结果做收集，对于直接调用ansible的模块的结果收集比较简单，代码中有实现，不做额外的说明了。
-<a href="https://github.com/liyongxin/case-python/blob/master/ansible/api.py">代码地址</a>，下面只对ansible执行后对callback做说明，其他部分参考代码即可。</p>
-
-<ul>
-<li>自定义callback类，注册给ansible</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">run_playbook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">playbook_path</span><span class="p">,</span> <span class="n">ip</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="c">#print(&#39;self_ips_run_playbook:&#39;,self.ips)</span>
-        <span class="c"># self.variable_manager.extra_vars = {&#39;ansible_ssh_pass&#39;: self.default_password, &#39;disabled&#39;: &#39;yes&#39;}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="o">.</span><span class="n">extra_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span>
-        <span class="n">playbook</span> <span class="o">=</span> <span class="n">PlaybookExecutor</span><span class="p">(</span><span class="n">playbooks</span><span class="o">=</span><span class="n">playbook_path</span><span class="p">,</span>
-                                    <span class="n">inventory</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inventory</span><span class="p">,</span>
-                                    <span class="n">variable_manager</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_manager</span><span class="p">,</span>
-                                    <span class="n">loader</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">,</span>
-                                    <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
-                                    <span class="n">passwords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
-        <span class="c"># 注册callback</span>
-        <span class="n">playbook</span><span class="o">.</span><span class="n">_tqm</span><span class="o">.</span><span class="n">_stdout_callback</span> <span class="o">=</span> <span class="n">PlaybookResultCallback</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="n">playbook</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></code></pre></div>
-
-
-<ul>
-<li>实现自定义callback类</li>
-</ul>
-
-
-<p><code>ansible</code>的<code>plugins</code>中定义了<code>CallbackBase</code>，只需要实现该基础类即可。
-大致的逻辑是按照上述期望的理想的返回结果进行数据拼装，实际使用过程中，发现如果有台机器是unreachable的，那么无论有多少task，如果遇到了unreachable
-的情况，那么后续的task就不会在unreachable的机器上执行，因为在实现中做了人工补救<code>__fix_unreachable_result</code>，即对每个task来说，只要有unreachable
-的机器，那么都会注册到task的返回结果中。</p>
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">class</span> <span class="nc">PlaybookResultCallback</span><span class="p">(</span><span class="n">CallbackBase</span><span class="p">):</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">PlaybookResultCallback</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
-
-    <span class="k">def</span> <span class="nf">__init_result_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">KEYS_SUCCESS</span><span class="p">:</span> <span class="p">{},</span>
-                <span class="n">KEYS_FAILED</span><span class="p">:</span> <span class="p">{},</span>
-                <span class="n">KEYS_UNREACHABLE</span><span class="p">:</span> <span class="p">{},</span>
-                <span class="n">KEYS_SKIPPED</span><span class="p">:</span> <span class="p">{}</span>
-            <span class="p">}</span>
-
-    <span class="k">def</span> <span class="nf">__set_ansi_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="nb">type</span><span class="p">][</span><span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span>
-
-    <span class="k">def</span> <span class="nf">__fix_unreachable_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">task_unreachable</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="p">:</span>
-                <span class="n">unreachable_host</span> <span class="o">=</span> <span class="n">task_unreachable</span><span class="p">[</span><span class="s">&quot;host&quot;</span><span class="p">]</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">unreachable_host</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">KEYS_UNREACHABLE</span><span class="p">]:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">KEYS_UNREACHABLE</span><span class="p">][</span><span class="n">unreachable_host</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_unreachable</span><span class="p">[</span><span class="s">&quot;msg&quot;</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">v2_runner_on_unreachable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;unreachable task {} on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
-        <span class="n">task_unreachable</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s">&quot;host&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">,</span>
-            <span class="s">&quot;msg&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">_result</span>
-        <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">task_unreachable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task_unreachable</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_UNREACHABLE</span><span class="p">)</span>
-        <span class="c">#self.result[result._task.name][result._host] = result._result</span>
-
-    <span class="k">def</span> <span class="nf">v2_runner_on_ok</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;playbook task {} ok on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_SUCCESS</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-        <span class="c"># self.result[result._task.name][&quot;success&quot;][result._host] = result._result</span>
-        <span class="c">## add unreachable</span>
-        <span class="sd">&quot;&quot;&quot;if self.task_unreachable:</span>
-<span class="sd">            for task_unreachable in self.task_unreachable:</span>
-<span class="sd">                unreachable_host = task_unreachable[&quot;host&quot;]</span>
-<span class="sd">                if not unreachable_host in self.result[result._task.name]:</span>
-<span class="sd">                    self.result[result._task.name][unreachable_host] = task_unreachable[&quot;msg&quot;]&quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">v2_runner_on_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;failed task {} on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_FAILED</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">v2_runner_on_skipped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">&quot;unreachable task {}  on host {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">_task</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">_host</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__init_result_dict</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__set_ansi_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">KEYS_SKIPPED</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__fix_unreachable_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></code></pre></div>
-
 
 		
-		
+		<a href="/blog/2019/03/03/pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>
@@ -373,90 +226,11 @@
         <span class="k">return</span> <span class="n">msg</span></code></pre></div>
 
 
-<h4>为每个子类的调用分配一个子线程，并调用子线程的业务入口</h4>
 
-<ul>
-<li>获取所有的业务子类</li>
-</ul>
-
-
-<p>为了给每个子类分配一个子线程，需要先获取所有的子类，使用递归的方式，根据基类名称来读取所有基类的实现类</p>
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="k">def</span> <span class="nf">get_all_subclasses</span><span class="p">(</span><span class="n">mod</span><span class="p">):</span>
-    <span class="n">all_subclasses</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="c1">## collections</span>
-    <span class="k">for</span> <span class="n">subclass</span> <span class="k">in</span> <span class="o">.</span><span class="n">__subclasses__</span><span class="p">():</span>
-        <span class="n">class_name</span> <span class="o">=</span> <span class="n">subclass</span><span class="o">.</span><span class="n">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">class_name</span> <span class="k">in</span> <span class="n">all_subclasses</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">all_subclasses</span><span class="o">[</span><span class="n">class_name</span><span class="o">]</span> <span class="o">=</span> <span class="n">subclass</span>
-        <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">subclass</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">all_subclasses</span></code></pre></div>
-
-
-<ul>
-<li>实现多线程类，并在默认的线程入口run方法中调用注册方法</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">threading</span>
-<span class="kn">from</span> <span class="nn">thread_test.collector.collector</span> <span class="kn">import</span> <span class="n">Collector</span>
-
-<span class="k">class</span> <span class="nc">GrabThread</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">func</span><span class="p">,</span><span class="n">args</span><span class="o">=</span><span class="p">()):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">GrabThread</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="bp">None</span>
-
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;run func registry by sub-class&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">get_result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">result</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></code></pre></div>
-
-
-<ul>
-<li>主线程注册子类到子线程中，并进行调用</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">all_cls</span> <span class="o">=</span> <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">Collector</span><span class="p">)</span>
-    <span class="n">threads</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">all_cls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">fn_collect</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;get_data&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn_collect</span><span class="p">):</span>
-            <span class="n">p</span> <span class="o">=</span> <span class="n">GrabThread</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">fn_collect</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,))</span>
-            <span class="n">threads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-            <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;执行{0}的collect 方法&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">threads</span><span class="p">:</span>
-        <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>  <span class="c">#</span>
-
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;main done&quot;</span><span class="p">)</span></code></pre></div>
-
-
-<h2>执行结果</h2>
-
-<p>每个线程负责一个子任务，并行运行</p>
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c">#/usr/local/Cellar/python/3.7.1/Frameworks/Python.framework/Versions/3.7/bin/python3.7 /Users/liyongxin/PycharmProjects/case-python/thread_test/threads.py</span>
-<span class="n">i</span> <span class="n">am</span> <span class="kn">from</span>  <span class="nn">c1</span>
-<span class="err">执行</span><span class="n">c1</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span>
-<span class="n">i</span> <span class="n">am</span> <span class="kn">from</span>  <span class="nn">c2</span>
-<span class="err">执行</span><span class="n">c2</span><span class="err">的</span><span class="n">collect</span> <span class="err">方法</span>
-<span class="n">main</span> <span class="n">done</span>
-
-<span class="n">Process</span> <span class="n">finished</span> <span class="k">with</span> <span class="nb">exit</span> <span class="n">code</span> <span class="mi">0</span></code></pre></div>
 
 
 		
-		
+		<a href="/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>
@@ -525,35 +299,11 @@ use_shell会和shell模块类似，若不指定，默认为False，则以command
     <span class="n">module</span><span class="o">.</span><span class="n">exit_json</span><span class="p">(</span><span class="o">**</span><span class="n">rst</span><span class="p">)</span></code></pre></div>
 
 
-<ul>
-<li><h4>多进程执行ansible任务</h4>
 
-<p>实现故障定位工具时为提高执行效率，打算采用多线程方式同时执行多个任务，使用<a href="http://localhost:4000/blog/2019/03/03/pythonduo-xian-cheng-zhi-xing-lei-fang-fa/">python多线程执行类方法</a>,
-发现由于ansible自身已经实现了多线程执行，如果在多线程中再次包裹ansible的多线程的话，会遇到各种诡异的问题(非线程安全)，于是多线程调用多个ansible任务基本上行不通。
-于是尝试使用多进程的方式，发现多进程下包裹ansible的多进程是可以正常运行的，与多线程方式不同的是，多线程需要使用multiprocessing的Manager管理共享数据，即需要在
-主进程中传递Manager的变量到每个子进程中，否则主进程无法获取各子进程的数据。</p></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">all_cls</span> <span class="o">=</span> <span class="n">get_all_subclasses</span><span class="p">(</span><span class="n">Collector</span><span class="p">)</span>
-    <span class="n">manager</span> <span class="o">=</span> <span class="n">Manager</span><span class="p">()</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>  <span class="c"># 多进程共享数据</span>
-    <span class="n">processes</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c"># 进程id</span>
-    <span class="k">for</span> <span class="n">item</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">all_cls</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">fn_collect</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;grab&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn_collect</span><span class="p">):</span>
-            <span class="n">p</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">fn_collect</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">results</span><span class="p">))</span>
-            <span class="n">processes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-            <span class="n">p</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-            <span class="k">print</span><span class="p">(</span><span class="s">&quot;执行{0}的collect 方法&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">processes</span><span class="p">:</span>
-        <span class="n">p</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>  <span class="c">#</span>
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;main done&quot;</span><span class="p">)</span></code></pre></div>
 
 
 		
-		
+		<a href="/blog/2019/02/28/ansible-sui-shou-ji/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>
@@ -632,21 +382,11 @@ REVISION  CHANGE-CAUSE
 <span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm --to-revision=2</span></code></pre></div>
 
 
-<ul>
-<li>查看docker使用的cpu核心数</li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
-/sys/fs/cgroup/cpuset/docker
-<span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># cat cpuset.cpus</span>
-0-7</code></pre></div>
-
 
 
 
 		
-		
+		<a href="/blog/2019/02/28/k8sxiao-zhi-shi/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>
@@ -743,66 +483,9 @@ link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span
 而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
 时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
 
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
-kind: MasterConfiguration
-api:
-  bindPort: 6443
-etcd:
-  endpoints:
-  <span class="c">#sed -i &quot;/#ETCD_ENDPOINTS/a\  - http://123.456:2379/g&quot; ./abc.yml</span>
-  <span class="c">#ETCD ENDPOINTS</span>
-  - http://10.81.32.150:2379
-apiServerExtraArgs:
-  apiserver-count: <span class="s2">&quot;1&quot;</span>
-  insecure-port: <span class="s2">&quot;8080&quot;</span>
-  advertise-address<span class="o">=</span>10.81.32.150
-  service-node-port-range: <span class="s2">&quot;30000-32000&quot;</span>
-  admission-control: <span class="s2">&quot;Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota&quot;</span>
-  feature-gates: <span class="s2">&quot;MountPropagation=true&quot;</span>
-  endpoint-reconciler-type: <span class="s2">&quot;lease&quot;</span>
-controllerManagerExtraArgs:
-  pod-eviction-timeout: <span class="s2">&quot;30s&quot;</span>
-  node-monitor-period: <span class="s2">&quot;2s&quot;</span>
-  node-monitor-grace-period: <span class="s2">&quot;16s&quot;</span>
-controllerManagerExtraVolumes:
-- name: k8s
-  hostPath: /etc/kubernetes
-  mountPath: /etc/kubernetes
-imageRepository: index.docker.cn/claas
-networking:
-  podSubnet: 192.168.0.0/16
-kubernetesVersion: v1.9.6
-token: 8d775a.8f70da6999842a27
-tokenTTL: <span class="s2">&quot;0&quot;</span>
-apiServerCertSANs:
-- 127.0.0.1
-- amazonaws.com.cn
-- amazonaws.com
-- 10.81.32.150
-- 10.81.32.150</code></pre></div>
-
-
-<ul>
-<li><h4>flannel网络问题</h4>
-
-<p>多网卡导致flannel网络选择网卡错误,flannel在初始化的时候会默认找defalut网卡，如果需要指定，则在flannel的
-初始化yaml文件中通过&ndash;iface指定网卡，</p></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">... ...
-      containers:
-      - name: kube-flannel
-        image: index.alauda.cn/claas/flannel:v0.9.1
-        <span class="nb">command</span>: <span class="o">[</span> <span class="s2">&quot;/opt/bin/flanneld&quot;</span>, <span class="s2">&quot;--ip-masq&quot;</span>, <span class="s2">&quot;--kube-subnet-mgr&quot;</span>, <span class="s2">&quot;--iface=eth0&quot;</span><span class="o">]</span>
-        securityContext:
-          privileged: <span class="nb">true</span>
-<span class="nb">        </span>env:
-  ... ...</code></pre></div>
-
 
 		
-		
+		<a href="/blog/2018/08/31/kubernetes-wen-ti-zheng-li/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>

@@ -39,6 +39,7 @@ class C1(Collector):
         print("i am from ", msg)
         return msg
 {% endhighlight %}
+<!--more-->
 ####为每个子类的调用分配一个子线程，并调用子线程的业务入口
 - 获取所有的业务子类
 

@@ -55,7 +55,7 @@ tar --use-compress-program=pigz -xvpf PKG-20180627.tar.gz
 curl -H "Content-Type:application/json" -X POST -d '{"user": "admin", "passwd":"12345678"}' http://127.0.0.1:8000/login
 curl -d "user=admin&passwd=12345678" http://127.0.0.1:8080/login
 {% endhighlight %}
-
+<!--more-->
 
 - ####sed 匹配替换
 {% highlight bash %}
