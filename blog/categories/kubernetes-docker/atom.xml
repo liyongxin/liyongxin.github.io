@@ -4,7 +4,7 @@
   <title><![CDATA[Category: kubernetes,docker | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/kubernetes-docker/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-03-03T19:30:58+08:00</updated>
+  <updated>2019-03-04T10:35:13+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -78,8 +78,12 @@ link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span
 
 <p>使用<code>kubeadm</code>搭建，若未指定&ndash;advertise-address地址则k8s默认拿default网卡，
 而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
-时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
+时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
+
+<!--more-->
+
+
+<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
 api:
   bindPort: 6443

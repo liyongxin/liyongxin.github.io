@@ -4,7 +4,7 @@
   <title><![CDATA[Category: k8s | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/k8s/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-03-03T19:30:58+08:00</updated>
+  <updated>2019-03-04T10:35:13+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -67,6 +67,13 @@ REVISION  CHANGE-CAUSE
 &lt;h1&gt;回滚至指定版本&lt;/h1&gt;
 
 &lt;p&gt;<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm &amp;ndash;to-revision=2</span></code></pre></div></p></li>
+</ul>
+
+
+<!--more-->
+
+
+<ul>
 <li>查看docker使用的cpu核心数
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@yxli-onebox docker<span class="o">]</span><span class="c"># pwd</span>
 /sys/fs/cgroup/cpuset/docker
@@ -182,6 +189,9 @@ system:basic-user
 那么该环节的最终结果就是授权成功。在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，<code>authorization-mode</code>的默认配置是<code>”Node,RBAC”</code>。</p>
 
 <p>Node授权器主要用于各个node上的kubelet访问apiserver时使用的，其他一般均由RBAC授权器来授权。</p>
+
+<!--more-->
+
 
 <h2>kubectl的授权认证</h2>
 

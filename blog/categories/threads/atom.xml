@@ -4,7 +4,7 @@
   <title><![CDATA[Category: threads, | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/threads/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-03-03T19:30:58+08:00</updated>
+  <updated>2019-03-04T10:35:13+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -53,6 +53,9 @@
 <span class="sr">    def get_data(cls, msg):</span>
 <span class="sr">        print(&amp;ldquo;i am from &amp;rdquo;, msg)</span>
 <span class="sr">        return msg</span></code></pre></div></p>
+
+<!--more-->
+
 
 <h4>为每个子类的调用分配一个子线程，并调用子线程的业务入口</h4>
 

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: ansible, | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/ansible/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-03-03T19:30:58+08:00</updated>
+  <updated>2019-03-04T10:35:13+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -38,8 +38,12 @@
 
 <h2>理想中的友好返回</h2>
 
-<p>因为ansible会在多个机器执行多个任务，每个机器上的每个任务的执行情况都需要收集，于是作为开发者，更期望得到如下结构的返回结果：
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span>
+<p>因为ansible会在多个机器执行多个任务，每个机器上的每个任务的执行情况都需要收集，于是作为开发者，更期望得到如下结构的返回结果：</p>
+
+<!--more-->
+
+
+<p><div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span>
     <span class="k">return</span> <span class="n">data</span>
     <span class="p">{</span>
             <span class="s">&quot;task_name1&amp;rdquo;: {</span>

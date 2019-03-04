@@ -189,6 +189,11 @@ link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span
 而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
 时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
 
+<!--more-->
+
+
+
+
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
 api:
