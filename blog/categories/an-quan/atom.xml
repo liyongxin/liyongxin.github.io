@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: 安全 | Earlene]]></title>
+  <link href="http://liyongxin.github.io/blog/categories/an-quan/atom.xml" rel="self"/>
+  <link href="http://liyongxin.github.io/"/>
+  <updated>2019-04-03T17:32:56+08:00</updated>
+  <id>http://liyongxin.github.io/</id>
+  <author>
+    <name><![CDATA[yxli@alauda.io]]></name>
+    <email><![CDATA[yxli@alauda.io]]></email>
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[验证kubernetes的pod安全策略]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/03/18/yan-zheng-kubernetesde-podan-quan-ce-lue/"/>
+    <updated>2019-03-18T14:19:02+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/03/18/yan-zheng-kubernetesde-podan-quan-ce-lue</id>
+    <content type="html"><![CDATA[
+
+<p>最近有客户提出需要对业务集群的pod做安全限制，不允许使用pod拥有privileged的权限，研究一番，刚好k8s的<a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">Pod Security Policies</a>可以实现该需求。</p>
+
+<h2>什么是pod安全策略</h2>
+
+<p>Pod Security Policy(简称psp)是集群级别的资源，该资源控制pod的spec中安全相关的方面，具体的方面参考下表：</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">       Control Aspect                  </th>
+<th style="text-align:center;">       Field Names     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;"> Running of privileged containers      </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#privileged">privileged</a>   </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of host namespaces              </td>
+<td style="text-align:center;">   <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces">hostPID, hostIPC</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of host networking and ports    </td>
+<td style="text-align:center;">    <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces">hostNetwork, hostPorts</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of volume types                 </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">volumes</a>   </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of the host filesystem          </td>
+<td style="text-align:center;">  <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">allowedHostPaths</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> White list of Flexvolume drivers      </td>
+<td style="text-align:center;">   <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#flexvolume-drivers">allowedFlexVolumes</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Allocating an FSGroup that owns the pod’s volumes           </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">fsGroup</a>   </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Requiring the use of a read only root file system             </td>
+<td style="text-align:center;">   <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">readOnlyRootFilesystem</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> The user and group IDs of the container       </td>
+<td style="text-align:center;">    <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#users-and-groups">runAsUser, runAsGroup, supplementalGroups</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> The SELinux context of the container                      </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#selinux">seLinux</a>   </td>
+</tr>
+</tbody>
+</table>
+
+
+<!--more-->
+
+
+<h2>如何开启Pod Security Policy</h2>
+
+<ul>
+<li><strong>Enable API extensions</strong></li>
+</ul>
+
+
+<p>For Kubernetes &lt; 1.6.0, the API Server must enable the extensions/v1beta1/podsecuritypolicy API extensions group (&ndash;runtime-config=extensions/v1beta1/podsecuritypolicy=true).</p>
+
+<ul>
+<li><strong>Enable PodSecurityPolicy admission control policy</strong></li>
+</ul>
+
+
+<p>The following parameter needs to be added to the API server startup argument: –admission-control=PodSecurityPolicy</p>
+
+<p>默认psp是不开启的，若要开启，需要配置上述apiserver启动参数，默认的apiserver的yaml文件为<code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="p">&amp;</span>hellip<span class="p">;</span>
+spec:
+  containers:
+  - <span class="nb">command</span>:
+    - kube-apiserver
+    - <span class="p">&amp;</span>ndash<span class="p">;</span>authorization-mode<span class="o">=</span>Node,RBAC
+    - <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nb">enable</span>-admission-plugins<span class="o">=</span>Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota,PodSecurityPolicy
+    - <span class="p">&amp;</span>ndash<span class="p">;</span>runtime-config<span class="o">=</span>extensions/v1beta1/podsecuritypolicy<span class="o">=</span><span class="nb">true</span>
+    <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
+
+<h2>配置默认的psp</h2>
+
+<p>由于已有打开了pod创建的安全策略,但此时还未创建任何的policy，所以任何pod都无法被创建，此时如果尝试去创建一个pod，会发现pod无法进行调度，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl run &amp;ndash;image=nginx yxli</span>
+deployment.apps/yxli created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get deploy yxli</span>
+NAME      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+yxli      <span class="m">1</span>         <span class="m">0</span>         <span class="m">0</span>            <span class="m">0</span>           4m</code></pre></div>
+查看controller的日志会发现报错forbidden: no providers available to validate pod request
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master ~<span class="o">]</span><span class="c"># kubectl logs &amp;ndash;tail=10 -f kube-controller-manager-build-master -n kube-system</span>
+E0318 03:01:17.321184       <span class="m">1</span> replica_set.go:450<span class="o">]</span> Sync <span class="p">&amp;</span>ldquo<span class="p">;</span>default/yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span> failed with pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+I0318 03:01:17.321302       <span class="m">1</span> event.go:221<span class="o">]</span> Event<span class="o">(</span>v1.ObjectReference<span class="o">{</span>Kind:<span class="p">&amp;</span>ldquo<span class="p">;</span>ReplicaSet<span class="p">&amp;</span>rdquo<span class="p">;</span>, Namespace:<span class="p">&amp;</span>ldquo<span class="p">;</span>default<span class="p">&amp;</span>rdquo<span class="p">;</span>, Name:<span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span>, UID:<span class="p">&amp;</span>ldquo<span class="p">;</span>0d11050f-492a-11e9-8ef0-00163e004fd2<span class="p">&amp;</span>rdquo<span class="p">;</span>, APIVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>apps/v1<span class="p">&amp;</span>rdquo<span class="p">;</span>, ResourceVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>764927<span class="p">&amp;</span>rdquo<span class="p">;</span>, FieldPath:<span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span><span class="o">})</span>: <span class="nb">type</span>: <span class="p">&amp;</span>lsquo<span class="p">;</span>Warning<span class="p">&amp;</span>rsquo<span class="p">;</span> reason: <span class="p">&amp;</span>lsquo<span class="p">;</span>FailedCreate<span class="p">&amp;</span>rsquo<span class="p">;</span> Error creating: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+E0318 03:01:37.807060       <span class="m">1</span> replica_set.go:450<span class="o">]</span> Sync <span class="p">&amp;</span>ldquo<span class="p">;</span>default/yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span> failed with pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+I0318 03:01:37.807046       <span class="m">1</span> event.go:221<span class="o">]</span> Event<span class="o">(</span>v1.ObjectReference<span class="o">{</span>Kind:<span class="p">&amp;</span>ldquo<span class="p">;</span>ReplicaSet<span class="p">&amp;</span>rdquo<span class="p">;</span>, Namespace:<span class="p">&amp;</span>ldquo<span class="p">;</span>default<span class="p">&amp;</span>rdquo<span class="p">;</span>, Name:<span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span>, UID:<span class="p">&amp;</span>ldquo<span class="p">;</span>0d11050f-492a-11e9-8ef0-00163e004fd2<span class="p">&amp;</span>rdquo<span class="p">;</span>, APIVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>apps/v1<span class="p">&amp;</span>rdquo<span class="p">;</span>, ResourceVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>764927<span class="p">&amp;</span>rdquo<span class="p">;</span>, FieldPath:<span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span><span class="o">})</span>: <span class="nb">type</span>: <span class="p">&amp;</span>lsquo<span class="p">;</span>Warning<span class="p">&amp;</span>rsquo<span class="p">;</span> reason: <span class="p">&amp;</span>lsquo<span class="p">;</span>FailedCreate<span class="p">&amp;</span>rsquo<span class="p">;</span> Error creating: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+E0318 03:02:18.773092       <span class="m">1</span> replica_set.go:450<span class="o">]</span> Sync <span class="p">&amp;</span>ldquo<span class="p">;</span>default/yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span> failed with pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request</code></pre></div></p>
+
+<p>而由于我们修改了apiserver的参数，pod受kubelet管理，自动触发了重建，此时apiserver的pod也是因为缺少权限没法创建出来
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># journalctl -fu kubelet</span>
+<span class="p">&amp;</span>ndash<span class="p">;</span> Logs begin at Tue 2019-03-12 20:33:59 CST. <span class="p">&amp;</span>ndash<span class="p">;</span>
+Mar <span class="m">18</span> 11:25:29 build-master kubelet<span class="o">[</span>4013<span class="o">]</span>: E0318 11:25:29.016416    <span class="m">4013</span> kubelet.go:1594<span class="o">]</span> Failed creating a mirror pod <span class="k">for</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master_kube-system<span class="o">(</span>77a7d13c654e7233306d4e2948aaaa78<span class="o">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span>: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+Mar <span class="m">18</span> 11:25:30 build-master kubelet<span class="o">[</span>4013<span class="o">]</span>: W0318 11:25:30.113587    <span class="m">4013</span> kubelet.go:1579<span class="o">]</span> Deleting mirror pod <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master_kube-system<span class="o">(</span>e48d84cd-46f0-11e9-8ef0-00163e004fd2<span class="o">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span> because it is outdated
+Mar <span class="m">18</span> 11:25:30 build-master kubelet<span class="o">[</span>4013<span class="o">]</span>: E0318 11:25:30.117242    <span class="m">4013</span> kubelet.go:1594<span class="o">]</span> Failed creating a mirror pod <span class="k">for</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master_kube-system<span class="o">(</span>77a7d13c654e7233306d4e2948aaaa78<span class="o">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span>: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request</code></pre></div></p>
+
+<p>所以我们需要创建一个policy，为我们需要的受kubelet管理的静态pod以及kube-system命名空间下的pod提供权限，否则pod一旦发生重建，都将因为缺少权限导致无法正常创建出来。</p>
+
+<p>首先新建文件 privileged.policy.yaml，权限不受限制，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: privileged
+spec:
+  allowedCapabilities:
+  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  allowPrivilegeEscalation: <span class="nb">true</span>
+<span class="nb">  </span>fsGroup:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  hostIPC: <span class="nb">true</span>
+<span class="nb">  </span>hostNetwork: <span class="nb">true</span>
+<span class="nb">  </span>hostPID: <span class="nb">true</span>
+<span class="nb">  </span>hostPorts:
+  - min: 0
+    max: 65535
+  privileged: <span class="nb">true</span>
+<span class="nb">  </span>readOnlyRootFilesystem: <span class="nb">false</span>
+<span class="nb">  </span>runAsUser:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  seLinux:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  supplementalGroups:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  volumes:
+  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;/em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span></code></pre></div></p>
+
+<p>创建并查看该policy
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl create -f privileged.policy.yaml</span>
+podsecuritypolicy.policy/privileged created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get psp</span>
+NAME         PRIV      CAPS      SELINUX    RUNASUSER   FSGROUP    SUPGROUP   READONLYROOTFS   VOLUMES
+privileged   <span class="nb">true</span>      *         RunAsAny   RunAsAny    RunAsAny   RunAsAny   <span class="nb">false</span>            *</code></pre></div></p>
+
+<p>然后还需要创建一个clusterrole，并且赋予该role对上述psp对使用权
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;Cluster role which grants access to the privileged pod security policy&lt;/h1&gt;
+
+&lt;p&gt;apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: privileged-psp
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - privileged
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use</code></pre></div>
+然后把clusterrole赋予serviceaccount或者对应的user、group，针对kube-system命名空间下的pod来说，都使用了kube-system下的serviceaccount或者由kubelet管理，kubelet是使用system:nodes这个组来管理的pod，所以只需要做如下binding即可为kube-system下的所有pod提供权限，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-system-psp
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:nodes
+  namespace: kube-system
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:serviceaccounts:kube-system</code></pre></div></p>
+
+<p>都创建好之后，查看kube-system下的pod，发现apiserver已经创建成功
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get po -n kube-system</span>
+NAME                                   READY     STATUS    RESTARTS   AGE
+coredns-68f5b48ccb-9hjvr               1/1       Running   <span class="m">0</span>          5d
+coredns-68f5b48ccb-qrjnr               1/1       Running   <span class="m">0</span>          5d
+etcd-build-master                      1/1       Running   <span class="m">0</span>          5d
+kube-apiserver-build-master            1/1       Running   <span class="m">0</span>          18s</code></pre></div></p>
+
+<blockquote><p>上面的binding只是为kube-system空间赋予了权限，若想要为别的命名空间赋予权限，可以使用ClusterRoleBinding的方式为多个namespace绑定privileged-psp的clusterrole，或者像如下方式，为所有合法的serviceaccounts和user绑定权限，当然前提是pod使用了namespace下的serviceAccount
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;Authorize all service accounts in a namespace:&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;kind: Group
+apiGroup: rbac.authorization.k8s.io
+name: system:serviceaccounts
+
+&lt;h1&gt;Or equivalently, all authenticated users in a namespace:&lt;/h1&gt;&lt;/li&gt;
+&lt;li&gt;kind: Group
+apiGroup: rbac.authorization.k8s.io
+name: system:authenticated</code></pre></div></li>
+</ul>
+</blockquote>
+
+<h2>验证psp的privileged限制</h2>
+
+<p>该章节会创建一个名为psp-namespace的namespace做测试，来验证psp中对privileged的pod的限制
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl create namespace psp-example</span>
+namespace/psp-example created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl create serviceaccount fake-user -n psp-example</span>
+serviceaccount/fake-user created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl run &amp;ndash;image=nginx psp-pod-nginx-1 -n psp-example &amp;ndash;serviceaccount=fake-user</span>
+deployment.apps/psp-pod-nginx-1 created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get po -n psp-example</span>
+No resources found.
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get deploy -n psp-example</span>
+NAME              DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+psp-pod-nginx-1   <span class="m">1</span>         <span class="m">0</span>         <span class="m">0</span>            <span class="m">0</span>           23s</code></pre></div></p>
+
+<p>如上所示，新的psp-example命名空间由于没有任何权限，所以无法创建新pod，接下来我们创建一个policy并给psp-example做authorize，但是policy中会限制无法创建privileged的pod
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: example
+spec:
+  privileged: <span class="nb">false</span>  <span class="c"># Don&amp;rsquo;t allow privileged pods!</span>
+  <span class="c"># The rest fills in some required fields.</span>
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  volumes:
+  - <span class="p">&amp;</span>lsquo<span class="p">;</span>*<span class="p">&amp;</span>rsquo<span class="p">;</span></code></pre></div></p>
+
+<p> 然后创建role和rolebinding，并验证fake-user是否有权限使用example的policy
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl -n psp-example create role psp:unprivileged &amp;ndash;verb=use &amp;ndash;resource=podsecuritypolicy &amp;ndash;resource-name=example</span>
+role.rbac.authorization.k8s.io/psp:unprivileged created
+<span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl -n psp-example create rolebinding fake-user:psp:unprivileged &amp;ndash;role=psp:unprivileged &amp;ndash;serviceaccount=psp-example:fake-user</span>
+rolebinding.rbac.authorization.k8s.io/fake-user:psp:unprivileged created
+<span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c">#  kubectl &amp;ndash;as=system:serviceaccount:psp-example:fake-user -n psp-example auth can-i use podsecuritypolicy/example</span>
+yes</code></pre></div></p>
+
+<p>等待片刻，再次查看刚才创建的deploy，发现已经调度成功
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl get deploy -n psp-example psp-pod-nginx-1</span>
+NAME              DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+psp-pod-nginx-1   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           22m</code></pre></div></p>
+
+<p>此时我们尝试在psp-example下创建一个privileged的特权容器，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    run: psp-pod-nginx-privileged
+  name: psp-pod-nginx-privileged
+  namespace: psp-example
+spec:
+  selector:
+    matchLabels:
+      run: psp-pod-nginx-privileged
+  template:
+    metadata:
+      labels:
+        run: psp-pod-nginx-privileged
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: psp-pod-nginx-privileged
+      securityContext:
+        privileged: <span class="nb">true</span>
+<span class="nb">      </span>serviceAccount: fake-user</code></pre></div>
+创建并查看结果
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl create -f privileged-pod.yaml</span>
+deployment.extensions/psp-pod-nginx-privileged created
+<span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl get deploy -n psp-example psp-pod-nginx-privileged</span>
+psp-pod-nginx-privileged   <span class="m">1</span>         <span class="m">0</span>         <span class="m">0</span>            <span class="m">0</span>           24s
+<span class="o">[</span>root@build-master ~<span class="o">]</span><span class="c"># kubectl logs &amp;ndash;tail=1 -f kube-controller-manager-build-master -n kube-system</span>
+I0318 04:32:42.777200       <span class="m">1</span> event.go:221<span class="o">]</span> Event<span class="o">(</span>v1.ObjectReference<span class="o">{</span>Kind:<span class="p">&amp;</span>ldquo<span class="p">;</span>ReplicaSet<span class="p">&amp;</span>rdquo<span class="p">;</span>, Namespace:<span class="p">&amp;</span>ldquo<span class="p">;</span>psp-example<span class="p">&amp;</span>rdquo<span class="p">;</span>, Name:<span class="p">&amp;</span>ldquo<span class="p">;</span>psp-pod-nginx-privileged-d7f8dbd75<span class="p">&amp;</span>rdquo<span class="p">;</span>, UID:<span class="p">&amp;</span>ldquo<span class="p">;</span>c66fb10f-4936-11e9-9c58-00163e004fd2<span class="p">&amp;</span>rdquo<span class="p">;</span>, APIVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>apps/v1<span class="p">&amp;</span>rdquo<span class="p">;</span>, ResourceVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>773292<span class="p">&amp;</span>rdquo<span class="p">;</span>, FieldPath:<span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span><span class="o">})</span>: <span class="nb">type</span>: <span class="p">&amp;</span>lsquo<span class="p">;</span>Warning<span class="p">&amp;</span>rsquo<span class="p">;</span> reason: <span class="p">&amp;</span>lsquo<span class="p">;</span>FailedCreate<span class="p">&amp;</span>rsquo<span class="p">;</span> Error creating: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>psp-pod-nginx-privileged-d7f8dbd75-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: unable to validate against any pod security policy: <span class="o">[</span>spec.containers<span class="o">[</span>0<span class="o">]</span>.securityContext.privileged: Invalid value: <span class="nb">true</span>: Privileged containers are not allowed<span class="o">]</span></code></pre></div>
+查看controller-manager的日志，发现Privileged containers are not allowed</p>
+]]></content>
+  </entry>
+  
+</feed>

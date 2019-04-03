@@ -4,7 +4,7 @@
   <title><![CDATA[Category: kubernetes | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/kubernetes/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-03-04T11:19:27+08:00</updated>
+  <updated>2019-04-03T17:32:56+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -12,6 +12,461 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[kubernetes的service cluster ip]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/04/03/kubernetesde-service-cluster-ip/"/>
+    <updated>2019-04-03T17:17:23+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/04/03/kubernetesde-service-cluster-ip</id>
+    <content type="html"><![CDATA[<p>k8s的pod可以有多个副本，但是在访问pod时，会有几个问题：</p>
+
+<ul>
+<li>客户端需要知道各个pod的地址</li>
+<li>某一node上的pod如果故障，客户端需要感知</li>
+</ul>
+
+
+<p>为了解决这个问题，k8s引入了service的概念，用以指导客户端的流量。</p>
+
+<h2>Service</h2>
+
+<p>以下面的my-nginx为例。</p>
+
+<p>pod和service的定义文件如下：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># cat run-my-nginx.yaml</span>
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+<span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># cat run-my-nginx-service.yaml</span>
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    run: my-nginx</code></pre></div></p>
+
+<p>pod my-nginx定义的replicas为2即2个副本，端口号为80;service my-nginx定义的selector为run:my-nginx，即该service选中所有label为run: my-nginx的pod；定义的port为80。</p>
+
+<p>使用kubectl create -f xx.yml创建后，可以在集群上看到2个pod，地址分别为10.244.1.10/10.244.2.10；可以看到1个service，IP/Port为10.11.97.177/80，其对接的Endpoints为10.244.1.10:80,10.244.2.10:80，即2个pod的服务地址，这三个URL在集群内任一节点都可以使用curl访问。
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># kubectl get pods -n default -o wide</span>
+NAME                       READY     STATUS    RESTARTS   AGE       IP            NODE
+my-nginx-379829228-3n755   1/1       Running   <span class="m">0</span>          21h       10.244.1.10   note2
+my-nginx-379829228-xh214   1/1       Running   <span class="m">0</span>          21h       10.244.2.10   node1
+<span class="o">[</span>root@localhost ~<span class="o">]</span><span class="c">#</span>
+<span class="o">[</span>root@localhost ~<span class="o">]</span><span class="c"># kubectl describe svc my-nginx</span>
+Name:                   my-nginx
+Namespace:              default
+Labels:                 <span class="nv">run</span><span class="o">=</span>my-nginx
+Selector:               <span class="nv">run</span><span class="o">=</span>my-nginx
+Type:                   ClusterIP
+IP:                     10.11.97.177
+Port:                   &lt;<span class="nb">unset</span>&gt; 80/TCP
+Endpoints:              10.244.1.10:80,10.244.2.10:80
+Session Affinity:       None</code></pre></div></p>
+
+<p>但是，如果你去查看集群各节点的IP信息，是找不到10.11.97.177这个IP的，那么curl是如何通过这个(Virtual)IP地址访问到后端的Endpoints呢？
+答案在<a href="https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies">这里</a>。</p>
+
+<h2>kube-proxy</h2>
+
+<p>k8s支持2种proxy模式，userspace和iptables。从v1.2版本开始，默认采用iptables proxy。那么这两种模式有什么不同吗？</p>
+
+<p>1、userspace</p>
+
+<p>顾名思义，userspace即用户空间。为什么这么叫呢？看下面的图。</p>
+
+<p><img src="/images/custom/services-userspace-overview.svg" alt="" /></p>
+
+<p>kube-proxy会为每个service随机监听一个端口(proxy port)，并增加一条iptables规则：所以到clusterIP:Port 的报文都redirect到proxy port；kube-proxy从它监听的proxy port收到报文后，走round robin（默认）或者session affinity（会话亲和力，即同一client IP都走同一链路给同一pod服务），分发给对应的pod。</p>
+
+<p>显然userspace会造成所有报文都走一遍用户态，性能不高，现在k8s已经不再使用了。</p>
+
+<p>2、iptables</p>
+
+<p>我们回过头来看看userspace，既然用户态会增加性能损耗，那么有没有办法不走呢？实际上用户态也只是一个报文LB，通过iptables完全可以搞定。k8s下面这张图很清晰的说明了iptables方式与userspace方式的不同：kube-proxy只是作为controller，而不是server，真正服务的是内核的netfilter，体现在用户态则是iptables。</p>
+
+<p>kube-proxy的iptables方式也支持round robin(默认)和session affinity。</p>
+
+<p><img src="/images/custom/services-iptables-overview.svg" alt="" /></p>
+
+<p>那么iptables是怎么做到LB，而且还能round-robin呢？我们通过iptables-save来看my-nginx这个服务在某一个node上的iptables规则。
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">-A KUBE-SERVICES -d 10.11.97.177/32 -p tcp -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>default/my-nginx: cluster IP<span class="p">&amp;</span>rdquo<span class="p">;</span> -m tcp <span class="p">&amp;</span>ndash<span class="p">;</span>dport <span class="m">80</span> -j KUBE-SVC-BEPXDJBUHFCSYIC3&lt;/p&gt;
+
+&lt;p&gt;-A KUBE-SVC-BEPXDJBUHFCSYIC3 -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>default/my-nginx:<span class="p">&amp;</span>rdquo<span class="p">;</span> -m statistic <span class="p">&amp;</span>ndash<span class="p">;</span>mode random <span class="p">&amp;</span>ndash<span class="p">;</span>probability 0.50000000000 -j KUBE-SEP-U4UWLP4OR3LOJBXU
+-A KUBE-SVC-BEPXDJBUHFCSYIC3 -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>default/my-nginx:<span class="p">&amp;</span>rdquo<span class="p">;</span> -j KUBE-SEP-QHRWSLKOO5YUPI7O&lt;/p&gt;
+
+&lt;p&gt;-A KUBE-SEP-U4UWLP4OR3LOJBXU -s 10.244.1.10/32 -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>default/my-nginx:<span class="p">&amp;</span>rdquo<span class="p">;</span> -j KUBE-MARK-MASQ
+-A KUBE-SEP-U4UWLP4OR3LOJBXU -p tcp -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>default/my-nginx:<span class="p">&amp;</span>rdquo<span class="p">;</span> -m tcp -j DNAT <span class="p">&amp;</span>ndash<span class="p">;</span>to-destination 10.244.1.10:80&lt;/p&gt;
+
+&lt;p&gt;-A KUBE-SEP-QHRWSLKOO5YUPI7O -s 10.244.2.10/32 -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>default/my-nginx:<span class="p">&amp;</span>rdquo<span class="p">;</span> -j KUBE-MARK-MASQ
+-A KUBE-SEP-QHRWSLKOO5YUPI7O -p tcp -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>default/my-nginx:<span class="p">&amp;</span>rdquo<span class="p">;</span> -m tcp -j DNAT <span class="p">&amp;</span>ndash<span class="p">;</span>to-destination 10.244.2.10:80</code></pre></div></p>
+
+<p>第1条规则，终于看到这个virtual IP了。node上不需要有这个ip地址，iptables在看到目的地址为virutal ip的符合规则tcp报文，会走KUBE-SVC-BEPXDJBUHFCSYIC3规则。</p>
+
+<p>第2/3条规则，KUBE-SVC-BEPXDJBUHFCSYIC3链实现了将报文按50%的统计概率随机匹配到2条规则(round-robin)。</p>
+
+<p>第4/5和5/6为成对的2组规则，将报文转给了真正的服务pod。</p>
+
+<p>至此，从物理node收到目的地址为10.11.97.177、端口号为80的报文开始，到pod my-nginx收到报文并响应，描述了一个完整的链路。可以看到，整个报文链路上没有经过任何用户态进程，效率和稳定性都比较高。</p>
+
+<h2>NodePort</h2>
+
+<p>上面的例子里，由于10.11.97.177其实还是在集群内有效地址，由于实际上并不存在这个地址，当从集群外访问时会访问失败，这时需要将service暴漏出去。k8s给出的一个方案是NodePort，客户端根据NodePort+集群内任一物理节点的IP，就可以访问k8s的service了。这又是怎么做到的呢？</p>
+
+<p>答案还是iptables。我们来看下面这个sock-shop的例子，其创建方法见k8s.io，不再赘述。
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># kubectl describe svc front-end -n sock-shop</span>
+Name:                   front-end
+Namespace:              sock-shop
+Labels:                 <span class="nv">name</span><span class="o">=</span>front-end
+Selector:               <span class="nv">name</span><span class="o">=</span>front-end
+Type:                   NodePort
+IP:                     10.15.9.0
+Port:                   &lt;<span class="nb">unset</span>&gt; 80/TCP
+NodePort:               &lt;<span class="nb">unset</span>&gt; 30001/TCP
+Endpoints:              10.244.2.5:8079
+Session Affinity:       None</code></pre></div></p>
+
+<p>在任一node上查看iptables-save：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">-A KUBE-NODEPORTS -p tcp -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>sock-shop/front-end:<span class="p">&amp;</span>rdquo<span class="p">;</span> -m tcp <span class="p">&amp;</span>ndash<span class="p">;</span>dport <span class="m">30001</span> -j KUBE-MARK-MASQ
+-A KUBE-NODEPORTS -p tcp -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>sock-shop/front-end:<span class="p">&amp;</span>rdquo<span class="p">;</span> -m tcp <span class="p">&amp;</span>ndash<span class="p">;</span>dport <span class="m">30001</span> -j KUBE-SVC-LFMD53S3EZEAOUSJ&lt;/p&gt;
+
+&lt;p&gt;-A KUBE-SERVICES -d 10.15.9.0/32 -p tcp -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>sock-shop/front-end: cluster IP<span class="p">&amp;</span>rdquo<span class="p">;</span> -m tcp <span class="p">&amp;</span>ndash<span class="p">;</span>dport <span class="m">80</span> -j KUBE-SVC-LFMD53S3EZEAOUSJ&lt;/p&gt;
+
+&lt;p&gt;-A KUBE-SVC-LFMD53S3EZEAOUSJ -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>sock-shop/front-end:<span class="p">&amp;</span>rdquo<span class="p">;</span> -j KUBE-SEP-SM6TGF2R62ADFGQA&lt;/p&gt;
+
+&lt;p&gt;-A KUBE-SEP-SM6TGF2R62ADFGQA -s 10.244.2.5/32 -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>sock-shop/front-end:<span class="p">&amp;</span>rdquo<span class="p">;</span> -j KUBE-MARK-MASQ
+-A KUBE-SEP-SM6TGF2R62ADFGQA -p tcp -m comment <span class="p">&amp;</span>ndash<span class="p">;</span>comment <span class="p">&amp;</span>ldquo<span class="p">;</span>sock-shop/front-end:<span class="p">&amp;</span>rdquo<span class="p">;</span> -m tcp -j DNAT <span class="p">&amp;</span>ndash<span class="p">;</span>to-destination 10.244.2.5:8079</code></pre></div>
+聪明如你，一定已经看明白了吧。</p>
+
+<p>要是还不明白，看看这篇文章：源地址审计：<a href="https://ieevee.com/tech/2017/09/18/k8s-svc-src.html">追踪 kubernetees 服务的SNAT</a> 。</p>
+
+<p>不过kube-proxy的iptables有个缺陷，即当pod故障时无法自动重试，需要依赖readiness probes，主要思想就是创建一个探测容器，当检测到后端pod挂了的时候，更新iptables。</p>
+
+<p>在用NodePort的时候，经常会有人问一个问题，NodePort指定的端口(30000+)，而client建立tcp连接时，本地端口是操作系统随机选定的(30000+)，如何防止产生冲突呢？</p>
+
+<p>解决办法是kube-proxy进程会去起一个tcp listen socket，监听端口号就是NodePort。可以把这个socket理解为“占位符”，目的是为了让操作系统跳开该端口。</p>
+
+<p>转载自<a href="https://ieevee.com/tech/2017/01/20/k8s-service.html#kube-proxy">谈谈kubernets的service组件的Virtual IP</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[验证kubernetes的pod安全策略]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/03/18/yan-zheng-kubernetesde-podan-quan-ce-lue/"/>
+    <updated>2019-03-18T14:19:02+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/03/18/yan-zheng-kubernetesde-podan-quan-ce-lue</id>
+    <content type="html"><![CDATA[
+
+<p>最近有客户提出需要对业务集群的pod做安全限制，不允许使用pod拥有privileged的权限，研究一番，刚好k8s的<a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/">Pod Security Policies</a>可以实现该需求。</p>
+
+<h2>什么是pod安全策略</h2>
+
+<p>Pod Security Policy(简称psp)是集群级别的资源，该资源控制pod的spec中安全相关的方面，具体的方面参考下表：</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">       Control Aspect                  </th>
+<th style="text-align:center;">       Field Names     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;"> Running of privileged containers      </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#privileged">privileged</a>   </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of host namespaces              </td>
+<td style="text-align:center;">   <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces">hostPID, hostIPC</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of host networking and ports    </td>
+<td style="text-align:center;">    <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces">hostNetwork, hostPorts</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of volume types                 </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">volumes</a>   </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Usage of the host filesystem          </td>
+<td style="text-align:center;">  <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">allowedHostPaths</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> White list of Flexvolume drivers      </td>
+<td style="text-align:center;">   <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#flexvolume-drivers">allowedFlexVolumes</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Allocating an FSGroup that owns the pod’s volumes           </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">fsGroup</a>   </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Requiring the use of a read only root file system             </td>
+<td style="text-align:center;">   <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#volumes-and-file-systems">readOnlyRootFilesystem</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> The user and group IDs of the container       </td>
+<td style="text-align:center;">    <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#users-and-groups">runAsUser, runAsGroup, supplementalGroups</a>  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> The SELinux context of the container                      </td>
+<td style="text-align:center;"> <a href="https://kubernetes.io/docs/concepts/policy/pod-security-policy/#selinux">seLinux</a>   </td>
+</tr>
+</tbody>
+</table>
+
+
+<!--more-->
+
+
+<h2>如何开启Pod Security Policy</h2>
+
+<ul>
+<li><strong>Enable API extensions</strong></li>
+</ul>
+
+
+<p>For Kubernetes &lt; 1.6.0, the API Server must enable the extensions/v1beta1/podsecuritypolicy API extensions group (&ndash;runtime-config=extensions/v1beta1/podsecuritypolicy=true).</p>
+
+<ul>
+<li><strong>Enable PodSecurityPolicy admission control policy</strong></li>
+</ul>
+
+
+<p>The following parameter needs to be added to the API server startup argument: –admission-control=PodSecurityPolicy</p>
+
+<p>默认psp是不开启的，若要开启，需要配置上述apiserver启动参数，默认的apiserver的yaml文件为<code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="p">&amp;</span>hellip<span class="p">;</span>
+spec:
+  containers:
+  - <span class="nb">command</span>:
+    - kube-apiserver
+    - <span class="p">&amp;</span>ndash<span class="p">;</span>authorization-mode<span class="o">=</span>Node,RBAC
+    - <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nb">enable</span>-admission-plugins<span class="o">=</span>Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota,PodSecurityPolicy
+    - <span class="p">&amp;</span>ndash<span class="p">;</span>runtime-config<span class="o">=</span>extensions/v1beta1/podsecuritypolicy<span class="o">=</span><span class="nb">true</span>
+    <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
+
+<h2>配置默认的psp</h2>
+
+<p>由于已有打开了pod创建的安全策略,但此时还未创建任何的policy，所以任何pod都无法被创建，此时如果尝试去创建一个pod，会发现pod无法进行调度，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl run &amp;ndash;image=nginx yxli</span>
+deployment.apps/yxli created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get deploy yxli</span>
+NAME      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+yxli      <span class="m">1</span>         <span class="m">0</span>         <span class="m">0</span>            <span class="m">0</span>           4m</code></pre></div>
+查看controller的日志会发现报错forbidden: no providers available to validate pod request
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master ~<span class="o">]</span><span class="c"># kubectl logs &amp;ndash;tail=10 -f kube-controller-manager-build-master -n kube-system</span>
+E0318 03:01:17.321184       <span class="m">1</span> replica_set.go:450<span class="o">]</span> Sync <span class="p">&amp;</span>ldquo<span class="p">;</span>default/yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span> failed with pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+I0318 03:01:17.321302       <span class="m">1</span> event.go:221<span class="o">]</span> Event<span class="o">(</span>v1.ObjectReference<span class="o">{</span>Kind:<span class="p">&amp;</span>ldquo<span class="p">;</span>ReplicaSet<span class="p">&amp;</span>rdquo<span class="p">;</span>, Namespace:<span class="p">&amp;</span>ldquo<span class="p">;</span>default<span class="p">&amp;</span>rdquo<span class="p">;</span>, Name:<span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span>, UID:<span class="p">&amp;</span>ldquo<span class="p">;</span>0d11050f-492a-11e9-8ef0-00163e004fd2<span class="p">&amp;</span>rdquo<span class="p">;</span>, APIVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>apps/v1<span class="p">&amp;</span>rdquo<span class="p">;</span>, ResourceVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>764927<span class="p">&amp;</span>rdquo<span class="p">;</span>, FieldPath:<span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span><span class="o">})</span>: <span class="nb">type</span>: <span class="p">&amp;</span>lsquo<span class="p">;</span>Warning<span class="p">&amp;</span>rsquo<span class="p">;</span> reason: <span class="p">&amp;</span>lsquo<span class="p">;</span>FailedCreate<span class="p">&amp;</span>rsquo<span class="p">;</span> Error creating: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+E0318 03:01:37.807060       <span class="m">1</span> replica_set.go:450<span class="o">]</span> Sync <span class="p">&amp;</span>ldquo<span class="p">;</span>default/yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span> failed with pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+I0318 03:01:37.807046       <span class="m">1</span> event.go:221<span class="o">]</span> Event<span class="o">(</span>v1.ObjectReference<span class="o">{</span>Kind:<span class="p">&amp;</span>ldquo<span class="p">;</span>ReplicaSet<span class="p">&amp;</span>rdquo<span class="p">;</span>, Namespace:<span class="p">&amp;</span>ldquo<span class="p">;</span>default<span class="p">&amp;</span>rdquo<span class="p">;</span>, Name:<span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span>, UID:<span class="p">&amp;</span>ldquo<span class="p">;</span>0d11050f-492a-11e9-8ef0-00163e004fd2<span class="p">&amp;</span>rdquo<span class="p">;</span>, APIVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>apps/v1<span class="p">&amp;</span>rdquo<span class="p">;</span>, ResourceVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>764927<span class="p">&amp;</span>rdquo<span class="p">;</span>, FieldPath:<span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span><span class="o">})</span>: <span class="nb">type</span>: <span class="p">&amp;</span>lsquo<span class="p">;</span>Warning<span class="p">&amp;</span>rsquo<span class="p">;</span> reason: <span class="p">&amp;</span>lsquo<span class="p">;</span>FailedCreate<span class="p">&amp;</span>rsquo<span class="p">;</span> Error creating: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+E0318 03:02:18.773092       <span class="m">1</span> replica_set.go:450<span class="o">]</span> Sync <span class="p">&amp;</span>ldquo<span class="p">;</span>default/yxli-6978dddc9d<span class="p">&amp;</span>rdquo<span class="p">;</span> failed with pods <span class="p">&amp;</span>ldquo<span class="p">;</span>yxli-6978dddc9d-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request</code></pre></div></p>
+
+<p>而由于我们修改了apiserver的参数，pod受kubelet管理，自动触发了重建，此时apiserver的pod也是因为缺少权限没法创建出来
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># journalctl -fu kubelet</span>
+<span class="p">&amp;</span>ndash<span class="p">;</span> Logs begin at Tue 2019-03-12 20:33:59 CST. <span class="p">&amp;</span>ndash<span class="p">;</span>
+Mar <span class="m">18</span> 11:25:29 build-master kubelet<span class="o">[</span>4013<span class="o">]</span>: E0318 11:25:29.016416    <span class="m">4013</span> kubelet.go:1594<span class="o">]</span> Failed creating a mirror pod <span class="k">for</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master_kube-system<span class="o">(</span>77a7d13c654e7233306d4e2948aaaa78<span class="o">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span>: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request
+Mar <span class="m">18</span> 11:25:30 build-master kubelet<span class="o">[</span>4013<span class="o">]</span>: W0318 11:25:30.113587    <span class="m">4013</span> kubelet.go:1579<span class="o">]</span> Deleting mirror pod <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master_kube-system<span class="o">(</span>e48d84cd-46f0-11e9-8ef0-00163e004fd2<span class="o">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span> because it is outdated
+Mar <span class="m">18</span> 11:25:30 build-master kubelet<span class="o">[</span>4013<span class="o">]</span>: E0318 11:25:30.117242    <span class="m">4013</span> kubelet.go:1594<span class="o">]</span> Failed creating a mirror pod <span class="k">for</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master_kube-system<span class="o">(</span>77a7d13c654e7233306d4e2948aaaa78<span class="o">)</span><span class="p">&amp;</span>rdquo<span class="p">;</span>: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-apiserver-build-master<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: no providers available to validate pod request</code></pre></div></p>
+
+<p>所以我们需要创建一个policy，为我们需要的受kubelet管理的静态pod以及kube-system命名空间下的pod提供权限，否则pod一旦发生重建，都将因为缺少权限导致无法正常创建出来。</p>
+
+<p>首先新建文件 privileged.policy.yaml，权限不受限制，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: privileged
+spec:
+  allowedCapabilities:
+  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  allowPrivilegeEscalation: <span class="nb">true</span>
+<span class="nb">  </span>fsGroup:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  hostIPC: <span class="nb">true</span>
+<span class="nb">  </span>hostNetwork: <span class="nb">true</span>
+<span class="nb">  </span>hostPID: <span class="nb">true</span>
+<span class="nb">  </span>hostPorts:
+  - min: 0
+    max: 65535
+  privileged: <span class="nb">true</span>
+<span class="nb">  </span>readOnlyRootFilesystem: <span class="nb">false</span>
+<span class="nb">  </span>runAsUser:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  seLinux:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  supplementalGroups:
+    rule: <span class="p">&amp;</span>lsquo<span class="p">;</span>RunAsAny<span class="p">&amp;</span>rsquo<span class="p">;</span>
+  volumes:
+  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;/em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span></code></pre></div></p>
+
+<p>创建并查看该policy
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl create -f privileged.policy.yaml</span>
+podsecuritypolicy.policy/privileged created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get psp</span>
+NAME         PRIV      CAPS      SELINUX    RUNASUSER   FSGROUP    SUPGROUP   READONLYROOTFS   VOLUMES
+privileged   <span class="nb">true</span>      *         RunAsAny   RunAsAny    RunAsAny   RunAsAny   <span class="nb">false</span>            *</code></pre></div></p>
+
+<p>然后还需要创建一个clusterrole，并且赋予该role对上述psp对使用权
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;Cluster role which grants access to the privileged pod security policy&lt;/h1&gt;
+
+&lt;p&gt;apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: privileged-psp
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - privileged
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use</code></pre></div>
+然后把clusterrole赋予serviceaccount或者对应的user、group，针对kube-system命名空间下的pod来说，都使用了kube-system下的serviceaccount或者由kubelet管理，kubelet是使用system:nodes这个组来管理的pod，所以只需要做如下binding即可为kube-system下的所有pod提供权限，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-system-psp
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: privileged-psp
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:nodes
+  namespace: kube-system
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:serviceaccounts:kube-system</code></pre></div></p>
+
+<p>都创建好之后，查看kube-system下的pod，发现apiserver已经创建成功
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get po -n kube-system</span>
+NAME                                   READY     STATUS    RESTARTS   AGE
+coredns-68f5b48ccb-9hjvr               1/1       Running   <span class="m">0</span>          5d
+coredns-68f5b48ccb-qrjnr               1/1       Running   <span class="m">0</span>          5d
+etcd-build-master                      1/1       Running   <span class="m">0</span>          5d
+kube-apiserver-build-master            1/1       Running   <span class="m">0</span>          18s</code></pre></div></p>
+
+<blockquote><p>上面的binding只是为kube-system空间赋予了权限，若想要为别的命名空间赋予权限，可以使用ClusterRoleBinding的方式为多个namespace绑定privileged-psp的clusterrole，或者像如下方式，为所有合法的serviceaccounts和user绑定权限，当然前提是pod使用了namespace下的serviceAccount
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;Authorize all service accounts in a namespace:&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;kind: Group
+apiGroup: rbac.authorization.k8s.io
+name: system:serviceaccounts
+
+&lt;h1&gt;Or equivalently, all authenticated users in a namespace:&lt;/h1&gt;&lt;/li&gt;
+&lt;li&gt;kind: Group
+apiGroup: rbac.authorization.k8s.io
+name: system:authenticated</code></pre></div></li>
+</ul>
+</blockquote>
+
+<h2>验证psp的privileged限制</h2>
+
+<p>该章节会创建一个名为psp-namespace的namespace做测试，来验证psp中对privileged的pod的限制
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl create namespace psp-example</span>
+namespace/psp-example created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl create serviceaccount fake-user -n psp-example</span>
+serviceaccount/fake-user created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl run &amp;ndash;image=nginx psp-pod-nginx-1 -n psp-example &amp;ndash;serviceaccount=fake-user</span>
+deployment.apps/psp-pod-nginx-1 created
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get po -n psp-example</span>
+No resources found.
+<span class="o">[</span>root@build-master apiserver<span class="o">]</span><span class="c"># kubectl get deploy -n psp-example</span>
+NAME              DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+psp-pod-nginx-1   <span class="m">1</span>         <span class="m">0</span>         <span class="m">0</span>            <span class="m">0</span>           23s</code></pre></div></p>
+
+<p>如上所示，新的psp-example命名空间由于没有任何权限，所以无法创建新pod，接下来我们创建一个policy并给psp-example做authorize，但是policy中会限制无法创建privileged的pod
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: example
+spec:
+  privileged: <span class="nb">false</span>  <span class="c"># Don&amp;rsquo;t allow privileged pods!</span>
+  <span class="c"># The rest fills in some required fields.</span>
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  volumes:
+  - <span class="p">&amp;</span>lsquo<span class="p">;</span>*<span class="p">&amp;</span>rsquo<span class="p">;</span></code></pre></div></p>
+
+<p> 然后创建role和rolebinding，并验证fake-user是否有权限使用example的policy
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl -n psp-example create role psp:unprivileged &amp;ndash;verb=use &amp;ndash;resource=podsecuritypolicy &amp;ndash;resource-name=example</span>
+role.rbac.authorization.k8s.io/psp:unprivileged created
+<span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl -n psp-example create rolebinding fake-user:psp:unprivileged &amp;ndash;role=psp:unprivileged &amp;ndash;serviceaccount=psp-example:fake-user</span>
+rolebinding.rbac.authorization.k8s.io/fake-user:psp:unprivileged created
+<span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c">#  kubectl &amp;ndash;as=system:serviceaccount:psp-example:fake-user -n psp-example auth can-i use podsecuritypolicy/example</span>
+yes</code></pre></div></p>
+
+<p>等待片刻，再次查看刚才创建的deploy，发现已经调度成功
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl get deploy -n psp-example psp-pod-nginx-1</span>
+NAME              DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+psp-pod-nginx-1   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           22m</code></pre></div></p>
+
+<p>此时我们尝试在psp-example下创建一个privileged的特权容器，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    run: psp-pod-nginx-privileged
+  name: psp-pod-nginx-privileged
+  namespace: psp-example
+spec:
+  selector:
+    matchLabels:
+      run: psp-pod-nginx-privileged
+  template:
+    metadata:
+      labels:
+        run: psp-pod-nginx-privileged
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: psp-pod-nginx-privileged
+      securityContext:
+        privileged: <span class="nb">true</span>
+<span class="nb">      </span>serviceAccount: fake-user</code></pre></div>
+创建并查看结果
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl create -f privileged-pod.yaml</span>
+deployment.extensions/psp-pod-nginx-privileged created
+<span class="o">[</span>root@build-master psp-example<span class="o">]</span><span class="c"># kubectl get deploy -n psp-example psp-pod-nginx-privileged</span>
+psp-pod-nginx-privileged   <span class="m">1</span>         <span class="m">0</span>         <span class="m">0</span>            <span class="m">0</span>           24s
+<span class="o">[</span>root@build-master ~<span class="o">]</span><span class="c"># kubectl logs &amp;ndash;tail=1 -f kube-controller-manager-build-master -n kube-system</span>
+I0318 04:32:42.777200       <span class="m">1</span> event.go:221<span class="o">]</span> Event<span class="o">(</span>v1.ObjectReference<span class="o">{</span>Kind:<span class="p">&amp;</span>ldquo<span class="p">;</span>ReplicaSet<span class="p">&amp;</span>rdquo<span class="p">;</span>, Namespace:<span class="p">&amp;</span>ldquo<span class="p">;</span>psp-example<span class="p">&amp;</span>rdquo<span class="p">;</span>, Name:<span class="p">&amp;</span>ldquo<span class="p">;</span>psp-pod-nginx-privileged-d7f8dbd75<span class="p">&amp;</span>rdquo<span class="p">;</span>, UID:<span class="p">&amp;</span>ldquo<span class="p">;</span>c66fb10f-4936-11e9-9c58-00163e004fd2<span class="p">&amp;</span>rdquo<span class="p">;</span>, APIVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>apps/v1<span class="p">&amp;</span>rdquo<span class="p">;</span>, ResourceVersion:<span class="p">&amp;</span>ldquo<span class="p">;</span>773292<span class="p">&amp;</span>rdquo<span class="p">;</span>, FieldPath:<span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span><span class="o">})</span>: <span class="nb">type</span>: <span class="p">&amp;</span>lsquo<span class="p">;</span>Warning<span class="p">&amp;</span>rsquo<span class="p">;</span> reason: <span class="p">&amp;</span>lsquo<span class="p">;</span>FailedCreate<span class="p">&amp;</span>rsquo<span class="p">;</span> Error creating: pods <span class="p">&amp;</span>ldquo<span class="p">;</span>psp-pod-nginx-privileged-d7f8dbd75-<span class="p">&amp;</span>rdquo<span class="p">;</span> is forbidden: unable to validate against any pod security policy: <span class="o">[</span>spec.containers<span class="o">[</span>0<span class="o">]</span>.securityContext.privileged: Invalid value: <span class="nb">true</span>: Privileged containers are not allowed<span class="o">]</span></code></pre></div>
+查看controller-manager的日志，发现Privileged containers are not allowed</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[somethings about kubernetes]]></title>
@@ -263,266 +718,6 @@ system:basic-user
 
 <p>继续查找<a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">kubernetes官方的信息</a>,得知
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">Node authorization is a special-purpose authorization mode that specifically authorizes API requests made by kubelets.</code></pre></div></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[kubectl的认证与授权]]></title>
-    <link href="http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/"/>
-    <updated>2018-08-25T14:41:00+08:00</updated>
-    <id>http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan</id>
-    <content type="html"><![CDATA[<p>关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章：</p>
-
-<ul>
-<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/">Controlling Access to the Kubernetes API</a></li>
-<li><a href="https://jimmysong.io/posts/user-authentication-in-kubernetes/">Kubernetes 中的用户与身份认证授权</a></li>
-<li><a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">Kubernetes RBAC - 基于角色的访问控制</a></li>
-</ul>
-
-
-<h2>Kubernetes API的访问控制原理回顾</h2>
-
-<p>Kubernetes集群的访问权限控制由<code>kube-apiserver</code>负责，<code>kube-apiserver</code>的访问权限控制由身份验证(authentication)、授权(authorization)
-和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
-<img src="/images/k8s-apiserver-access-control-overview.svg" alt="" /></p>
-
-<h4>身份验证（Authentication）</h4>
-
-<p>这个环节它面对的输入是整个<code>http request</code>，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
-<code>basic auth</code>、普通token以及<code>jwt token</code>(用于serviceaccount)。</p>
-
-<p>APIServer启动时，可以指定一种Authentication方法，也可以指定多种方法。如果指定了多种方法，那么APIServer将会逐个使用这些方法对客户端请求进行验证，
-只要请求数据通过其中一种方法的验证，APIServer就会认为Authentication成功；</p>
-
-<p>在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，默认支持<code>client证书</code>验证和<code>serviceaccount</code>两种身份验证方式。
-证书认证通过设置<code>--client-ca-file</code>根证书以及<code>--tls-cert-file</code>和<code>--tls-private-key-file</code>来开启。</p>
-
-<p>在这个环节，apiserver会通过client证书或
-<code>http header</code>中的字段(比如serviceaccount的<code>jwt token</code>)来识别出请求的<code>用户身份</code>，包括”user”、”group”等，这些信息将在后面的<code>authorization</code>环节用到。</p>
-
-<h4>授权（Authorization）</h4>
-
-<p>这个环节面对的输入是<code>http request context</code>中的各种属性，包括：<code>user</code>、<code>group</code>、<code>request path</code>（比如：<code>/api/v1</code>、<code>/healthz</code>、<code>/version</code>等）、
-<code>request verb</code>(比如：<code>get</code>、<code>list</code>、<code>create</code>等)。</p>
-
-<p>APIServer会将这些属性值与事先配置好的访问策略(<code>access policy</code>）相比较。APIServer支持多种<code>authorization mode</code>，包括<code>Node、RBAC、Webhook</code>等。</p>
-
-<p>APIServer启动时，可以指定一种<code>authorization mode</code>，也可以指定多种<code>authorization mode</code>，如果是后者，只要Request通过了其中一种mode的授权，
-那么该环节的最终结果就是授权成功。在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，<code>authorization-mode</code>的默认配置是<code>”Node,RBAC”</code>。</p>
-
-<p>Node授权器主要用于各个node上的kubelet访问apiserver时使用的，其他一般均由RBAC授权器来授权。</p>
-
-<!--more-->
-
-
-<h2>kubectl的授权认证</h2>
-
-<p><code>kubeadm init</code>启动完master节点后，会默认输出类似下面的提示内容：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span>
-Your Kubernetes master has initialized successfully!&lt;/p&gt;
-
-&lt;p&gt;To start using your cluster, you need to run the following as a regular user:
-  mkdir -p <span class="nv">$HOME</span>/.kube
-  sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
-  sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config
-<span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div>
-这些信息是在告知我们如何配置<code>kubeconfig</code>文件。按照上述命令配置后，master节点上的<code>kubectl</code>就可以直接使用<code>$HOME/.kube/config</code>的信息访问<code>k8s cluster</code>了。
-并且，通过这种配置方式，<code>kubectl</code>也拥有了整个集群的管理员(root)权限。</p>
-
-<p>很多K8s初学者在这里都会有疑问：</p>
-
-<ul>
-<li>当<code>kubectl</code>使用这种<code>kubeconfig</code>方式访问集群时，<code>Kubernetes</code>的<code>kube-apiserver</code>是如何对来自<code>kubectl</code>的访问进行身份验证(<code>authentication</code>)和授权(<code>authorization</code>)的呢？</li>
-<li>为什么来自<code>kubectl</code>的请求拥有最高的管理员权限呢？</li>
-</ul>
-
-
-<h4>kubectl的身份认证（authentication）</h4>
-
-<p>我们先从kubectl使用的<code>kubeconfig</code>入手。kubectl使用的kubeconfig文件实质上就是<code>kubeadm init</code>过程中生成的<code>/etc/kubernetes/admin.conf</code>，
-我们查看一下该kubeconfig文件的内容：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl config view</span>
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: REDACTED
-    server: &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;https://192.168.8.33:6443&quot;</span>&gt;https://192.168.8.33:6443&lt;/a&gt;
-  name: kubernetes
-contexts:
-- context:
-    cluster: kubernetes
-    user: kubernetes-admin
-  name: kubernetes-admin@kubernetes
-current-context: kubernetes-admin@kubernetes
-kind: Config
-preferences: <span class="o">{}</span>
-users:
-- name: kubernetes-admin
-  user:
-    client-certificate-data: REDACTED
-    client-key-data: REDACTED</code></pre></div>
-关于kubeconfig文件的解释，可以在<a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/">这里</a>自行脑补。在这些输出信息中，我们着重提取到两个信息：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">user name: kubernetes-admin
-client-certificate-data: XXXX</code></pre></div>
-前面提到过apiserver的authentication支持通过<code>tls client certificate、basic auth、token</code>等方式对客户端发起的请求进行身份校验，
-从kubeconfig信息来看，kubectl显然在请求中使用了<code>tls client certificate</code>的方式，即客户端的证书。另外我们知道Kubernetes是没有user这种资源的，
-通过k8s API也无法创建user。</p>
-
-<p>那么kubectl的身份信息就应该“隐藏”在<code>client-certificate</code>的数据中，我们来查看一下。</p>
-
-<p>首先把<code>/etc/kubernetes/kubelet.conf</code>中的<code>client-key-data</code>内容保存在<code>admin-client-certificate.txt</code>中
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt</span>
-<span class="nv">LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBbjVLRFNhck1VZzdldmErbS9lOCswQ0tSaUl4ajY4a1lwazBYbFBEcEN4WmtLVWhpCkt2K0lqZG80RUFvWG5SWThHRUEvaUpVbmUyNzJBU3ZIeXB0OGFwOWtha3l6ZEZ1bXlKbmV2TjBuWldYeEFkQXMKUTlmcUZyVGcyTTFpTjJPYjFPb3VnR2pHenJ6bEw3Wm5xc3hQcHppOEtCeEVsM0dUVGFLVG5hSzFRWDUwNkt2aApIVkdXMTdkazZLWEltZDZhYWo0VmNNOXJaeEZ5bCs3SzFyQ2hPWXBhNzJUYWpqdEtuZm9FdzNxV0tmb0JXclBkCjJCRDhSaW4vcmlEbGNKTy9GRUt3azJQb1ZrcWx4bzdObWtld0Zma2txTVJrOHY3WTZVUTNvT1lhVDdsMFV0bEUKVzdCaEw1U0lkcTZIbGVzVU1CQkk4NDZEMnFZNk4zdGlndTFES3dJREFRQUJBb0lCQUFjMlJmekVYV3V3QkYwcQpYUy9JNmx2WjFCNEp5bEpUeW10cHZKRWN1a3VuL1dyb1BKZVk2UUVRUmN4anlHRnZLZFFtd3poWEZXdTh2aDJiCmJ2STNTTTVBMmZiNzlIaGoxQXZvK0dvc3pLVUdrSGYyZ3FtbVRvd3NMS1ZmMHZxUjQrOGhqbXg3VDlEME5KK04KYk80SlFlaGE1aFlpQU8rZlVIc0h5QWd0M0dkVFQ0eEh6elBzYjd0dXAxd1hJUVp5SnRkSTR1MGdaMmJFcUw2dQpGdm12RlF2RzY0S1dtQ0Eydk9zclNpb1QxTGpFMDJuZk11dWhvbEhxRVoxNEx4Lzk0elI4MXlYMjV2MnBCVE9yCitvOFBYNGhtUEprckJCVUNvQVZrSmlCYmVqMUh4TW1iQXlhM2ZlaXZBR01LcXh6b2wrVkltUmUwVE8xNk1WbWoKT1dzRGJYRUNnWUVBeW84aUNRR05iQ0p3QzIvOEkzaXU2TktGc2ZYZ08waC9RT0xhbGlReWlzbEx3anBadXNrVQpsaE1zR0xkQUFoZDVrZmVpTUF1UHRPbHNxb1NjeE80eDh1RUFqcUtndklVMHR1NjFjYWFPV29BTnczMkt2bDRnCk05UmxRbFVDMXRRT0htdFRsdURrSmRUQWFGQSswYjFMeVBnZFNlamV1eFl3dlR1MHV1R1BXNlVDZ1lFQXlhd0wKNEcyN05VT0JpSmpGalNPdGEvcjJtVHpEbFNPVUl6NlpyandVd1ZHbTQvRXdPZmx6czROYWd3R0RHK0tvM2lDagpySVJnUkhaMktCWXNjQUlKQk4xWVNpVjZxVzgvaEUzT3k0Y0EySFVZd1NmTktXNXZQSUNMcnVaMGxZWTJlcHFlClZLZXZUNUJWMlJvK3gxZFo2TE4vcXk0c3RHTzhTYWp0b1FxUUtvOENnWUFiQmNOTm5rWm1vYVYrOFI2YkFOT2MKdmRFV0w2NE5XcHVYWld3eDBYeG9wWGdVM2tId09Ea2wyRUx1dlN1dDI4SGRKa01kMDcwRkxvclBxTWRkUWtXcAptRGpCenBKUTlCaFhPenM3Z1RQR2dRVFZDcCtDeS8zUnpFa0I4Mk5nazRPYXJVakdmUlFTcy9KRE9FbFpJNzdECmZjNHllUDJWeWQwUXNiRm5xUVc5L1FLQmdRQzhZblU1c09jV2F6ZStCSTlOTjAyUk4zNVJTRnllblB5Tks3WGMKOXd5Z1JRaXpscUpwRldjS0FpSnppOThRRmx1T0cwa3BKd0xTRVNKd2NiNFM1eVBMb29RTnh4TGM0U21oQ2htcApMelFQL3RvZjNIRWVTYVdwQzU3dnd5Q1dhQ2ZOd1U4elh1dzVVMmVPQktFdURwL1M2cEhRc3JKWjAyeVlGaS9iCnBnVmphd0tCZ1FDbS9sejBRWXFUUFlQcG93RHpSZE84K1VaUmNVRHFKcFZ4TmdpRVdWN0pUN09qaENxVDdMUFAKQkZMYzdCY2hYTElMaElxOGhHNmJrL2dvNWt1TzhuMWpOTjFPTlNMaHh6RVp2VVgva000RE5FYjRaLzVON1JxWAp0Q0hMeFNDZXFUZVJ6K1FXRGRFL2pXaklEcU9McEdUVjdVbXJKN2kvU04rcE02dHZTWVFSUlE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo</span><span class="o">=</span></code></pre></div>
-然后对上述内容base64解密，然后存储在<code>admin.crt</code>文件中
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt |base64 -d &gt; admin.crt</span>
-<span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin.crt</span>
-<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span>BEGIN CERTIFICATE<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span>
-MIIC8jCCAdqgAwIBAgIIQD98S9X+SVUwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
-AxMKa3ViZXJuZXRlczAeFw0xODA4MjAwNTUwMzlaFw0xOTA4MjAwNTUwNDFaMDQx
-FzAVBgNVBAoTDnN5c3RlbTptYXN0ZXJzMRkwFwYDVQQDExBrdWJlcm5ldGVzLWFk
-bWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs5Rpnr5a68Cp4/EC
-1IeebFl1z3ixDVT3pwR5YZgfy5E98IYB42c3fFrgV6fOuewOaW3bwrS9SZ4NMqB9
-6TYXlZYkwxeQIp1HE+VSdbAHww7XE8zizv9/BSEynSqDglodmmDres0Cs9/3PG2F
-B9OcAVycRzvxx87iecSzRwVF5DoopFbYkPJY/OjTQMeO8LX8YvoBYCD0ZpHxu7NE
-b9qdUhPKH7ExbgSsSVZ75npjNtdDzlFzD4+tyYkvpBIYttOWHMFMQhipOyG+t1Af
-ydVHzzsiAxgA/00ulxNCvhx1WXN+mL3PeDeBYMSFWo6cg60ih0nnNPk3rezrHoAg
-294QxwIDAQABoycwJTAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUH
-AwIwDQYJKoZIhvcNAQELBQADggEBAFQ9ZvPCQsQQVR1kszsHip3qqcmIwUlkJiF6
-YUVRzeG/QG15dIid5i87q5ZyK+NZhsuBrROnNUDSlg77jD61iHw+jREWd1pYAoK3
-OyLcFd5q73xp+0aP1yEsRDnTmb7gzvKAYnFwKue7OZOVfpzWk0qakWkaPrzx6Bzp
-G62X6p6701sL+9Gru56M8+tp+3/z635Z+56VjAFErzs5Sv5Pw5eAYxA12ebigNeh
-0fIpVyPSZtA1MYgkbtqvjR6qxpgQUBvTCL7unNOGmdrvZI73fDLl+tTvlcgFDWcm
-jlt8d2/5x/55BAfH/6LfqzfbDfOqlicKYvogLa7QE/A0uquVjLg<span class="o">=</span>
-<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span>END CERTIFICATE<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span></code></pre></div>
-然后用openssl工具查看crt证书内容
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in admin.crt -noout</span>
-Certificate:
-    Data:
-        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
-        Serial Number: <span class="m">4629555607114762581</span> <span class="o">(</span>0x403f7c4bd5fe4955<span class="o">)</span>
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
-        Validity
-            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
-            Not After : Aug <span class="m">20</span> 05:50:41 <span class="m">2019</span> GMT
-        Subject: <span class="nv">O</span><span class="o">=</span>system:masters, <span class="nv">CN</span><span class="o">=</span>kubernetes-admin
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-            <span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span>&lt;/p&gt;
-
-&lt;p&gt;</code></pre></div>
-从证书输出的信息中，我们看到了下面这行：
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">Subject</span><span class="p">:</span> <span class="n">O</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">masters</span><span class="p">,</span> <span class="n">CN</span><span class="o">=</span><span class="n">kubernetes</span><span class="o">-</span><span class="n">admin</span></code></pre></div></p>
-
-<p>说明在认证阶段，<code>apiserver</code>会首先使用<code>--client-ca-file</code>配置的CA证书去验证kubectl提供的证书的有效性,基本的方式
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl verify -CAfile /etc/kubernetes/pki/ca.crt /etc/kubernetes/admin.crt</span>
-/etc/kubernetes/admin.crt: OK</code></pre></div>
-然后认证通过后，提取出签发证书时指定的CN(Common Name),<code>kubernetes-admin</code>，作为请求的用户名 (User Name),
-O(Organization)， 从证书中提取该字段作为请求用户所属的组 (Group)，<code>group = system:masters</code>，然后传递给后面的授权模块</p>
-
-<blockquote><p>X509 客户端证书
-通过将 &ndash;client-ca-file=SOMEFILE 选项传递给 API server 来启用客户端证书认证。引用的文件必须包含一个或多个证书颁发机构，用于验证提交给 API server 的客户端证书。如果客户端证书已提交并验证，则使用 subject 的 Common Name（CN）作为请求的用户名。从 Kubernetes 1.4开始，客户端证书还可以使用证书的 organization 字段来指示用户的组成员身份。</p></blockquote>
-
-<h4>kubectl的授权</h4>
-
-<p>kubeadm在init初始引导集群启动过程中，创建了许多<code>default</code>的<code>role、clusterrole、rolebinding</code>和<code>clusterrolebinding</code>，
-在k8s有关RBAC的官方文档中，我们看到下面一些<code>default clusterrole</code>列表:</p>
-
-<p><img src="/images/kubeadm-default-clusterrole-list.png" alt="" />
-其中第一个cluster-admin这个cluster role binding绑定了system:masters group，这和authentication环节传递过来的身份信息不谋而合。
-沿着system:masters group对应的cluster-admin clusterrolebinding“追查”下去，真相就会浮出水面。</p>
-
-<p>我们查看一下这一binding：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrolebinding/cluster-admin -n kube-system -o yaml</span>
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
-  creationTimestamp: 2018-08-20T05:51:30Z
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cluster-admin
-  resourceVersion: <span class="p">&amp;</span>ldquo<span class="p">;</span>93<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterrolebindings/cluster-admin
-  uid: 163adc34-a43d-11e8-89a4-000c2948e532
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: Group
-  name: system:masters</code></pre></div>
- 我们看到在kube-system名字空间中，一个名为cluster-admin的clusterrolebinding将cluster-admin cluster role与system:masters Group绑定到了一起，
- 赋予了所有归属于system:masters Group中用户cluster-admin角色所拥有的权限。</p>
-
-<p> 我们再来查看一下cluster-admin这个role的具体权限信息：
- <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrole/cluster-admin -n kube-system -o yaml</span>
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
-  creationTimestamp: 2018-08-20T05:51:30Z
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cluster-admin
-  resourceVersion: <span class="p">&amp;</span>ldquo<span class="p">;</span>40<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterroles/cluster-admin
-  uid: 15f71927-a43d-11e8-89a4-000c2948e532
-rules:
-- apiGroups:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-  resources:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;/em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-  verbs:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-- nonResourceURLs:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;/em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-  verbs:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>*<span class="p">&amp;</span>rsquo<span class="p">;</span></code></pre></div>
-从rules列表中来看，cluster-admin这个角色对所有resources、verbs、apiGroups均有无限制的操作权限，
-即整个集群的root权限。于是kubectl的请求就可以操控和管理整个集群了。</p>
-
-<h3>疑问</h3>
-
-<p>使用kubeadm-1.11.2版本初始化集群，即使不配置.kube/config文件，也可以直接访问到kubernetes cluster,
-<a href="https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/">官方文档</a>中对这块的记录如下：</p>
-
-<p>To make kubectl work for your non-root user, run these commands, which are also part of the kubeadm init output:
- <div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir -p <span class="nv">$HOME</span>/.kube
-sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
-sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config</code></pre></div></p>
-
-<p>Alternatively, if you are the root user, you can run:
- <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">KUBECONFIG</span><span class="o">=</span>/etc/kubernetes/admin.conf</code></pre></div></p>
-
-<ul>
-<li>关于非root用户，尝试新建了用户，且没有配置kubeconfig文件的情况下，依然可以通过kubectl直接访问集群。</li>
-<li>关于<code>KUBECONFIG</code>环境变量，发现未设置该env，而且尝试把<code>/etc/kubernetes/admin.conf</code> 文件删除掉，重启apiserver的情况，依然可以访问</li>
-</ul>
-
-
-<p>关于以上疑问已经弄明白，当我们在master节点中使用kubectl请求时，如果没有设置$HOME/.kube/config文件，则默认是通过本地的非安全端口来访问
-apiserver，
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@ip-172-31-10-236 centos<span class="o">]</span><span class="c"># kubectl get no -v 7</span>
-I0930 06:55:41.036661   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/alauda.io/v3/serverresources.json
-I0930 06:55:41.037250   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/v1/serverresources.json
-I0930 06:55:41.037484   <span class="m">13865</span> round_trippers.go:383<span class="o">]</span> GET &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/api/v1/nodes&quot;</span>&gt;http://localhost:8080/api/v1/nodes&lt;/a&gt;
-I0930 06:55:41.037502   <span class="m">13865</span> round_trippers.go:390<span class="o">]</span> Request Headers:
-I0930 06:55:41.037515   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     Accept: application/json
-I0930 06:55:41.037528   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     User-Agent: kubectl/v1.7.3 <span class="o">(</span>linux/amd64<span class="o">)</span> kubernetes/2c2fe6e
-I0930 06:55:41.046449   <span class="m">13865</span> round_trippers.go:408<span class="o">]</span> Response Status: <span class="m">200</span> OK in <span class="m">8</span> milliseconds
-I0930 06:55:41.067926   <span class="m">13865</span> cached_discovery.go:119<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/servergroups.json
-I0930 06:55:41.068015   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/apiregistration.k8s.io/v1beta1/serverresources.json</code></pre></div>
- 如果</p>
-
-<h3>小结</h3>
-
-<p>总结一下kubectl的认证过程：</p>
-
-<p><img src="/images/how-kubectl-be-authorized.png" alt="" /></p>
 ]]></content>
   </entry>
   

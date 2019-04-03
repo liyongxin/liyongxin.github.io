@@ -9,8 +9,7 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="2018-08-25 18:17:17 +0800 k8s, kubernetes kubelet的认证 研究完kubectl的认证与授权，使用相同的方式去找kubelet的访问，
-首先定位配置文件/etc/kubernetes/kubelet.conf，然后用相同的方式对client-key- &hellip;">
+	<meta name="description" content="2019-02-28 14:18:47 +0800 ansible somethings about ansible task解析json并注册变量给其他task使用 多个task涉及变量传递时，有时taskA取值是json格式，taskB若想使用json中的数据，可以通过如下方式： # get &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -24,6 +23,7 @@
 	<link href="/favicon.png" rel="shortcut icon">
 	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
 	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/custom.css"  rel="stylesheet" type="text/css">
 	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
 	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
        	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
@@ -102,6 +102,261 @@
 			<div class="mid-col-container">
 				<div id="content" class="inner">
 <div itemscope itemtype="http://schema.org/Blog">
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-02-28T14:18:47+08:00" data-updated="true" itemprop="datePublished">2019-02-28 14:18:47 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/ansible/'>ansible</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/ansible-sui-shou-ji/" itemprop="url">somethings about ansible</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<ul>
+<li><h4>task解析json并注册变量给其他task使用</h4>
+
+<p>多个task涉及变量传递时，有时taskA取值是json格式，taskB若想使用json中的数据，可以通过如下方式：</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="c"># get config task stdout is json format</span>
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;get_config&quot;</span>
+  <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">kubectl</span> <span class="n">get</span> <span class="n">cm</span> <span class="k">global</span><span class="o">-</span><span class="n">var</span> <span class="o">-</span><span class="n">n</span> <span class="n">alauda</span><span class="o">-</span><span class="n">system</span> <span class="o">-</span><span class="n">o</span> <span class="n">json</span>
+  <span class="n">register</span><span class="p">:</span> <span class="n">cms</span>
+
+<span class="c"># use from_json plugin</span>
+<span class="o">-</span> <span class="n">set_fact</span><span class="p">:</span> <span class="n">data</span><span class="o">=</span><span class="s">&quot;&quot;</span>
+
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;read_config&quot;</span>
+  <span class="n">shell</span><span class="p">:</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">redis</span><span class="o">-</span><span class="n">cli</span> <span class="o">-</span><span class="n">a</span>
+  <span class="n">when</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s">&#39;kind&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;ConfigMap&#39;</span></code></pre></div>
+
+
+<ul>
+<li><h4>ansible自定义模块执行命令支持管道</h4>
+
+<p>自定义ansible module时，可以默认使用<code>AnsibleModule</code>的实例<code>run_command</code>来执行shell命令,可以指定use_unsafe_shell=True来让ansible支持管道。
+use_shell会和shell模块类似，若不指定，默认为False，则以command模块运行，command是比较安全的隧道连接，但是不支持管道</p></li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;The main function.&quot;&quot;&quot;</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">AnsibleModule</span><span class="p">(</span><span class="n">argument_spec</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span><span class="n">supports_check_mode</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="s">&quot;/usr/local/sbin/kubectl get po -n alauda-system |grep alauda-redis|awk </span><span class="se">\&#39;</span><span class="s">END{print $1}&quot;</span><span class="p">,</span> <span class="n">use_unsafe_shell</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">redis</span> <span class="o">=</span> <span class="n">Redis</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+    <span class="n">rst</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">get_redis_status</span><span class="p">()</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">exit_json</span><span class="p">(</span><span class="o">**</span><span class="n">rst</span><span class="p">)</span></code></pre></div>
+
+
+
+
+
+		
+		<a href="/blog/2019/02/28/ansible-sui-shou-ji/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-02-28T11:12:56+08:00" data-updated="true" itemprop="datePublished">2019-02-28 11:12:56 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/k8s/'>k8s</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2019/02/28/k8sxiao-zhi-shi/" itemprop="url">somethings about kubernetes</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<ul>
+<li>k8s默认驱逐设置</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">// DefaultEvictionHard includes default options <span class="k">for</span> hard eviction.
+var <span class="nv">DefaultEvictionHard</span> <span class="o">=</span> map<span class="o">[</span>string<span class="o">]</span>string<span class="o">{</span>
+        <span class="s2">&quot;memory.available&quot;</span>:  <span class="s2">&quot;100Mi&quot;</span>,
+        <span class="s2">&quot;nodefs.available&quot;</span>:  <span class="s2">&quot;10%&quot;</span>,
+        <span class="s2">&quot;nodefs.inodesFree&quot;</span>: <span class="s2">&quot;5%&quot;</span>,
+        <span class="s2">&quot;imagefs.available&quot;</span>: <span class="s2">&quot;15%&quot;</span>,
+<span class="o">}</span></code></pre></div>
+
+
+<ul>
+<li>kubernetes 滚动升级</li>
+</ul>
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c"># run test deploy</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl run --image=nginx --port=80 --replicas=2 yxli-nginx</span>
+<span class="c"># scale replica</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl scale --replicas=1 deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl get deploy</span>
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+busybox      <span class="m">2</span>         <span class="m">2</span>         <span class="m">2</span>            <span class="m">2</span>           39d
+busybox1     <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           39d
+yxli-nginx   <span class="m">1</span>         <span class="m">1</span>         <span class="m">1</span>            <span class="m">1</span>           2h
+<span class="c"># update image</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl set image  deploy/yxli-nginx yxli-nginx=nginx:alpine</span>
+<span class="c"># 查看升级历史</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">1</span>         &lt;none&gt;
+<span class="m">2</span>         &lt;none&gt;
+<span class="c"># 回顾至上次版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout undo deploy/yxli-nginx</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rollout history deploy/yxli-nginx</span>
+deployments <span class="s2">&quot;yxli-nginx&quot;</span>
+REVISION  CHANGE-CAUSE
+<span class="m">2</span>         &lt;none&gt;
+<span class="m">3</span>         &lt;none&gt;
+<span class="c"># 回滚至指定版本</span>
+<span class="o">[</span>root@k8s-master ~<span class="o">]</span><span class="c"># kubectl rolloutundo deployment/lykops-dpm --to-revision=2</span></code></pre></div>
+
+
+
+
+
+		
+		<a href="/blog/2019/02/28/k8sxiao-zhi-shi/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-08-31T10:36:27+08:00" data-updated="true" itemprop="datePublished">2018-08-31 10:36:27 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/docker/'>docker</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/08/31/kubernetes-wen-ti-zheng-li/" itemprop="url">kubernetes 问题整理</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～</p>
+
+<h2>kubernetes多网卡导致的问题</h2>
+
+<p>部署机器是阿里云，有两块网卡，<code>eth0</code>外网，<code>eth1 vpc</code>内网，集群的路由信息如下</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 src<span class="o">]</span><span class="c"># route</span>
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         gateway         0.0.0.0         UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+10.0.0.0        10.81.35.247    255.0.0.0       UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+10.81.32.0      0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+39.107.40.0     0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+100.64.0.0      10.81.35.247    255.192.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1002</span>   <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span>   <span class="m">0</span>        <span class="m">0</span> eth1
+172.16.0.0      10.81.35.247    255.240.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+192.168.0.0     0.0.0.0         255.255.255.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> cni0
+192.168.0.0     0.0.0.0         255.255.240.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> docker0
+192.168.1.0     192.168.1.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1
+192.168.2.0     192.168.2.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1</code></pre></div>
+
+
+<ul>
+<li><h4>docker0网段与cni0网段冲突问题</h4></li>
+</ul>
+
+
+<p>docker启动时没有指定bip，从上述路由规则发现，docker0使用了192.168的段,刚好给flannel设置的cidr段冲突，
+所以需要给docker修改默认的网段，解决方法是给docker配置bip网段,然后重启docker，观察docker0的route规则</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 ~<span class="o">]</span><span class="c"># cat /etc/docker/daemon.json</span>
+<span class="o">{</span>
+    <span class="s2">&quot;insecure-registries&quot;</span>: <span class="o">[]</span>,
+    <span class="s2">&quot;graph&quot;</span>: <span class="s2">&quot;/var/lib/docker&quot;</span>,
+    <span class="s2">&quot;bip&quot;</span>: <span class="s2">&quot;172.17.0.1/16&quot;</span>,
+    <span class="s2">&quot;registry-mirrors&quot;</span>: <span class="o">[</span><span class="s2">&quot;https://registry.docker-cn.com&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-driver&quot;</span>: <span class="s2">&quot;devicemapper&quot;</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span><span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>, <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span>
+        <span class="s2">&quot;dm.thinpooldev=/dev/mapper/docker-thinpool&quot;</span>,
+        <span class="s2">&quot;dm.min_free_space=0%&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>,
+        <span class="s2">&quot;dm.fs=ext4&quot;</span>
+    <span class="o">]</span>,
+    <span class="s2">&quot;log-driver&quot;</span>: <span class="s2">&quot;fluentd&quot;</span>,
+    <span class="s2">&quot;log-opts&quot;</span>:
+    <span class="o">{</span>
+        <span class="s2">&quot;fluentd-address&quot;</span>: <span class="s2">&quot;localhost:24224&quot;</span>,
+        <span class="s2">&quot;tag&quot;</span>: <span class="s2">&quot;docker.&quot;</span>,
+        <span class="s2">&quot;fluentd-async-connect&quot;</span>: <span class="s2">&quot;true&quot;</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+
+<ul>
+<li><h4>集群初始化问题</h4></li>
+</ul>
+
+
+<p>使用<code>kubeadm</code>搭建，若未指定&ndash;advertise-address地址则k8s默认拿default网卡，
+而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
+时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
+
+
+		
+		<a href="/blog/2018/08/31/kubernetes-wen-ti-zheng-li/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
 
 
     <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
@@ -270,198 +525,6 @@ system:basic-user
 
 		
 		<a href="/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-17T20:30:37+08:00" data-updated="true" itemprop="datePublished">2018-05-17 20:30:37 +0800</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/javascript/'>javascript</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/" itemprop="url">javascript运行顺序详解</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>JavaScript是一种描述型脚本语言，它不同于java或C#等编译性语言,它不需要进行编译成中间语言,而是由浏览器进行动态地解析与执行。如果你不能理解javaScript语言的运行机制，或者简单地说，你不能掌握javascript的执行顺序，那你就犹如伯乐驾驭不了千里马，让千里马脱缰而出，四处乱窜。
-那么JavaScript是怎么来进行解析的吗？它的执行顺序又是如何的呢？在了解这些之前，我们先来认识几个重要的术语：</p>
-
-<h3>代码块</h3>
-
-<p><code>JavaScript</code>中的代码块是指由<code>&lt;script&gt;</code>标签分割的代码段。例如：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 示例代码</span>
-<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块一&quot;</span><span class="p">);</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span>
-
-<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块二&quot;</span><span class="p">);</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
-
-
-<p>JS是按照代码块来进行编译和执行的，代码块间相互独立，但变量和方法共享。什么意思呢? 举个例子，你就明白了：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>   <span class="c1">//因为没有定义str，所以浏览器会出错，下面的不能运行</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块一&quot;</span><span class="p">);</span>  <span class="c1">//没有运行到这里</span>
-    <span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="s2">&quot;我是代码块一变量&quot;</span><span class="p">;</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span>
-
-<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块二&quot;</span><span class="p">);</span>  <span class="c1">//这里有运行到</span>
-    <span class="nx">alert</span><span class="p">(</span><span class="nx">test</span><span class="p">);</span>  <span class="c1">//弹出&quot;我是代码块一变量&quot;</span>
-<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
-
-
-<p>上面的代码中代码块一中运行报错，但不影响代码块二的执行，这就是代码块间的独立性，而代码块二中能调用到代码一中的变量，则是块间共享性。</p>
-
-
-		
-		<a href="/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-15T20:02:51+08:00" data-updated="true" itemprop="datePublished">2018-05-15 20:02:51 +0800</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" itemprop="url">GreenPlum脚本化安装</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>由于手动安装<code>Greenplum</code>过于繁琐，考虑对安装过程进行自动化，针对手动安装的过程，大致整理了几个脚本，简化安装程序，安装过程中必要的交互操作可以通过<code>expect</code>来实现，比如多机互信环节、<code>master</code>安装<code>GreenPlum</code>过程等。
-大致过程如下：</p>
-
-<h2>准备脚本</h2>
-
-<p><code>root</code>用户登录<code>master</code>节点，创建<code>/opt/gp</code>目录</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir /opt/gp</code></pre></div>
-
-
-<p>拷贝<code>gp.tar</code>到<code>/opt/gp</code>目录，解压</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar -xvf gp.tar -C /opt/gp
-chmod -R <span class="m">777</span> /opt/gp</code></pre></div>
-
-
-<h2>master安装GP</h2>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">cd</span> /opt/gp
-./greenplum-db-4.3.0.0-build-3-RHEL5-x86_64.bin</code></pre></div>
-
-
-<h2>关闭相关服务，执行脚本拷贝</h2>
-
-<h4>配置hosts文件,内容参照如下</h4>
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">222</span> <span class="n">mdw</span>
-<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">223</span> <span class="n">smdw</span>
-<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">224</span> <span class="n">sdw1</span>
-<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">225</span> <span class="n">sdw2</span></code></pre></div>
-
-
-
-
-
-		
-		<a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-14T20:24:55+08:00" data-updated="true" itemprop="datePublished">2018-05-14 20:24:55 +0800</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/14/greenpluman-zhuang/" itemprop="url">GreenPlum安装</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下：</p>
-
-<h3>安装前准备</h3>
-
-<h4>网络规划</h4>
-
-<p>Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。Master主机和Segment主机之间会组成一个内部网络（LAN）。
-为了充分发挥Greenplum数据库并行处理的性能，对网络带宽要求较高。服务器会配置多个网卡，内部网需要配置多个网段的IP。需要对外连接的服务器需配置外部IP。
-建议在Greenplum数据库系统安装之前，把网络配置规划好。
-<img src="/images/network.png" alt="" /></p>
-
-<h4>存储空间规划</h4>
-
-<p>首先，需要评估目标数据库数据所需要的空间容量。建议了解客户搭建Greenplum数据库的具体应用。举例：估计数据库所需空间为U，数据库需要启用Mirror，磁盘阵列总可用空间为D（Raid之后）。空间规划服务和如下公式：
-<code>2 * U + U / 3 = D * 70%</code>
-磁盘空间D平均分配到各个Segment服务器上。
-Master需要相应的空间。使用服务器内置硬盘的计算方式类似。</p>
-
-<h4>数据库实例规划</h4>
-
-<p>规划每个Segment服务器上建立的数据库实例的数量（instance数量），通常建议每2个CPU内核（core）对应一个数据库实例。
-如 ：<code>2*4</code>核CPU的服务器，可配置4个实例。</p>
-
-
-		
-		<a href="/blog/2018/05/14/greenpluman-zhuang/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>

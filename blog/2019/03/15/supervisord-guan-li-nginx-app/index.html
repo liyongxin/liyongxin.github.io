@@ -1,0 +1,190 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>supervisord 管理nginx app - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="2019-03-15 10:47:18 +0800 nginx, python, supervisord supervisord 管理nginx app 在使用supervisord管理nginx的时候，发现nginx提示端口占用后异常退出， 2019-03-15 02:36:37,587 &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2019/03/15/supervisord-guan-li-nginx-app/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/custom.css"  rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-03-15T10:47:18+08:00" data-updated="true" itemprop="datePublished">2019-03-15 10:47:18 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/nginx/'>nginx</a>, <a class='category' href='/blog/categories/python/'>python</a>, <a class='category' href='/blog/categories/supervisord/'>supervisord</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name">supervisord 管理nginx app</h1>
+	<div class="entry-content" itemprop="articleBody"><p>在使用supervisord管理nginx的时候，发现nginx提示端口占用后异常退出，</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">37</span><span class="p">,</span><span class="mi">587</span> <span class="n">INFO</span> <span class="n">RPC</span> <span class="n">interface</span> <span class="s">&#39;supervisor&#39;</span> <span class="n">initialized</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">37</span><span class="p">,</span><span class="mi">587</span> <span class="n">CRIT</span> <span class="n">Server</span> <span class="s">&#39;unix_http_server&#39;</span> <span class="n">running</span> <span class="n">without</span> <span class="nb">any</span> <span class="n">HTTP</span> <span class="n">authentication</span> <span class="n">checking</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">37</span><span class="p">,</span><span class="mi">588</span> <span class="n">INFO</span> <span class="n">supervisord</span> <span class="n">started</span> <span class="k">with</span> <span class="n">pid</span> <span class="mi">9662</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">38</span><span class="p">,</span><span class="mi">591</span> <span class="n">INFO</span> <span class="n">spawned</span><span class="p">:</span> <span class="s">&#39;nginx&#39;</span> <span class="k">with</span> <span class="n">pid</span> <span class="mi">9664</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">38</span><span class="p">,</span><span class="mi">595</span> <span class="n">INFO</span> <span class="n">spawned</span><span class="p">:</span> <span class="s">&#39;app-gunicorn&#39;</span> <span class="k">with</span> <span class="n">pid</span> <span class="mi">9665</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">38</span><span class="p">,</span><span class="mi">616</span> <span class="n">INFO</span> <span class="n">exited</span><span class="p">:</span> <span class="n">nginx</span> <span class="p">(</span><span class="nb">exit</span> <span class="n">status</span> <span class="mi">0</span><span class="p">;</span> <span class="ow">not</span> <span class="n">expected</span><span class="p">)</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">39</span><span class="p">,</span><span class="mi">610</span> <span class="n">INFO</span> <span class="n">success</span><span class="p">:</span> <span class="n">app</span><span class="o">-</span><span class="n">gunicorn</span> <span class="n">entered</span> <span class="n">RUNNING</span> <span class="n">state</span><span class="p">,</span> <span class="n">process</span> <span class="n">has</span> <span class="n">stayed</span> <span class="n">up</span> <span class="k">for</span> <span class="o">&gt;</span> <span class="n">than</span> <span class="mi">1</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">startsecs</span><span class="p">)</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">39</span><span class="p">,</span><span class="mi">628</span> <span class="n">INFO</span> <span class="n">spawned</span><span class="p">:</span> <span class="s">&#39;nginx&#39;</span> <span class="k">with</span> <span class="n">pid</span> <span class="mi">9686</span>
+<span class="n">nginx</span><span class="p">:</span> <span class="p">[</span><span class="n">emerg</span><span class="p">]</span> <span class="n">bind</span><span class="p">()</span> <span class="n">to</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">10087</span> <span class="n">failed</span> <span class="p">(</span><span class="mi">98</span><span class="p">:</span> <span class="n">Address</span> <span class="ow">in</span> <span class="n">use</span><span class="p">)</span>
+<span class="n">nginx</span><span class="p">:</span> <span class="p">[</span><span class="n">emerg</span><span class="p">]</span> <span class="n">bind</span><span class="p">()</span> <span class="n">to</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">10087</span> <span class="n">failed</span> <span class="p">(</span><span class="mi">98</span><span class="p">:</span> <span class="n">Address</span> <span class="ow">in</span> <span class="n">use</span><span class="p">)</span>
+<span class="n">nginx</span><span class="p">:</span> <span class="p">[</span><span class="n">emerg</span><span class="p">]</span> <span class="n">bind</span><span class="p">()</span> <span class="n">to</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">10087</span> <span class="n">failed</span> <span class="p">(</span><span class="mi">98</span><span class="p">:</span> <span class="n">Address</span> <span class="ow">in</span> <span class="n">use</span><span class="p">)</span>
+<span class="mi">2019</span><span class="o">-</span><span class="mo">03</span><span class="o">-</span><span class="mi">15</span> <span class="mo">02</span><span class="p">:</span><span class="mi">36</span><span class="p">:</span><span class="mi">40</span><span class="p">,</span><span class="mi">652</span> <span class="n">INFO</span> <span class="n">success</span><span class="p">:</span> <span class="n">nginx</span> <span class="n">entered</span> <span class="n">RUNNING</span> <span class="n">state</span><span class="p">,</span> <span class="n">process</span> <span class="n">has</span> <span class="n">stayed</span> <span class="n">up</span> <span class="k">for</span> <span class="o">&gt;</span> <span class="n">than</span> <span class="mi">1</span> <span class="n">seconds</span> <span class="p">(</span><span class="n">startsecs</span><span class="p">)</span>
+<span class="n">nginx</span><span class="p">:</span> <span class="p">[</span><span class="n">emerg</span><span class="p">]</span> <span class="n">bind</span><span class="p">()</span> <span class="n">to</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">10087</span> <span class="n">failed</span> <span class="p">(</span><span class="mi">98</span><span class="p">:</span> <span class="n">Address</span> <span class="ow">in</span> <span class="n">use</span><span class="p">)</span>
+<span class="n">nginx</span><span class="p">:</span> <span class="p">[</span><span class="n">emerg</span><span class="p">]</span> <span class="n">bind</span><span class="p">()</span> <span class="n">to</span> <span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span><span class="p">:</span><span class="mi">10087</span> <span class="n">failed</span> <span class="p">(</span><span class="mi">98</span><span class="p">:</span> <span class="n">Address</span> <span class="ow">in</span> <span class="n">use</span><span class="p">)</span></code></pre></div>
+
+
+<p>手动执行nginx可以正常启动，查询了一番，找到了如下，不能用daemon的方式启动nginx，所以修改nginx配置，添加<code>daemon off;</code> 后恢复正常</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">Supervisord</span> <span class="n">expects</span> <span class="n">nginx</span> <span class="n">to</span> <span class="ow">not</span> <span class="n">fork</span> <span class="n">but</span> <span class="n">remain</span> <span class="ow">in</span> <span class="n">foreground</span><span class="o">.</span> <span class="n">Set</span> <span class="n">daemon</span> <span class="n">to</span> <span class="n">off</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">nginx</span> <span class="n">configuration</span> <span class="nb">file</span></code></pre></div>
+
+
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

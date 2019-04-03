@@ -1,0 +1,326 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>kubernetes的service cluster ip - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="2019-04-03 17:17:23 +0800 clusterip, k8s, kubernetes kubernetes的service cluster ip k8s的pod可以有多个副本，但是在访问pod时，会有几个问题： 客户端需要知道各个pod的地址
+某一node上的pod如果故障， &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2019/04/03/kubernetesde-service-cluster-ip/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/custom.css"  rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-04-03T17:17:23+08:00" data-updated="true" itemprop="datePublished">2019-04-03 17:17:23 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/clusterip/'>clusterip</a>, <a class='category' href='/blog/categories/k8s/'>k8s</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name">kubernetes的service cluster ip</h1>
+	<div class="entry-content" itemprop="articleBody"><p>k8s的pod可以有多个副本，但是在访问pod时，会有几个问题：</p>
+
+<ul>
+<li>客户端需要知道各个pod的地址</li>
+<li>某一node上的pod如果故障，客户端需要感知</li>
+</ul>
+
+
+<p>为了解决这个问题，k8s引入了service的概念，用以指导客户端的流量。</p>
+
+<h2>Service</h2>
+
+<p>以下面的my-nginx为例。</p>
+
+<p>pod和service的定义文件如下：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># cat run-my-nginx.yaml</span>
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+<span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># cat run-my-nginx-service.yaml</span>
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    run: my-nginx</code></pre></div>
+
+
+<p>pod my-nginx定义的replicas为2即2个副本，端口号为80;service my-nginx定义的selector为run:my-nginx，即该service选中所有label为run: my-nginx的pod；定义的port为80。</p>
+
+<p>使用kubectl create -f xx.yml创建后，可以在集群上看到2个pod，地址分别为10.244.1.10/10.244.2.10；可以看到1个service，IP/Port为10.11.97.177/80，其对接的Endpoints为10.244.1.10:80,10.244.2.10:80，即2个pod的服务地址，这三个URL在集群内任一节点都可以使用curl访问。</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># kubectl get pods -n default -o wide</span>
+NAME                       READY     STATUS    RESTARTS   AGE       IP            NODE
+my-nginx-379829228-3n755   1/1       Running   <span class="m">0</span>          21h       10.244.1.10   note2
+my-nginx-379829228-xh214   1/1       Running   <span class="m">0</span>          21h       10.244.2.10   node1
+<span class="o">[</span>root@localhost ~<span class="o">]</span><span class="c">#</span>
+<span class="o">[</span>root@localhost ~<span class="o">]</span><span class="c"># kubectl describe svc my-nginx</span>
+Name:                   my-nginx
+Namespace:              default
+Labels:                 <span class="nv">run</span><span class="o">=</span>my-nginx
+Selector:               <span class="nv">run</span><span class="o">=</span>my-nginx
+Type:                   ClusterIP
+IP:                     10.11.97.177
+Port:                   &lt;<span class="nb">unset</span>&gt; 80/TCP
+Endpoints:              10.244.1.10:80,10.244.2.10:80
+Session Affinity:       None</code></pre></div>
+
+
+<p>但是，如果你去查看集群各节点的IP信息，是找不到10.11.97.177这个IP的，那么curl是如何通过这个(Virtual)IP地址访问到后端的Endpoints呢？
+答案在<a href="https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies">这里</a>。</p>
+
+<h2>kube-proxy</h2>
+
+<p>k8s支持2种proxy模式，userspace和iptables。从v1.2版本开始，默认采用iptables proxy。那么这两种模式有什么不同吗？</p>
+
+<p>1、userspace</p>
+
+<p>顾名思义，userspace即用户空间。为什么这么叫呢？看下面的图。</p>
+
+<p><img src="/images/custom/services-userspace-overview.svg" alt="" /></p>
+
+<p>kube-proxy会为每个service随机监听一个端口(proxy port)，并增加一条iptables规则：所以到clusterIP:Port 的报文都redirect到proxy port；kube-proxy从它监听的proxy port收到报文后，走round robin（默认）或者session affinity（会话亲和力，即同一client IP都走同一链路给同一pod服务），分发给对应的pod。</p>
+
+<p>显然userspace会造成所有报文都走一遍用户态，性能不高，现在k8s已经不再使用了。</p>
+
+<p>2、iptables</p>
+
+<p>我们回过头来看看userspace，既然用户态会增加性能损耗，那么有没有办法不走呢？实际上用户态也只是一个报文LB，通过iptables完全可以搞定。k8s下面这张图很清晰的说明了iptables方式与userspace方式的不同：kube-proxy只是作为controller，而不是server，真正服务的是内核的netfilter，体现在用户态则是iptables。</p>
+
+<p>kube-proxy的iptables方式也支持round robin(默认)和session affinity。</p>
+
+<p><img src="/images/custom/services-iptables-overview.svg" alt="" /></p>
+
+<p>那么iptables是怎么做到LB，而且还能round-robin呢？我们通过iptables-save来看my-nginx这个服务在某一个node上的iptables规则。</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">-A KUBE-SERVICES -d 10.11.97.177/32 -p tcp -m comment --comment <span class="s2">&quot;default/my-nginx: cluster IP&quot;</span> -m tcp --dport <span class="m">80</span> -j KUBE-SVC-BEPXDJBUHFCSYIC3
+
+-A KUBE-SVC-BEPXDJBUHFCSYIC3 -m comment --comment <span class="s2">&quot;default/my-nginx:&quot;</span> -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-U4UWLP4OR3LOJBXU
+-A KUBE-SVC-BEPXDJBUHFCSYIC3 -m comment --comment <span class="s2">&quot;default/my-nginx:&quot;</span> -j KUBE-SEP-QHRWSLKOO5YUPI7O
+
+-A KUBE-SEP-U4UWLP4OR3LOJBXU -s 10.244.1.10/32 -m comment --comment <span class="s2">&quot;default/my-nginx:&quot;</span> -j KUBE-MARK-MASQ
+-A KUBE-SEP-U4UWLP4OR3LOJBXU -p tcp -m comment --comment <span class="s2">&quot;default/my-nginx:&quot;</span> -m tcp -j DNAT --to-destination 10.244.1.10:80
+
+-A KUBE-SEP-QHRWSLKOO5YUPI7O -s 10.244.2.10/32 -m comment --comment <span class="s2">&quot;default/my-nginx:&quot;</span> -j KUBE-MARK-MASQ
+-A KUBE-SEP-QHRWSLKOO5YUPI7O -p tcp -m comment --comment <span class="s2">&quot;default/my-nginx:&quot;</span> -m tcp -j DNAT --to-destination 10.244.2.10:80</code></pre></div>
+
+
+<p>第1条规则，终于看到这个virtual IP了。node上不需要有这个ip地址，iptables在看到目的地址为virutal ip的符合规则tcp报文，会走KUBE-SVC-BEPXDJBUHFCSYIC3规则。</p>
+
+<p>第2/3条规则，KUBE-SVC-BEPXDJBUHFCSYIC3链实现了将报文按50%的统计概率随机匹配到2条规则(round-robin)。</p>
+
+<p>第4/5和5/6为成对的2组规则，将报文转给了真正的服务pod。</p>
+
+<p>至此，从物理node收到目的地址为10.11.97.177、端口号为80的报文开始，到pod my-nginx收到报文并响应，描述了一个完整的链路。可以看到，整个报文链路上没有经过任何用户态进程，效率和稳定性都比较高。</p>
+
+<h2>NodePort</h2>
+
+<p>上面的例子里，由于10.11.97.177其实还是在集群内有效地址，由于实际上并不存在这个地址，当从集群外访问时会访问失败，这时需要将service暴漏出去。k8s给出的一个方案是NodePort，客户端根据NodePort+集群内任一物理节点的IP，就可以访问k8s的service了。这又是怎么做到的呢？</p>
+
+<p>答案还是iptables。我们来看下面这个sock-shop的例子，其创建方法见k8s.io，不再赘述。</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@localhost k8s<span class="o">]</span><span class="c"># kubectl describe svc front-end -n sock-shop</span>
+Name:                   front-end
+Namespace:              sock-shop
+Labels:                 <span class="nv">name</span><span class="o">=</span>front-end
+Selector:               <span class="nv">name</span><span class="o">=</span>front-end
+Type:                   NodePort
+IP:                     10.15.9.0
+Port:                   &lt;<span class="nb">unset</span>&gt; 80/TCP
+NodePort:               &lt;<span class="nb">unset</span>&gt; 30001/TCP
+Endpoints:              10.244.2.5:8079
+Session Affinity:       None</code></pre></div>
+
+
+<p>在任一node上查看iptables-save：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">-A KUBE-NODEPORTS -p tcp -m comment --comment <span class="s2">&quot;sock-shop/front-end:&quot;</span> -m tcp --dport <span class="m">30001</span> -j KUBE-MARK-MASQ
+-A KUBE-NODEPORTS -p tcp -m comment --comment <span class="s2">&quot;sock-shop/front-end:&quot;</span> -m tcp --dport <span class="m">30001</span> -j KUBE-SVC-LFMD53S3EZEAOUSJ
+
+-A KUBE-SERVICES -d 10.15.9.0/32 -p tcp -m comment --comment <span class="s2">&quot;sock-shop/front-end: cluster IP&quot;</span> -m tcp --dport <span class="m">80</span> -j KUBE-SVC-LFMD53S3EZEAOUSJ
+
+-A KUBE-SVC-LFMD53S3EZEAOUSJ -m comment --comment <span class="s2">&quot;sock-shop/front-end:&quot;</span> -j KUBE-SEP-SM6TGF2R62ADFGQA
+
+-A KUBE-SEP-SM6TGF2R62ADFGQA -s 10.244.2.5/32 -m comment --comment <span class="s2">&quot;sock-shop/front-end:&quot;</span> -j KUBE-MARK-MASQ
+-A KUBE-SEP-SM6TGF2R62ADFGQA -p tcp -m comment --comment <span class="s2">&quot;sock-shop/front-end:&quot;</span> -m tcp -j DNAT --to-destination 10.244.2.5:8079</code></pre></div>
+
+
+<p>聪明如你，一定已经看明白了吧。</p>
+
+<p>要是还不明白，看看这篇文章：源地址审计：<a href="https://ieevee.com/tech/2017/09/18/k8s-svc-src.html">追踪 kubernetees 服务的SNAT</a> 。</p>
+
+<p>不过kube-proxy的iptables有个缺陷，即当pod故障时无法自动重试，需要依赖readiness probes，主要思想就是创建一个探测容器，当检测到后端pod挂了的时候，更新iptables。</p>
+
+<p>在用NodePort的时候，经常会有人问一个问题，NodePort指定的端口(30000+)，而client建立tcp连接时，本地端口是操作系统随机选定的(30000+)，如何防止产生冲突呢？</p>
+
+<p>解决办法是kube-proxy进程会去起一个tcp listen socket，监听端口号就是NodePort。可以把这个socket理解为“占位符”，目的是为了让操作系统跳开该端口。</p>
+
+<p>转载自<a href="https://ieevee.com/tech/2017/01/20/k8s-service.html#kube-proxy">谈谈kubernets的service组件的Virtual IP</a></p>
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

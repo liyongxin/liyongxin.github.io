@@ -9,7 +9,7 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="2018-05-09 16:33:42 +0800 shell 常用命令随手记 统计系统各类连接数 netstat -n | awk &#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39; 结果类似如下格式： ESTABLISHED &hellip;">
+	<meta name="description" content="2018-05-17 20:30:37 +0800 javascript javascript运行顺序详解 JavaScript是一种描述型脚本语言，它不同于java或C#等编译性语言,它不需要进行编译成中间语言,而是由浏览器进行动态地解析与执行。如果你不能理解javaScript语言的运行机制 &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -23,6 +23,7 @@
 	<link href="/favicon.png" rel="shortcut icon">
 	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
 	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/custom.css"  rel="stylesheet" type="text/css">
 	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
 	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
        	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
@@ -101,6 +102,198 @@
 			<div class="mid-col-container">
 				<div id="content" class="inner">
 <div itemscope itemtype="http://schema.org/Blog">
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-05-17T20:30:37+08:00" data-updated="true" itemprop="datePublished">2018-05-17 20:30:37 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/javascript/'>javascript</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/" itemprop="url">javascript运行顺序详解</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>JavaScript是一种描述型脚本语言，它不同于java或C#等编译性语言,它不需要进行编译成中间语言,而是由浏览器进行动态地解析与执行。如果你不能理解javaScript语言的运行机制，或者简单地说，你不能掌握javascript的执行顺序，那你就犹如伯乐驾驭不了千里马，让千里马脱缰而出，四处乱窜。
+那么JavaScript是怎么来进行解析的吗？它的执行顺序又是如何的呢？在了解这些之前，我们先来认识几个重要的术语：</p>
+
+<h3>代码块</h3>
+
+<p><code>JavaScript</code>中的代码块是指由<code>&lt;script&gt;</code>标签分割的代码段。例如：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 示例代码</span>
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块一&quot;</span><span class="p">);</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;这是代码块二&quot;</span><span class="p">);</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<p>JS是按照代码块来进行编译和执行的，代码块间相互独立，但变量和方法共享。什么意思呢? 举个例子，你就明白了：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>   <span class="c1">//因为没有定义str，所以浏览器会出错，下面的不能运行</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块一&quot;</span><span class="p">);</span>  <span class="c1">//没有运行到这里</span>
+    <span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="s2">&quot;我是代码块一变量&quot;</span><span class="p">;</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span>
+
+<span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;我是代码块二&quot;</span><span class="p">);</span>  <span class="c1">//这里有运行到</span>
+    <span class="nx">alert</span><span class="p">(</span><span class="nx">test</span><span class="p">);</span>  <span class="c1">//弹出&quot;我是代码块一变量&quot;</span>
+<span class="o">&lt;</span><span class="err">/script&gt;</span></code></pre></div>
+
+
+<p>上面的代码中代码块一中运行报错，但不影响代码块二的执行，这就是代码块间的独立性，而代码块二中能调用到代码一中的变量，则是块间共享性。</p>
+
+
+		
+		<a href="/blog/2018/05/17/javascriptyun-xing-shun-xu-xiang-jie/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-05-15T20:02:51+08:00" data-updated="true" itemprop="datePublished">2018-05-15 20:02:51 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" itemprop="url">GreenPlum脚本化安装</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>由于手动安装<code>Greenplum</code>过于繁琐，考虑对安装过程进行自动化，针对手动安装的过程，大致整理了几个脚本，简化安装程序，安装过程中必要的交互操作可以通过<code>expect</code>来实现，比如多机互信环节、<code>master</code>安装<code>GreenPlum</code>过程等。
+大致过程如下：</p>
+
+<h2>准备脚本</h2>
+
+<p><code>root</code>用户登录<code>master</code>节点，创建<code>/opt/gp</code>目录</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir /opt/gp</code></pre></div>
+
+
+<p>拷贝<code>gp.tar</code>到<code>/opt/gp</code>目录，解压</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar -xvf gp.tar -C /opt/gp
+chmod -R <span class="m">777</span> /opt/gp</code></pre></div>
+
+
+<h2>master安装GP</h2>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">cd</span> /opt/gp
+./greenplum-db-4.3.0.0-build-3-RHEL5-x86_64.bin</code></pre></div>
+
+
+<h2>关闭相关服务，执行脚本拷贝</h2>
+
+<h4>配置hosts文件,内容参照如下</h4>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">222</span> <span class="n">mdw</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">223</span> <span class="n">smdw</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">224</span> <span class="n">sdw1</span>
+<span class="mi">10</span><span class="o">.</span><span class="mi">68</span><span class="o">.</span><span class="mi">28</span><span class="o">.</span><span class="mi">225</span> <span class="n">sdw2</span></code></pre></div>
+
+
+
+
+
+		
+		<a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-05-14T20:24:55+08:00" data-updated="true" itemprop="datePublished">2018-05-14 20:24:55 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/05/14/greenpluman-zhuang/" itemprop="url">GreenPlum安装</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下：</p>
+
+<h3>安装前准备</h3>
+
+<h4>网络规划</h4>
+
+<p>Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。Master主机和Segment主机之间会组成一个内部网络（LAN）。
+为了充分发挥Greenplum数据库并行处理的性能，对网络带宽要求较高。服务器会配置多个网卡，内部网需要配置多个网段的IP。需要对外连接的服务器需配置外部IP。
+建议在Greenplum数据库系统安装之前，把网络配置规划好。
+<img src="/images/network.png" alt="" /></p>
+
+<h4>存储空间规划</h4>
+
+<p>首先，需要评估目标数据库数据所需要的空间容量。建议了解客户搭建Greenplum数据库的具体应用。举例：估计数据库所需空间为U，数据库需要启用Mirror，磁盘阵列总可用空间为D（Raid之后）。空间规划服务和如下公式：
+<code>2 * U + U / 3 = D * 70%</code>
+磁盘空间D平均分配到各个Segment服务器上。
+Master需要相应的空间。使用服务器内置硬盘的计算方式类似。</p>
+
+<h4>数据库实例规划</h4>
+
+<p>规划每个Segment服务器上建立的数据库实例的数量（instance数量），通常建议每2个CPU内核（core）对应一个数据库实例。
+如 ：<code>2*4</code>核CPU的服务器，可配置4个实例。</p>
+
+
+		
+		<a href="/blog/2018/05/14/greenpluman-zhuang/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
 
 
     <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
@@ -315,97 +508,13 @@ gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39
 
 </article>
 
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-04-24T00:00:00+08:00" data-updated="true" itemprop="datePublished">2018-04-24 00:00:00 +0800</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/markdown/'>markdown</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/" itemprop="url">马克飞象-markdown</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p><strong>马克飞象</strong>是一款专为印象笔记（Evernote）打造的Markdown编辑器，通过精心的设计与技术实现，配合印象笔记强大的存储和同步功能，带来前所未有的书写体验。特点概述：</p>
-
-<ul>
-<li><strong>功能丰富</strong> ：支持高亮代码块、<em>LaTeX</em> 公式、流程图，本地图片以及附件上传，甚至截图粘贴，工作学习好帮手；</li>
-<li><strong>得心应手</strong> ：简洁高效的编辑器，提供<a href="http://maxiang.info/client_zh">桌面客户端</a>以及<a href="https://chrome.google.com/webstore/detail/kidnkfckhbdkfgbicccmdggmpgogehop">离线Chrome App</a>，支持移动端 Web；</li>
-<li><strong>深度整合</strong> ：支持选择笔记本和添加标签，支持从印象笔记跳转编辑，轻松管理。</li>
-</ul>
-
-
-<h2>Markdown简介</h2>
-
-<blockquote><p>Markdown 是一种轻量级标记语言，它允许人们使用易读易写的纯文本格式编写文档，然后转换成格式丰富的HTML页面。    —— <a href="https://zh.wikipedia.org/wiki/Markdown">维基百科</a></p></blockquote>
-
-<p>正如您在阅读的这份文档，它使用简单的符号标识不同的标题，将某些文字标记为<strong>粗体</strong>或者<em>斜体</em>，创建一个<a href="http://www.example.com">链接</a>或一个脚注<sup id="fnref:1"><a href="#fn:1" rel="footnote">1</a></sup>。下面列举了几个高级功能，更多语法请按<code>Cmd + /</code>查看帮助。</p>
-
-<h3>代码块</h3>
-
-<figure class='code'><figcaption><span>linenos:false</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='python'><span class='line'><span class="nd">@requires_authorization</span>
-</span><span class='line'><span class="k">def</span> <span class="nf">somefunc</span><span class="p">(</span><span class="n">param1</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="n">param2</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-</span><span class='line'>    <span class="sd">&#39;&#39;&#39;A docstring&#39;&#39;&#39;</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">param1</span> <span class="o">&gt;</span> <span class="n">param2</span><span class="p">:</span> <span class="c"># interesting</span>
-</span><span class='line'>        <span class="k">print</span> <span class="s">&#39;Greater&#39;</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">(</span><span class="n">param2</span> <span class="o">-</span> <span class="n">param1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">None</span>
-</span><span class='line'><span class="k">class</span> <span class="nc">SomeClass</span><span class="p">:</span>
-</span><span class='line'>    <span class="k">pass</span>
-</span><span class='line'><span class="o">&gt;&gt;&gt;</span> <span class="n">message</span> <span class="o">=</span> <span class="s">&#39;&#39;&#39;interpreter</span>
-</span><span class='line'><span class="s">... prompt&#39;&#39;&#39;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">pyenv</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span> <span class="o">|</span> <span class="n">bash</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">curl</span> <span class="o">-</span><span class="n">L</span> <span class="ss">https</span><span class="p">:</span><span class="sr">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">pyenv</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span><span class="o">/</span><span class="n">master</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">pyenv</span><span class="o">-</span><span class="n">installer</span> <span class="o">|</span> <span class="n">bash</span></code></pre></div>
-
-
-
-
-
-		
-		<a href="/blog/2018/04/24/qs-sheng-ji-zu-jian-liu-cheng/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
 </div>
 <nav id="pagenavi">
     
         <a href="/posts2" class="prev">Prev</a>
     
+    
+        <a href="/posts4" class="next">Next</a>
     
     <div class="center"><a href="/blog/archives">Blog Archives</a></div>
 </nav></div>

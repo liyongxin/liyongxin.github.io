@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>http://liyongxin.github.io/blog/2019/04/03/kubernetesde-service-cluster-ip/</loc>
+<lastmod>2019-04-03T17:17:23+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2019/03/18/yan-zheng-kubernetesde-podan-quan-ce-lue/</loc>
+<lastmod>2019-03-18T14:19:02+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2019/03/15/supervisord-guan-li-nginx-app/</loc>
+<lastmod>2019-03-15T10:47:18+08:00</lastmod>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/2019/03/03/pythondiao-yong-ansibleren-wu-bing-huo-qu-fan-hui-zhi/</loc>
 <lastmod>2019-03-03T17:59:19+08:00</lastmod>
 </url>
@@ -96,5 +108,20 @@
 </url>
 <url>
 <loc>http://liyongxin.github.io/blog/categories/case/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/supervisord/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/nginx/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/pod/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/an-quan/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/clusterip/</loc>
 </url>
 </urlset>
