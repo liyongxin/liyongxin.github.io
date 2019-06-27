@@ -4,7 +4,7 @@
   <title><![CDATA[Category: k8s | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/k8s/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-04-03T17:36:26+08:00</updated>
+  <updated>2019-06-27T19:20:27+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -12,6 +12,203 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[记录一次高可用集群使用kubeadm v1.9.6升级v1.13 的问题]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/04/22/ji-lu-yi-ci-kubeadm-v1-dot-12sheng-ji-v1-dot-13-de-wen-ti/"/>
+    <updated>2019-04-22T14:12:52+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/04/22/ji-lu-yi-ci-kubeadm-v1-dot-12sheng-ji-v1-dot-13-de-wen-ti</id>
+    <content type="html"><![CDATA[<p>项目中使用kubeadm 将k8s版本从v1.9.6升级到1.13.4,由于无法跨版本升级，所以大致流程是</p>
+
+<ul>
+<li>v1.9.6 -> v1.10.8</li>
+<li>v1.10.8 -> v1.11.5</li>
+<li>v1.11.5 -> v1.12.4</li>
+<li>v1.12.4 -> v1.13.4</li>
+</ul>
+
+
+<p>其中操作集群A从<code>v1.9.6</code>到<code>v1.10.8</code>升级过程中，执行<code>upgrade</code>的时候出现了如下问题：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubeadm upgrade apply v1.10.8 -y</span>
+<span class="p">&amp;</span>hellip<span class="p">;</span>
+<span class="o">[</span>upgrade/prepull<span class="o">]</span> Successfully prepulled the images <span class="k">for</span> all the control plane components
+<span class="o">[</span>upgrade/apply<span class="o">]</span> Upgrading your Static Pod-hosted control plane to version <span class="p">&amp;</span>ldquo<span class="p">;</span>v1.10.8<span class="p">&amp;</span>rdquo<span class="p">;&amp;</span>hellip<span class="p">;</span>
+Static pod: kube-apiserver-rz-dev-master01 <span class="nb">hash</span>: a82830fd687fdabd030b65ee6c4b4fd4
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-scheduler-rz-dev-master01 <span class="nb">hash</span>: a0adc2bf23e7d5336ecd4677ce95938c
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> Writing new Static Pod manifests to <span class="p">&amp;</span>ldquo<span class="p">;</span>/etc/kubernetes/tmp/kubeadm-upgraded-manifests500670946<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="o">[</span>controlplane<span class="o">]</span> Adding extra host path mount <span class="p">&amp;</span>ldquo<span class="p">;</span>k8s<span class="p">&amp;</span>rdquo<span class="p">;</span> to <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-controller-manager<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> current and new manifests of kube-apiserver are equal, skipping upgrade
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> Moved new manifest to <span class="p">&amp;</span>ldquo<span class="p">;</span>/etc/kubernetes/manifests/kube-controller-manager.yaml<span class="p">&amp;</span>rdquo<span class="p">;</span> and backed up old manifest to <span class="p">&amp;</span>ldquo<span class="p">;</span>/etc/kubernetes/tmp/kubeadm-backup-manifests-2019-04-22-13-04-58/kube-controller-manager.yaml<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> Waiting <span class="k">for</span> the kubelet to restart the component
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> This might take a minute or longer depending on the component/version gap <span class="o">(</span>timeout 5m0s<span class="o">)</span>
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+<span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
+
+<!--more-->
+
+
+<p>升级过程中一直卡在校验<code>hash</code>这步，由于之前测试没有出现类似情况，而此次出问题和测试环境唯一的区别就是该环境升级过证书，
+默认证书有效期是1年，此环境更新成30年了，所以尝试先把证书还原后再次执行<code>upgrade</code>，升级成功，具体原因未排查。</p>
+
+<p>在另一个环境从<code>v1.12</code>升级到<code>v1.13.4</code>版本时候，出现了如下情况：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubeadm upgrade apply v1.13.4 -y</span>
+<span class="o">[</span>preflight<span class="o">]</span> Running pre-flight checks.
+<span class="o">[</span>upgrade<span class="o">]</span> Making sure the cluster is healthy:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Making sure the configuration is correct:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Reading configuration from the cluster<span class="p">&amp;</span>hellip<span class="p">;</span>
+<span class="o">[</span>upgrade/config<span class="o">]</span> FYI: You can look at this config file with <span class="p">&amp;</span>lsquo<span class="p">;</span>kubectl -n kube-system get cm kubeadm-config -oyaml<span class="p">&amp;</span>rsquo<span class="p">;</span>
+FATAL: failed to get node registration: node doesn<span class="p">&amp;</span>rsquo<span class="p">;</span>t have kubeadm.alpha.kubernetes.io/cri-socket annotation</code></pre></div></p>
+
+<p>报错提示<code>node</code>缺少<code>annotation</code>，而查看操作<code>kubeadm</code>升级的<code>master node</code>，是存在<code>cri-socket</code>的<code>annotation</code>的，但是其他两台<code>master</code>
+不存在，于是尝试手动添加<code>annotation</code>，然后再次跑<code>upgrade</code>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl annotate node &lt;nodename&gt; kubeadm.alpha.kubernetes.io/cri-socket=/var/run/dockershim.sock</span>
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubeadm upgrade apply v1.13.4 -y</span>
+<span class="o">[</span>preflight<span class="o">]</span> Running pre-flight checks.
+<span class="o">[</span>upgrade<span class="o">]</span> Making sure the cluster is healthy:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Making sure the configuration is correct:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Reading configuration from the cluster<span class="p">&amp;</span>hellip<span class="p">;</span>
+<span class="o">[</span>upgrade/config<span class="o">]</span> FYI: You can look at this config file with <span class="p">&amp;</span>lsquo<span class="p">;</span>kubectl -n kube-system get cm kubeadm-config -oyaml<span class="p">&amp;</span>rsquo<span class="p">;</span>
+<span class="o">[</span>upgrade/config<span class="o">]</span> FATAL: failed to getAPIEndpoint: failed to get APIEndpoint information <span class="k">for</span> this node</code></pre></div>
+又报错找不到<code>APIEndpoint</code>，尝试执行看下<code>kubeadm-config</code>的数据
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl -n kube-system get cm kubeadm-config -oyaml|grep -A5 cloud-cn-master-1</span>
+  ClusterStatus: <span class="p">|</span>
+    apiEndpoints:
+      cloud-cn-master-1:
+        advertiseAddress: 10.0.128.251
+        bindPort: 6443
+    apiVersion: kubeadm.k8s.io/v1beta1
+    kind: ClusterStatus</code></pre></div></p>
+
+<p>发现该<code>apiEndpoints</code>是存在的，但是只存在这一个节点，于是尝试<code>edit cm</code>把另外两个节点的<code>apiEndpoint</code>也配置上，再次<code>upgrade</code>，
+发现又出现了校验<code>hash</code>不通过的错误，于是尝试去看下<code>kubeadm</code>的源码，理清楚这个<code>config</code>阶段的思路，
+源码可以参考<a href="https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/util/config/cluster.go">此处</a>,
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// if this isn&amp;rsquo;t a new controlplane instance (e.g. in case of kubeadm upgrades)</span>
+<span class="c1">// get nodes specific information as well</span>
+<span class="k">if</span> <span class="p">!</span><span class="nx">newControlPlane</span> <span class="p">{</span>
+    <span class="c1">// gets the nodeRegistration for the current from the node object</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">getNodeRegistration</span><span class="p">(</span><span class="nx">kubeconfigDir</span><span class="p">,</span> <span class="nx">client</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">amp</span><span class="p">;</span><span class="nx">initcfg</span><span class="p">.</span><span class="nx">NodeRegistration</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">failed</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">node</span> <span class="nx">registration</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;)</span>
+    <span class="p">}</span>
+    <span class="c1">// gets the APIEndpoint for the current node from then ClusterStatus in the kubeadm-config ConfigMap</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">getAPIEndpoint</span><span class="p">(</span><span class="nx">configMap</span><span class="p">.</span><span class="nx">Data</span><span class="p">,</span> <span class="nx">initcfg</span><span class="p">.</span><span class="nx">NodeRegistration</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">amp</span><span class="p">;</span><span class="nx">initcfg</span><span class="p">.</span><span class="nx">LocalAPIEndpoint</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">failed</span> <span class="nx">to</span> <span class="nx">getAPIEndpoint</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></div></p>
+
+<p>该部分即对应执行<code>upgrade</code>的逻辑，先去<code>getNodeRegistration</code>然后去<code>getAPIEndpoint</code>，看下getAPIEndpoint的逻辑
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// getAPIEndpoint returns the APIEndpoint for the current node</span>
+<span class="kd">func</span> <span class="nx">getAPIEndpoint</span><span class="p">(</span><span class="nx">data</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">,</span> <span class="nx">nodeName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">apiEndpoint</span> <span class="o">*</span><span class="nx">kubeadmapi</span><span class="p">.</span><span class="nx">APIEndpoint</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// gets the ClusterStatus from kubeadm-config</span>
+    <span class="nx">clusterStatus</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">UnmarshalClusterStatus</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">err</span>
+    <span class="p">}&lt;</span><span class="o">/</span><span class="nx">p</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">pre</span><span class="p">&gt;&lt;</span><span class="nx">code</span><span class="p">&gt;</span><span class="c1">// gets the APIEndpoint for the current machine from the ClusterStatus</span>
+<span class="nx">e</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">clusterStatus</span><span class="p">.</span><span class="nx">APIEndpoints</span><span class="p">[</span><span class="nx">nodeName</span><span class="p">]</span>
+<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;failed to get APIEndpoint information for this node&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">apiEndpoint</span><span class="p">.</span><span class="nx">AdvertiseAddress</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">AdvertiseAddress</span>
+<span class="nx">apiEndpoint</span><span class="p">.</span><span class="nx">BindPort</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">BindPort</span>
+<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">&lt;</span><span class="o">/</span><span class="nx">code</span><span class="p">&gt;&lt;</span><span class="o">/</span><span class="nx">pre</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">p</span><span class="p">&gt;}</span></code></pre></div>
+会根据<code>nodeName</code>和<code>kubeadm-config</code>这个<code>configmap</code>的数据去拿<code>APIEndpoint</code>的<code>AdvertiseAddress</code>和<code>BindPort</code>信息，但是手动确认过确实是存在
+<code>APIEndpoint</code>的配置的，所以再次查看传过来的<code>nodeName</code>是否正确，由于<code>nodeName</code>是从<code>NodeRegistration</code>中获取的先看下<code>NodeRegistration</code>的获取逻辑:</p>
+
+<p><div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// getNodeRegistration returns the nodeRegistration for the current node</span>
+<span class="kd">func</span> <span class="nx">getNodeRegistration</span><span class="p">(</span><span class="nx">kubeconfigDir</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">client</span> <span class="nx">clientset</span><span class="p">.</span><span class="nx">Interface</span><span class="p">,</span> <span class="nx">nodeRegistration</span> <span class="o">*</span><span class="nx">kubeadmapi</span><span class="p">.</span><span class="nx">NodeRegistrationOptions</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// gets the name of the current node</span>
+    <span class="nx">nodeName</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">getNodeNameFromKubeletConfig</span><span class="p">(</span><span class="nx">kubeconfigDir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">failed</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">node</span> <span class="nx">name</span> <span class="nx">from</span> <span class="nx">kubelet</span> <span class="nx">config</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;)</span>
+    <span class="p">}&lt;</span><span class="o">/</span><span class="nx">p</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">pre</span><span class="p">&gt;&lt;</span><span class="nx">code</span><span class="p">&gt;</span><span class="c1">// gets the corresponding node and retrieves attributes stored there.</span>
+<span class="nx">node</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">CoreV1</span><span class="p">().</span><span class="nx">Nodes</span><span class="p">().</span><span class="nx">Get</span><span class="p">(</span><span class="nx">nodeName</span><span class="p">,</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">GetOptions</span><span class="p">{})</span>
+<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="s">&quot;failed to get corresponding node&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">criSocket</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">ObjectMeta</span><span class="p">.</span><span class="nx">Annotations</span><span class="p">[</span><span class="nx">constants</span><span class="p">.</span><span class="nx">AnnotationKubeadmCRISocket</span><span class="p">]</span>
+<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;node %s doesn&#39;t have %s annotation&quot;</span><span class="p">,</span> <span class="nx">nodeName</span><span class="p">,</span> <span class="nx">constants</span><span class="p">.</span><span class="nx">AnnotationKubeadmCRISocket</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// returns the nodeRegistration attributes</span>
+<span class="nx">nodeRegistration</span><span class="p">.</span><span class="nx">Name</span> <span class="p">=</span> <span class="nx">nodeName</span>
+<span class="nx">nodeRegistration</span><span class="p">.</span><span class="nx">CRISocket</span> <span class="p">=</span> <span class="nx">criSocket</span>
+<span class="nx">nodeRegistration</span><span class="p">.</span><span class="nx">Taints</span> <span class="p">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Taints</span>
+<span class="c1">// NB. currently nodeRegistration.KubeletExtraArgs isn&#39;t stored at node level but only in the kubeadm-flags.env</span>
+<span class="c1">//     that isn&#39;t modified during upgrades</span>
+<span class="c1">//     in future we might reconsider this thus enabling changes to the kubeadm-flags.env during upgrades as well</span>
+<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">&lt;</span><span class="o">/</span><span class="nx">code</span><span class="p">&gt;&lt;</span><span class="o">/</span><span class="nx">pre</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">p</span><span class="p">&gt;}</span></code></pre></div>
+发现<code>nodeName</code>是通过<code>getNodeNameFromKubeletConfig</code>获取的，也就是说读取的是<code>kubelet.conf</code>配置，看下<code>getNodeNameFromKubeletConfig</code>逻辑：
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// getNodeNameFromConfig gets the node name from a kubelet config file</span>
+<span class="c1">// TODO: in future we want to switch to a more canonical way for doing this e.g. by having this</span>
+<span class="c1">//       information in the local kubelet config.yaml</span>
+<span class="kd">func</span> <span class="nx">getNodeNameFromKubeletConfig</span><span class="p">(</span><span class="nx">kubeconfigDir</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// loads the kubelet.conf file</span>
+    <span class="nx">fileName</span> <span class="o">:=</span> <span class="nx">filepath</span><span class="p">.</span><span class="nx">Join</span><span class="p">(</span><span class="nx">kubeconfigDir</span><span class="p">,</span> <span class="nx">constants</span><span class="p">.</span><span class="nx">KubeletKubeConfigFileName</span><span class="p">)</span>
+    <span class="nx">config</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">clientcmd</span><span class="p">.</span><span class="nx">LoadFromFile</span><span class="p">(</span><span class="nx">fileName</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;,</span> <span class="nx">err</span>
+    <span class="p">}&lt;</span><span class="o">/</span><span class="nx">p</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">pre</span><span class="p">&gt;&lt;</span><span class="nx">code</span><span class="p">&gt;</span><span class="c1">// gets the info about the current user</span>
+<span class="nx">authInfo</span> <span class="o">:=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">AuthInfos</span><span class="p">[</span><span class="nx">config</span><span class="p">.</span><span class="nx">Contexts</span><span class="p">[</span><span class="nx">config</span><span class="p">.</span><span class="nx">CurrentContext</span><span class="p">].</span><span class="nx">AuthInfo</span><span class="p">]</span>
+
+<span class="c1">// gets the X509 certificate with current user credentials</span>
+<span class="kd">var</span> <span class="nx">certs</span> <span class="p">[]</span><span class="o">*</span><span class="nx">x509</span><span class="p">.</span><span class="nx">Certificate</span>
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificateData</span><span class="p">)</span> <span class="o">&amp;</span><span class="nx">gt</span><span class="p">;</span> <span class="mi">0</span> <span class="p">{</span>
+    <span class="c1">// if the config file uses an embedded x509 certificate (e.g. kubelet.conf created by kubeadm), parse it</span>
+    <span class="k">if</span> <span class="nx">certs</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">certutil</span><span class="p">.</span><span class="nx">ParseCertsPEM</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificateData</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nx">err</span>
+    <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificate</span><span class="p">)</span> <span class="o">&amp;</span><span class="nx">gt</span><span class="p">;</span> <span class="mi">0</span> <span class="p">{</span>
+    <span class="c1">// if the config file links an external x509 certificate (e.g. kubelet.conf created by TLS bootstrap), load it</span>
+    <span class="k">if</span> <span class="nx">certs</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">certutil</span><span class="p">.</span><span class="nx">CertsFromFile</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificate</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nx">err</span>
+    <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;invalid kubelet.conf. X509 certificate expected&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// We are only putting one certificate in the certificate pem file, so it&#39;s safe to just pick the first one</span>
+<span class="c1">// TODO: Support multiple certs here in order to be able to rotate certs</span>
+<span class="nx">cert</span> <span class="o">:=</span> <span class="nx">certs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1">// gets the node name from the certificate common name</span>
+<span class="k">return</span> <span class="nx">strings</span><span class="p">.</span><span class="nx">TrimPrefix</span><span class="p">(</span><span class="nx">cert</span><span class="p">.</span><span class="nx">Subject</span><span class="p">.</span><span class="nx">CommonName</span><span class="p">,</span> <span class="nx">constants</span><span class="p">.</span><span class="nx">NodesUserPrefix</span><span class="p">),</span> <span class="kc">nil</span>
+<span class="p">&lt;</span><span class="o">/</span><span class="nx">code</span><span class="p">&gt;&lt;</span><span class="o">/</span><span class="nx">pre</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">p</span><span class="p">&gt;}</span></code></pre></div>
+发现kubeadm先加载本机的<code>kubelet.conf</code>文件，然后尝试去找当前context中配置的用户的client-certificate-data数据，然后解析cert
+的信息，找到subject的CommanName,来当作NodeName然后去kubeadm-config中找对应的apiEndpoint,所以尝试解析下当前的证书数据，看下CN的值：
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">先获取</span><span class="n">client</span><span class="o">-</span><span class="n">certificate</span><span class="o">-</span><span class="n">data</span><span class="err">并做</span><span class="n">base64</span><span class="err">解密得到</span><span class="n">cert</span><span class="err">信息</span><span class="p">,</span><span class="err">$</span><span class="n">client</span><span class="o">-</span><span class="n">certificate</span><span class="o">-</span><span class="n">data</span><span class="err">为</span><span class="n">kubelet</span><span class="o">.</span><span class="n">conf</span><span class="err">中</span><span class="n">client</span><span class="o">-</span><span class="n">certificate</span><span class="o">-</span><span class="n">data</span><span class="err">对应的内容</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># echo $client-certificate-data |base64 -d &gt; kubelet.crt</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># openssl x509 -in kubelet.crt -text |grep -i Subject</span>
+        <span class="n">Subject</span><span class="p">:</span> <span class="n">O</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">nodes</span><span class="p">,</span> <span class="n">CN</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">node</span><span class="p">:</span><span class="n">cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">2</span>
+        <span class="n">Subject</span> <span class="n">Public</span> <span class="n">Key</span> <span class="n">Info</span><span class="p">:</span></code></pre></div>
+👆，好吧原因定位到了，是因为获取到的<code>CommanName</code>与本机不匹配，于是在<code>cloud-cn-master-1</code>上获取到的是<code>cloud-cn-master-2</code>的<code>nodeName</code>，
+然后去获取<code>annotation</code>自然也就拿不到了，然后即使手动<code>annotate</code>了，也是临时过了一步，到<code>configmap</code>中取<code>apiEndpoint</code>自然也获取不到，
+哪怕再手动维护<code>apiEndpoint</code>，那么后续到校验hash也是无法通过，所以根本原因在于升级证书的时候没有<code>kubelet</code>证书被覆盖了，导致一系列的问题</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[kubernetes的service cluster ip]]></title>
@@ -599,266 +796,6 @@ system:basic-user
 
 <p>继续查找<a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">kubernetes官方的信息</a>,得知
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">Node authorization is a special-purpose authorization mode that specifically authorizes API requests made by kubelets.</code></pre></div></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[kubectl的认证与授权]]></title>
-    <link href="http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/"/>
-    <updated>2018-08-25T14:41:00+08:00</updated>
-    <id>http://liyongxin.github.io/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan</id>
-    <content type="html"><![CDATA[<p>关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章：</p>
-
-<ul>
-<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/">Controlling Access to the Kubernetes API</a></li>
-<li><a href="https://jimmysong.io/posts/user-authentication-in-kubernetes/">Kubernetes 中的用户与身份认证授权</a></li>
-<li><a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">Kubernetes RBAC - 基于角色的访问控制</a></li>
-</ul>
-
-
-<h2>Kubernetes API的访问控制原理回顾</h2>
-
-<p>Kubernetes集群的访问权限控制由<code>kube-apiserver</code>负责，<code>kube-apiserver</code>的访问权限控制由身份验证(authentication)、授权(authorization)
-和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
-<img src="/images/k8s-apiserver-access-control-overview.svg" alt="" /></p>
-
-<h4>身份验证（Authentication）</h4>
-
-<p>这个环节它面对的输入是整个<code>http request</code>，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
-<code>basic auth</code>、普通token以及<code>jwt token</code>(用于serviceaccount)。</p>
-
-<p>APIServer启动时，可以指定一种Authentication方法，也可以指定多种方法。如果指定了多种方法，那么APIServer将会逐个使用这些方法对客户端请求进行验证，
-只要请求数据通过其中一种方法的验证，APIServer就会认为Authentication成功；</p>
-
-<p>在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，默认支持<code>client证书</code>验证和<code>serviceaccount</code>两种身份验证方式。
-证书认证通过设置<code>--client-ca-file</code>根证书以及<code>--tls-cert-file</code>和<code>--tls-private-key-file</code>来开启。</p>
-
-<p>在这个环节，apiserver会通过client证书或
-<code>http header</code>中的字段(比如serviceaccount的<code>jwt token</code>)来识别出请求的<code>用户身份</code>，包括”user”、”group”等，这些信息将在后面的<code>authorization</code>环节用到。</p>
-
-<h4>授权（Authorization）</h4>
-
-<p>这个环节面对的输入是<code>http request context</code>中的各种属性，包括：<code>user</code>、<code>group</code>、<code>request path</code>（比如：<code>/api/v1</code>、<code>/healthz</code>、<code>/version</code>等）、
-<code>request verb</code>(比如：<code>get</code>、<code>list</code>、<code>create</code>等)。</p>
-
-<p>APIServer会将这些属性值与事先配置好的访问策略(<code>access policy</code>）相比较。APIServer支持多种<code>authorization mode</code>，包括<code>Node、RBAC、Webhook</code>等。</p>
-
-<p>APIServer启动时，可以指定一种<code>authorization mode</code>，也可以指定多种<code>authorization mode</code>，如果是后者，只要Request通过了其中一种mode的授权，
-那么该环节的最终结果就是授权成功。在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，<code>authorization-mode</code>的默认配置是<code>”Node,RBAC”</code>。</p>
-
-<p>Node授权器主要用于各个node上的kubelet访问apiserver时使用的，其他一般均由RBAC授权器来授权。</p>
-
-<!--more-->
-
-
-<h2>kubectl的授权认证</h2>
-
-<p><code>kubeadm init</code>启动完master节点后，会默认输出类似下面的提示内容：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span>
-Your Kubernetes master has initialized successfully!&lt;/p&gt;
-
-&lt;p&gt;To start using your cluster, you need to run the following as a regular user:
-  mkdir -p <span class="nv">$HOME</span>/.kube
-  sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
-  sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config
-<span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div>
-这些信息是在告知我们如何配置<code>kubeconfig</code>文件。按照上述命令配置后，master节点上的<code>kubectl</code>就可以直接使用<code>$HOME/.kube/config</code>的信息访问<code>k8s cluster</code>了。
-并且，通过这种配置方式，<code>kubectl</code>也拥有了整个集群的管理员(root)权限。</p>
-
-<p>很多K8s初学者在这里都会有疑问：</p>
-
-<ul>
-<li>当<code>kubectl</code>使用这种<code>kubeconfig</code>方式访问集群时，<code>Kubernetes</code>的<code>kube-apiserver</code>是如何对来自<code>kubectl</code>的访问进行身份验证(<code>authentication</code>)和授权(<code>authorization</code>)的呢？</li>
-<li>为什么来自<code>kubectl</code>的请求拥有最高的管理员权限呢？</li>
-</ul>
-
-
-<h4>kubectl的身份认证（authentication）</h4>
-
-<p>我们先从kubectl使用的<code>kubeconfig</code>入手。kubectl使用的kubeconfig文件实质上就是<code>kubeadm init</code>过程中生成的<code>/etc/kubernetes/admin.conf</code>，
-我们查看一下该kubeconfig文件的内容：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl config view</span>
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: REDACTED
-    server: &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;https://192.168.8.33:6443&quot;</span>&gt;https://192.168.8.33:6443&lt;/a&gt;
-  name: kubernetes
-contexts:
-- context:
-    cluster: kubernetes
-    user: kubernetes-admin
-  name: kubernetes-admin@kubernetes
-current-context: kubernetes-admin@kubernetes
-kind: Config
-preferences: <span class="o">{}</span>
-users:
-- name: kubernetes-admin
-  user:
-    client-certificate-data: REDACTED
-    client-key-data: REDACTED</code></pre></div>
-关于kubeconfig文件的解释，可以在<a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/">这里</a>自行脑补。在这些输出信息中，我们着重提取到两个信息：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">user name: kubernetes-admin
-client-certificate-data: XXXX</code></pre></div>
-前面提到过apiserver的authentication支持通过<code>tls client certificate、basic auth、token</code>等方式对客户端发起的请求进行身份校验，
-从kubeconfig信息来看，kubectl显然在请求中使用了<code>tls client certificate</code>的方式，即客户端的证书。另外我们知道Kubernetes是没有user这种资源的，
-通过k8s API也无法创建user。</p>
-
-<p>那么kubectl的身份信息就应该“隐藏”在<code>client-certificate</code>的数据中，我们来查看一下。</p>
-
-<p>首先把<code>/etc/kubernetes/kubelet.conf</code>中的<code>client-key-data</code>内容保存在<code>admin-client-certificate.txt</code>中
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt</span>
-<span class="nv">LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBbjVLRFNhck1VZzdldmErbS9lOCswQ0tSaUl4ajY4a1lwazBYbFBEcEN4WmtLVWhpCkt2K0lqZG80RUFvWG5SWThHRUEvaUpVbmUyNzJBU3ZIeXB0OGFwOWtha3l6ZEZ1bXlKbmV2TjBuWldYeEFkQXMKUTlmcUZyVGcyTTFpTjJPYjFPb3VnR2pHenJ6bEw3Wm5xc3hQcHppOEtCeEVsM0dUVGFLVG5hSzFRWDUwNkt2aApIVkdXMTdkazZLWEltZDZhYWo0VmNNOXJaeEZ5bCs3SzFyQ2hPWXBhNzJUYWpqdEtuZm9FdzNxV0tmb0JXclBkCjJCRDhSaW4vcmlEbGNKTy9GRUt3azJQb1ZrcWx4bzdObWtld0Zma2txTVJrOHY3WTZVUTNvT1lhVDdsMFV0bEUKVzdCaEw1U0lkcTZIbGVzVU1CQkk4NDZEMnFZNk4zdGlndTFES3dJREFRQUJBb0lCQUFjMlJmekVYV3V3QkYwcQpYUy9JNmx2WjFCNEp5bEpUeW10cHZKRWN1a3VuL1dyb1BKZVk2UUVRUmN4anlHRnZLZFFtd3poWEZXdTh2aDJiCmJ2STNTTTVBMmZiNzlIaGoxQXZvK0dvc3pLVUdrSGYyZ3FtbVRvd3NMS1ZmMHZxUjQrOGhqbXg3VDlEME5KK04KYk80SlFlaGE1aFlpQU8rZlVIc0h5QWd0M0dkVFQ0eEh6elBzYjd0dXAxd1hJUVp5SnRkSTR1MGdaMmJFcUw2dQpGdm12RlF2RzY0S1dtQ0Eydk9zclNpb1QxTGpFMDJuZk11dWhvbEhxRVoxNEx4Lzk0elI4MXlYMjV2MnBCVE9yCitvOFBYNGhtUEprckJCVUNvQVZrSmlCYmVqMUh4TW1iQXlhM2ZlaXZBR01LcXh6b2wrVkltUmUwVE8xNk1WbWoKT1dzRGJYRUNnWUVBeW84aUNRR05iQ0p3QzIvOEkzaXU2TktGc2ZYZ08waC9RT0xhbGlReWlzbEx3anBadXNrVQpsaE1zR0xkQUFoZDVrZmVpTUF1UHRPbHNxb1NjeE80eDh1RUFqcUtndklVMHR1NjFjYWFPV29BTnczMkt2bDRnCk05UmxRbFVDMXRRT0htdFRsdURrSmRUQWFGQSswYjFMeVBnZFNlamV1eFl3dlR1MHV1R1BXNlVDZ1lFQXlhd0wKNEcyN05VT0JpSmpGalNPdGEvcjJtVHpEbFNPVUl6NlpyandVd1ZHbTQvRXdPZmx6czROYWd3R0RHK0tvM2lDagpySVJnUkhaMktCWXNjQUlKQk4xWVNpVjZxVzgvaEUzT3k0Y0EySFVZd1NmTktXNXZQSUNMcnVaMGxZWTJlcHFlClZLZXZUNUJWMlJvK3gxZFo2TE4vcXk0c3RHTzhTYWp0b1FxUUtvOENnWUFiQmNOTm5rWm1vYVYrOFI2YkFOT2MKdmRFV0w2NE5XcHVYWld3eDBYeG9wWGdVM2tId09Ea2wyRUx1dlN1dDI4SGRKa01kMDcwRkxvclBxTWRkUWtXcAptRGpCenBKUTlCaFhPenM3Z1RQR2dRVFZDcCtDeS8zUnpFa0I4Mk5nazRPYXJVakdmUlFTcy9KRE9FbFpJNzdECmZjNHllUDJWeWQwUXNiRm5xUVc5L1FLQmdRQzhZblU1c09jV2F6ZStCSTlOTjAyUk4zNVJTRnllblB5Tks3WGMKOXd5Z1JRaXpscUpwRldjS0FpSnppOThRRmx1T0cwa3BKd0xTRVNKd2NiNFM1eVBMb29RTnh4TGM0U21oQ2htcApMelFQL3RvZjNIRWVTYVdwQzU3dnd5Q1dhQ2ZOd1U4elh1dzVVMmVPQktFdURwL1M2cEhRc3JKWjAyeVlGaS9iCnBnVmphd0tCZ1FDbS9sejBRWXFUUFlQcG93RHpSZE84K1VaUmNVRHFKcFZ4TmdpRVdWN0pUN09qaENxVDdMUFAKQkZMYzdCY2hYTElMaElxOGhHNmJrL2dvNWt1TzhuMWpOTjFPTlNMaHh6RVp2VVgva000RE5FYjRaLzVON1JxWAp0Q0hMeFNDZXFUZVJ6K1FXRGRFL2pXaklEcU9McEdUVjdVbXJKN2kvU04rcE02dHZTWVFSUlE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo</span><span class="o">=</span></code></pre></div>
-然后对上述内容base64解密，然后存储在<code>admin.crt</code>文件中
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin-client-certificate.txt |base64 -d &gt; admin.crt</span>
-<span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># cat admin.crt</span>
-<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span>BEGIN CERTIFICATE<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span>
-MIIC8jCCAdqgAwIBAgIIQD98S9X+SVUwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
-AxMKa3ViZXJuZXRlczAeFw0xODA4MjAwNTUwMzlaFw0xOTA4MjAwNTUwNDFaMDQx
-FzAVBgNVBAoTDnN5c3RlbTptYXN0ZXJzMRkwFwYDVQQDExBrdWJlcm5ldGVzLWFk
-bWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs5Rpnr5a68Cp4/EC
-1IeebFl1z3ixDVT3pwR5YZgfy5E98IYB42c3fFrgV6fOuewOaW3bwrS9SZ4NMqB9
-6TYXlZYkwxeQIp1HE+VSdbAHww7XE8zizv9/BSEynSqDglodmmDres0Cs9/3PG2F
-B9OcAVycRzvxx87iecSzRwVF5DoopFbYkPJY/OjTQMeO8LX8YvoBYCD0ZpHxu7NE
-b9qdUhPKH7ExbgSsSVZ75npjNtdDzlFzD4+tyYkvpBIYttOWHMFMQhipOyG+t1Af
-ydVHzzsiAxgA/00ulxNCvhx1WXN+mL3PeDeBYMSFWo6cg60ih0nnNPk3rezrHoAg
-294QxwIDAQABoycwJTAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAwwCgYIKwYBBQUH
-AwIwDQYJKoZIhvcNAQELBQADggEBAFQ9ZvPCQsQQVR1kszsHip3qqcmIwUlkJiF6
-YUVRzeG/QG15dIid5i87q5ZyK+NZhsuBrROnNUDSlg77jD61iHw+jREWd1pYAoK3
-OyLcFd5q73xp+0aP1yEsRDnTmb7gzvKAYnFwKue7OZOVfpzWk0qakWkaPrzx6Bzp
-G62X6p6701sL+9Gru56M8+tp+3/z635Z+56VjAFErzs5Sv5Pw5eAYxA12ebigNeh
-0fIpVyPSZtA1MYgkbtqvjR6qxpgQUBvTCL7unNOGmdrvZI73fDLl+tTvlcgFDWcm
-jlt8d2/5x/55BAfH/6LfqzfbDfOqlicKYvogLa7QE/A0uquVjLg<span class="o">=</span>
-<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span>END CERTIFICATE<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>ndash<span class="p">;</span></code></pre></div>
-然后用openssl工具查看crt证书内容
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in admin.crt -noout</span>
-Certificate:
-    Data:
-        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
-        Serial Number: <span class="m">4629555607114762581</span> <span class="o">(</span>0x403f7c4bd5fe4955<span class="o">)</span>
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
-        Validity
-            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
-            Not After : Aug <span class="m">20</span> 05:50:41 <span class="m">2019</span> GMT
-        Subject: <span class="nv">O</span><span class="o">=</span>system:masters, <span class="nv">CN</span><span class="o">=</span>kubernetes-admin
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-            <span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span>&lt;/p&gt;
-
-&lt;p&gt;</code></pre></div>
-从证书输出的信息中，我们看到了下面这行：
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">Subject</span><span class="p">:</span> <span class="n">O</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">masters</span><span class="p">,</span> <span class="n">CN</span><span class="o">=</span><span class="n">kubernetes</span><span class="o">-</span><span class="n">admin</span></code></pre></div></p>
-
-<p>说明在认证阶段，<code>apiserver</code>会首先使用<code>--client-ca-file</code>配置的CA证书去验证kubectl提供的证书的有效性,基本的方式
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl verify -CAfile /etc/kubernetes/pki/ca.crt /etc/kubernetes/admin.crt</span>
-/etc/kubernetes/admin.crt: OK</code></pre></div>
-然后认证通过后，提取出签发证书时指定的CN(Common Name),<code>kubernetes-admin</code>，作为请求的用户名 (User Name),
-O(Organization)， 从证书中提取该字段作为请求用户所属的组 (Group)，<code>group = system:masters</code>，然后传递给后面的授权模块</p>
-
-<blockquote><p>X509 客户端证书
-通过将 &ndash;client-ca-file=SOMEFILE 选项传递给 API server 来启用客户端证书认证。引用的文件必须包含一个或多个证书颁发机构，用于验证提交给 API server 的客户端证书。如果客户端证书已提交并验证，则使用 subject 的 Common Name（CN）作为请求的用户名。从 Kubernetes 1.4开始，客户端证书还可以使用证书的 organization 字段来指示用户的组成员身份。</p></blockquote>
-
-<h4>kubectl的授权</h4>
-
-<p>kubeadm在init初始引导集群启动过程中，创建了许多<code>default</code>的<code>role、clusterrole、rolebinding</code>和<code>clusterrolebinding</code>，
-在k8s有关RBAC的官方文档中，我们看到下面一些<code>default clusterrole</code>列表:</p>
-
-<p><img src="/images/kubeadm-default-clusterrole-list.png" alt="" />
-其中第一个cluster-admin这个cluster role binding绑定了system:masters group，这和authentication环节传递过来的身份信息不谋而合。
-沿着system:masters group对应的cluster-admin clusterrolebinding“追查”下去，真相就会浮出水面。</p>
-
-<p>我们查看一下这一binding：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrolebinding/cluster-admin -n kube-system -o yaml</span>
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
-  creationTimestamp: 2018-08-20T05:51:30Z
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cluster-admin
-  resourceVersion: <span class="p">&amp;</span>ldquo<span class="p">;</span>93<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterrolebindings/cluster-admin
-  uid: 163adc34-a43d-11e8-89a4-000c2948e532
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: Group
-  name: system:masters</code></pre></div>
- 我们看到在kube-system名字空间中，一个名为cluster-admin的clusterrolebinding将cluster-admin cluster role与system:masters Group绑定到了一起，
- 赋予了所有归属于system:masters Group中用户cluster-admin角色所拥有的权限。</p>
-
-<p> 我们再来查看一下cluster-admin这个role的具体权限信息：
- <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># kubectl get clusterrole/cluster-admin -n kube-system -o yaml</span>
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  annotations:
-    rbac.authorization.kubernetes.io/autoupdate: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
-  creationTimestamp: 2018-08-20T05:51:30Z
-  labels:
-    kubernetes.io/bootstrapping: rbac-defaults
-  name: cluster-admin
-  resourceVersion: <span class="p">&amp;</span>ldquo<span class="p">;</span>40<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  selfLink: /apis/rbac.authorization.k8s.io/v1/clusterroles/cluster-admin
-  uid: 15f71927-a43d-11e8-89a4-000c2948e532
-rules:
-- apiGroups:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-  resources:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;/em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-  verbs:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-- nonResourceURLs:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>&lt;/em&gt;<span class="p">&amp;</span>rsquo<span class="p">;</span>
-  verbs:
-  - <span class="p">&amp;</span>lsquo<span class="p">;</span>*<span class="p">&amp;</span>rsquo<span class="p">;</span></code></pre></div>
-从rules列表中来看，cluster-admin这个角色对所有resources、verbs、apiGroups均有无限制的操作权限，
-即整个集群的root权限。于是kubectl的请求就可以操控和管理整个集群了。</p>
-
-<h3>疑问</h3>
-
-<p>使用kubeadm-1.11.2版本初始化集群，即使不配置.kube/config文件，也可以直接访问到kubernetes cluster,
-<a href="https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/">官方文档</a>中对这块的记录如下：</p>
-
-<p>To make kubectl work for your non-root user, run these commands, which are also part of the kubeadm init output:
- <div class="highlight"><pre><code class="language-bash" data-lang="bash">mkdir -p <span class="nv">$HOME</span>/.kube
-sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
-sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config</code></pre></div></p>
-
-<p>Alternatively, if you are the root user, you can run:
- <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">KUBECONFIG</span><span class="o">=</span>/etc/kubernetes/admin.conf</code></pre></div></p>
-
-<ul>
-<li>关于非root用户，尝试新建了用户，且没有配置kubeconfig文件的情况下，依然可以通过kubectl直接访问集群。</li>
-<li>关于<code>KUBECONFIG</code>环境变量，发现未设置该env，而且尝试把<code>/etc/kubernetes/admin.conf</code> 文件删除掉，重启apiserver的情况，依然可以访问</li>
-</ul>
-
-
-<p>关于以上疑问已经弄明白，当我们在master节点中使用kubectl请求时，如果没有设置$HOME/.kube/config文件，则默认是通过本地的非安全端口来访问
-apiserver，
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@ip-172-31-10-236 centos<span class="o">]</span><span class="c"># kubectl get no -v 7</span>
-I0930 06:55:41.036661   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/alauda.io/v3/serverresources.json
-I0930 06:55:41.037250   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/v1/serverresources.json
-I0930 06:55:41.037484   <span class="m">13865</span> round_trippers.go:383<span class="o">]</span> GET &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080/api/v1/nodes&quot;</span>&gt;http://localhost:8080/api/v1/nodes&lt;/a&gt;
-I0930 06:55:41.037502   <span class="m">13865</span> round_trippers.go:390<span class="o">]</span> Request Headers:
-I0930 06:55:41.037515   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     Accept: application/json
-I0930 06:55:41.037528   <span class="m">13865</span> round_trippers.go:393<span class="o">]</span>     User-Agent: kubectl/v1.7.3 <span class="o">(</span>linux/amd64<span class="o">)</span> kubernetes/2c2fe6e
-I0930 06:55:41.046449   <span class="m">13865</span> round_trippers.go:408<span class="o">]</span> Response Status: <span class="m">200</span> OK in <span class="m">8</span> milliseconds
-I0930 06:55:41.067926   <span class="m">13865</span> cached_discovery.go:119<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/servergroups.json
-I0930 06:55:41.068015   <span class="m">13865</span> cached_discovery.go:72<span class="o">]</span> returning cached discovery info from /root/.kube/cache/discovery/localhost_8080/apiregistration.k8s.io/v1beta1/serverresources.json</code></pre></div>
- 如果</p>
-
-<h3>小结</h3>
-
-<p>总结一下kubectl的认证过程：</p>
-
-<p><img src="/images/how-kubectl-be-authorized.png" alt="" /></p>
 ]]></content>
   </entry>
   

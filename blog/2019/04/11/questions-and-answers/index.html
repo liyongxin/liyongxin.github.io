@@ -1,0 +1,276 @@
+
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>Questions &amp; Answers - Earlene</title>
+	<meta name="author" content="yxli@alauda.io">
+
+	
+	<meta name="description" content="2019-04-11 10:42:05 +0800 Questions &amp; Answers Dockerfile中CMD与ENTRYPOINT区别 CMD指令有如下三种用法：
+CMD [&ldquo;executable&rdquo;,&ldquo;param1&rdquo;,& &hellip;">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Earlene" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://liyongxin.github.io/blog/2019/04/11/questions-and-answers/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/font-awesome.min.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<link href="/stylesheets/custom.css"  rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<!--<link href='http://fonts.googleapis.com/css?family=Nunito:400,300,700' rel='stylesheet' type='text/css'>-->
+       	<!--<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>-->
+        <script src="/javascripts/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/highlight.min.js"></script>
+	<script src="//cdn.bootcss.com/highlight.js/9.2.0/languages/go.min.js"></script>
+	<link href="//cdn.bootcss.com/highlight.js/9.2.0/styles/github.min.css" rel="stylesheet">
+	<script>hljs.initHighlightingOnLoad();</script>
+	
+  
+
+	<style media="screen">
+	article pre, article code {padding:0 0;border-radius: 3px 3px 3px 3px; -moz-border-radius: 3px 3px 3px 3px; -webkit-border-radius: 3px 3px 3px 3px; border: 0px solid #000000;}
+	article code {background: #f8f8f8;}
+	.container .mid-col .mid-col-container #content article .entry-content table{line-height:2.2em}
+	.container .mid-col .mid-col-container #content article .entry-content table tr{padding:12px}
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	
+	<script src="/javascripts/md5.js"></script>
+	<script type="text/javascript">
+		$(function(){
+			$('.profilepic').append("<img src='/images/hsq4.jpg?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+	
+</div>
+
+<nav id="main-nav"><ul class="main">
+    <li><a href="/">Blog</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+			<a class="email" href="mailto:yxli@alauda.io" title="Email">Email</a>
+		
+		
+		
+		
+		
+			<a class="github" href="https://github.com/liyongxin" title="GitHub">GitHub</a>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+    	
+    	
+			<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			
+				
+			
+			<div class="mid-col-container">
+				<div id="content" class="inner"><article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2019-04-11T10:42:05+08:00" data-updated="true" itemprop="datePublished">2019-04-11 10:42:05 +0800</time></div>
+		<div class="tags">
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name">Questions &amp; Answers</h1>
+	<div class="entry-content" itemprop="articleBody"><ul>
+<li><h4>Dockerfile中CMD与ENTRYPOINT区别</h4>
+
+<p>CMD指令有如下三种用法：
+CMD [&ldquo;executable&rdquo;,&ldquo;param1&rdquo;,&ldquo;param2&rdquo;] (exec form, this is the preferred form)
+CMD [&ldquo;param1&rdquo;,&ldquo;param2&rdquo;] (as default parameters to ENTRYPOINT)
+CMD command param1 param2 (shell form)</p></li>
+</ul>
+
+
+<p>第一种是如果想非shell运行自己的命令，需要以JSON Array的形式，且指定全路径方式，比如：
+FROM ubuntu
+CMD [&ldquo;/usr/bin/wc&rdquo;,&ldquo;&ndash;help&rdquo;]
+第二种是以JSON Array的形式，配合ENTRYPOINT来使用，如果同时存在CMD和ENTRYPOINT，则CMD作为ENTRYPOINT的参数执行
+第三种是使用shell form，那么command默认在/bin/sh -c下执行，如
+FROM ubuntu
+CMD echo &ldquo;This is a test.&rdquo; | wc -</p>
+
+<p>和ENTRYPOINT主要区别是ENTRYPOINT的优先级是高于CMD的，同时存在则以ENTRYPOINT为主，CMD作为ENTRYPOINT的运行参数</p>
+
+<ul>
+<li><h4>Dockerfile中ADD和COPY区别</h4>
+
+<p>ADD支持使用URL作为<src>,会自动下载文件并拷贝，同时支持压缩包作为<src>并且自动解压到镜像中
+COPY是保证<src>和<dest>一致
+推荐使用COPY，ADD 指令会令镜像构建缓存失效，从而可能会令镜像构建变得比较缓慢</p></li>
+<li><h4>资源隔离</h4>
+
+<p>NameSpace和Cgroup</p></li>
+<li><h4>镜像如何实现分层</h4>
+
+<p>Docker 镜像本地存储机制及容器启动原理
+Docker 镜像不是一个单一的文件，而是有多层构成。我们可通过 docker images 获取本地的镜像列表及对应的元信息， 接着可通过docker history <imageId> 查看某个镜像各层内容及对应大小，每层对应着 Dockerfile 中的一条指令。Docker 镜像默认存储在 /var/lib/docker/<storage-driver>中，可通过 DOCKER_OPTS 或者 docker daemon 运行时指定 &ndash;graph= 或 -g 指定。</p></li>
+</ul>
+
+
+<p>Docker 使用存储驱动来管理镜像每层内容及可读写的容器层，存储驱动有 DeviceMapper、AUFS、Overlay、Overlay2、Btrfs、ZFS 等，不同的存储驱动实现方式有差异，镜像组织形式可能也稍有不同，但都采用栈式存储，并采用 Copy-on-Write(CoW) 策略。且存储驱动采用热插拔架构，可动态调整。那么，存储驱动那么多，该如何选择合适的呢？大致可从以下几方面考虑：
+若内核支持多种存储驱动，且没有显式配置，Docker 会根据它内部设置的优先级来选择。优先级为 AUFS > Btrfs/ZFS > Overlay2 > Overlay > DeviceMapper。若使用 DeviceMapper 的话，在生产环境，一定要选择 direct-lvm, loopback-lvm 性能非常差。
+选择会受限于 Docker 版本、操作系统、系统版本等。例如，AUFS 只能用于 Ubuntu 或 Debian 系统，Btrfs 只能用于 SLES （SUSE Linux Enterprise Server, 仅 Docker EE 支持）。
+有些存储驱动依赖于后端的文件系统。例如，Btrfs 只能运行于后端文件系统 Btrfs 上。
+不同的存储驱动在不同的应用场景下性能不同。例如，AUFS、Overlay、Overlay2 操作在文件级别，内存使用相对更高效，但大文件读写时，容器层会变得很大；DeviceMapper、Btrfs、ZFS 操作在块级别，适合工作在写负载高的场景；容器层数多，且写小文件频繁时，Overlay 效率比 Overlay2 更高；Btrfs、ZFS 更耗内存。</p>
+
+<p>Docker 容器其实是在镜像的最上层加了一层读写层，通常也称为容器层。在运行中的容器里做的所有改动，如写新文件、修改已有文件、删除文件等操作其实都写到了容器层。容器层删除了，最上层的读写层跟着也删除了，改动自然也丢失了。若要持久化这些改动，须通过 docker commit <containerId> [repository[:tag]] 将当前容器保存成为一个新镜像。若想将数据持久化，或是多个容器间共享数据，需将数据存储在 Docker volume 中，并将 volume 挂载到相应容器中。</p>
+
+<ul>
+<li><h4>controller manager如何判断deployment的副本数达到预期</h4>
+
+<p>判断满足deployment定义时指定的selector的matchLabels数量，每启动一个pod会有一个label和deployment match，以此来判断期望和实际数量匹配</p></li>
+<li><h4>kube-proxy 原理</h4></li>
+<li><h4>python 协程</h4></li>
+<li><h4>python迭代器、生成器</h4></li>
+<li><h4>读取大文件，yield</h4></li>
+<li><h4>k8s调度详解，优选、预选</h4>
+
+<p>Kubernetes Scheduler 提供的调度流程分三步：</p></li>
+<li><p>预选策略(predicate) 遍历nodelist，选择出符合要求的候选节点，Kubernetes内置了多种预选规则供用户选择。</p></li>
+<li>优选策略(priority) 在选择出符合要求的候选节点中，采用优选规则计算出每个节点的积分，最后选择得分最高的。</li>
+<li>选定(select) 如果最高得分有好几个节点，select就会从中随机选择一个节点。</li>
+</ul>
+
+
+<h5>常用的预选策略（代码里的策略不一定都会被使用）</h5>
+
+<p>CheckNodeConditionPred 检查节点是否正常
+GeneralPred HostName(如果pod定义hostname属性，会检查节点是否匹配。pod.spec.hostname)、PodFitsHostPorts（检查pod要暴露的hostpors是否被占用。pod.spec.containers.ports.hostPort）
+MatchNodeSelector pod.spec.nodeSelector 看节点标签能否适配pod定义的nodeSelector
+PodFitsResources 判断节点的资源能够满足Pod的定义（如果一个pod定义最少需要2C4G node上的低于此资源的将不被调度。用kubectl describe node NODE名称 可以查看资源使用情况）
+NoDiskConflict 判断pod定义的存储是否在node节点上使用。（默认没有启用）
+PodToleratesNodeTaints 检查pod上Tolerates的能否容忍污点（pod.spec.tolerations）
+CheckNodeLabelPresence 检查节点上的标志是否存在 （默认没有启动）
+CheckServiceAffinity 根据pod所属的service。将相同service上的pod尽量放到同一个节点（默认没有启动）
+CheckVolumeBinding 检查是否可以绑定（默认没有启动）
+NoVolumeZoneConflict 检查是否在一起区域（默认没有启动）
+CheckNodeMemoryPressure 检查内存是否存在压力
+CheckNodeDiskPressure 检查磁盘IO压力是否过大
+CheckNodePIDPressure 检查pid资源是否过大
+<a href="https://github.com/kubernetes/kubernetes/blob/master/pkg/scheduler/algorithm/predicates/predicates.go">源码参考</a></p>
+
+<h5>优选策略</h5>
+
+<p>least_requested 选择消耗最小的节点（根据空闲比率评估 cpu(总容量-sum(已使用)*10/总容量) ）
+balanced_resource_allocation 从节点列表中选出各项资源使用率最均衡的节点（CPU和内存）
+node_prefer_avoid_pods 节点倾向
+taint_toleration 将pod对象的spec.toleration与节点的taints列表项进行匹配度检查，匹配的条目越多，得分越低。
+selector_spreading 与services上其他pod尽量不在同一个节点上，节点上通一个service的pod越少得分越高。
+interpod_affinity 遍历node上的亲和性条目，匹配项越多的得分越高
+most_requested 选择消耗最大的节点上（尽量将一个节点上的资源用完）
+node_label 根据节点标签得分，存在标签既得分，没有标签没得分。标签越多 得分越高。
+image_locality 节点上有所需要的镜像既得分，所需镜像越多得分越高。（根据已有镜像体积大小之和）</p>
+
+<ul>
+<li><h4>pod的生命周期以及在销毁前想实现某些功能如何做</h4></li>
+<li><h4>hostgw和vxlan</h4></li>
+<li><h4>nodeport访问不了如何排查</h4></li>
+<li><h4>k8s版本升级、etcd滚动升级、不停机、服务不中断</h4></li>
+<li><h4>cgroup、namespace底层 如何把pid隔离起来</h4></li>
+<li><h4>tcpdump</h4></li>
+<li><h4>业务实现灰度发版</h4></li>
+<li><h4>golang协程实现原理，GOMAXPROC</h4></li>
+<li><h4>僵尸进程产生原因、影响</h4></li>
+<li><h4>二叉树</h4></li>
+<li><h4>创建pod流程</h4>
+
+<p>1.kubectl提交创建pod命令,api响应命令,通过一系列认证授权,把pod数据存储到etcd,创建deployment资源并初始化.
+2.controller通过list-watch机制,监测发现新的deployment,将该资源加入到内部工作队列,发现该资源没有关联的pod和replicaset,启用deployment controller创建replicaset资源,再启用replicaset controller创建pod.
+3.所有controller正常后.将deployment,replicaset,pod资源更新存储到etcd.
+4.scheduler通过list-watch机制,监测发现新的pod,经过主机过滤主机打分规则,将pod绑定(binding)到合适的主机.
+5.将绑定结果存储到etcd.
+6.kubelet每隔 20s(可以自定义)向kube-apiserver通过NodeName 获取自身Node上所要运行的pod清单.通过与自己的内部缓存进行比较,新增加pod.
+7.启动pod启动容器.
+8.把本节点的容器信息pod信息同步到etcd.</p></li>
+</ul>
+
+</div>
+
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+			</div>
+			<footer id="footer" class="inner">Copyright &copy; 2019
+
+    yxli@alauda.io
+
+
+Design credit: <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+<script src="http://liyangliang.me/js/slash.js"></script></footer>
+		</div>
+	</div>
+	
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

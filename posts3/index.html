@@ -9,7 +9,7 @@
 	<meta name="author" content="yxli@alauda.io">
 
 	
-	<meta name="description" content="2018-05-17 20:30:37 +0800 javascript javascript运行顺序详解 JavaScript是一种描述型脚本语言，它不同于java或C#等编译性语言,它不需要进行编译成中间语言,而是由浏览器进行动态地解析与执行。如果你不能理解javaScript语言的运行机制 &hellip;">
+	<meta name="description" content="2018-08-31 10:36:27 +0800 docker, kubernetes kubernetes 问题整理 本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～ kubernetes多网卡导致的问题 部署机器是阿里云，有两块网卡，eth0外网，eth1 vpc内网， &hellip;">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -102,6 +102,276 @@
 			<div class="mid-col-container">
 				<div id="content" class="inner">
 <div itemscope itemtype="http://schema.org/Blog">
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-08-31T10:36:27+08:00" data-updated="true" itemprop="datePublished">2018-08-31 10:36:27 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/docker/'>docker</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/08/31/kubernetes-wen-ti-zheng-li/" itemprop="url">kubernetes 问题整理</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～</p>
+
+<h2>kubernetes多网卡导致的问题</h2>
+
+<p>部署机器是阿里云，有两块网卡，<code>eth0</code>外网，<code>eth1 vpc</code>内网，集群的路由信息如下</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 src<span class="o">]</span><span class="c"># route</span>
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         gateway         0.0.0.0         UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+10.0.0.0        10.81.35.247    255.0.0.0       UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+10.81.32.0      0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+39.107.40.0     0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
+100.64.0.0      10.81.35.247    255.192.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1002</span>   <span class="m">0</span>        <span class="m">0</span> eth0
+link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span>   <span class="m">0</span>        <span class="m">0</span> eth1
+172.16.0.0      10.81.35.247    255.240.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
+192.168.0.0     0.0.0.0         255.255.255.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> cni0
+192.168.0.0     0.0.0.0         255.255.240.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> docker0
+192.168.1.0     192.168.1.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1
+192.168.2.0     192.168.2.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1</code></pre></div>
+
+
+<ul>
+<li><h4>docker0网段与cni0网段冲突问题</h4></li>
+</ul>
+
+
+<p>docker启动时没有指定bip，从上述路由规则发现，docker0使用了192.168的段,刚好给flannel设置的cidr段冲突，
+所以需要给docker修改默认的网段，解决方法是给docker配置bip网段,然后重启docker，观察docker0的route规则</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 ~<span class="o">]</span><span class="c"># cat /etc/docker/daemon.json</span>
+<span class="o">{</span>
+    <span class="s2">&quot;insecure-registries&quot;</span>: <span class="o">[]</span>,
+    <span class="s2">&quot;graph&quot;</span>: <span class="s2">&quot;/var/lib/docker&quot;</span>,
+    <span class="s2">&quot;bip&quot;</span>: <span class="s2">&quot;172.17.0.1/16&quot;</span>,
+    <span class="s2">&quot;registry-mirrors&quot;</span>: <span class="o">[</span><span class="s2">&quot;https://registry.docker-cn.com&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-driver&quot;</span>: <span class="s2">&quot;devicemapper&quot;</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span><span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>, <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span><span class="o">]</span>,
+    <span class="s2">&quot;storage-opts&quot;</span>: <span class="o">[</span>
+        <span class="s2">&quot;dm.thinpooldev=/dev/mapper/docker-thinpool&quot;</span>,
+        <span class="s2">&quot;dm.min_free_space=0%&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_deletion=true&quot;</span>,
+        <span class="s2">&quot;dm.use_deferred_removal=true&quot;</span>,
+        <span class="s2">&quot;dm.fs=ext4&quot;</span>
+    <span class="o">]</span>,
+    <span class="s2">&quot;log-driver&quot;</span>: <span class="s2">&quot;fluentd&quot;</span>,
+    <span class="s2">&quot;log-opts&quot;</span>:
+    <span class="o">{</span>
+        <span class="s2">&quot;fluentd-address&quot;</span>: <span class="s2">&quot;localhost:24224&quot;</span>,
+        <span class="s2">&quot;tag&quot;</span>: <span class="s2">&quot;docker.&quot;</span>,
+        <span class="s2">&quot;fluentd-async-connect&quot;</span>: <span class="s2">&quot;true&quot;</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+
+<ul>
+<li><h4>集群初始化问题</h4></li>
+</ul>
+
+
+<p>使用<code>kubeadm</code>搭建，若未指定&ndash;advertise-address地址则k8s默认拿default网卡，
+而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
+时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
+
+
+		
+		<a href="/blog/2018/08/31/kubernetes-wen-ti-zheng-li/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-08-25T18:17:17+08:00" data-updated="true" itemprop="datePublished">2018-08-25 18:17:17 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/k8s/'>k8s</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/08/25/kubeletde-ren-zheng/" itemprop="url">kubelet的认证</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>研究完<a href="../kuberneteszhong-de-ren-zheng-xiang-guan">kubectl的认证与授权</a>，使用相同的方式去找kubelet的访问，
+首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式对<code>client-key-data</code>做base64解码，保存为kubelet.crt文件。</p>
+
+<p>openssl查看crt证书，</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
+        Validity
+            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
+            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
+        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
+                Modulus:
+                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
+    ... ...</code></pre></div>
+
+
+<p>得到我们期望的内容：</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div>
+
+
+<blockquote><p>关于Subject，在k8s中可以理解为角色绑定主体，RoleBinding或者ClusterRoleBinding可以将角色绑定到角色绑定主体（Subject）。
+角色绑定主体可以是用户组（Group）、用户（User）或者服务账户（Service Accounts）</p></blockquote>
+
+<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in `kubectl get clusterrolebindings |awk &#39;{print $1}&#39;`; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &#39;system:nodes&#39;;done</span>
+NAME
+Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="s2">&quot;NAME&quot;</span> not found
+cluster-admin
+flannel
+kubeadm:kubelet-bootstrap
+kubeadm:node-autoapprove-bootstrap
+kubeadm:node-autoapprove-certificate-rotation
+  name: system:nodes
+kubeadm:node-proxier
+system:aws-cloud-provider
+system:basic-user
+... ...</code></pre></div>
+
+
+<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
+尝试去找<a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">资料</a>，发现了这么一段</p>
+
+<p><img src="/images/rbac.png" alt="" /></p>
+
+<p>Kubernetes 1.7开始, apiserver的启动中默认增加了<code>--authorization-mode=Node,RBAC</code>,也就是说，除了RBAC外，还有Node这种特殊的授权方式，</p>
+
+<p>继续查找<a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">kubernetes官方的信息</a>,得知</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">Node authorization is a special-purpose authorization mode that specifically authorizes API requests made by kubelets.</code></pre></div>
+
+
+
+
+		
+		
+	</div>
+
+</article>
+
+
+    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2018-08-25T14:41:00+08:00" data-updated="true" itemprop="datePublished">2018-08-25 14:41:00 +0800</time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/k8s/'>k8s</a>, <a class='category' href='/blog/categories/kubernetes/'>kubernetes</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/" itemprop="url">kubectl的认证与授权</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+		<p>关于k8s认证、授权相关的基础，只简单回顾，具体内容先参考如下文章：</p>
+
+<ul>
+<li><a href="https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/">Controlling Access to the Kubernetes API</a></li>
+<li><a href="https://jimmysong.io/posts/user-authentication-in-kubernetes/">Kubernetes 中的用户与身份认证授权</a></li>
+<li><a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">Kubernetes RBAC - 基于角色的访问控制</a></li>
+</ul>
+
+
+<h2>Kubernetes API的访问控制原理回顾</h2>
+
+<p>Kubernetes集群的访问权限控制由<code>kube-apiserver</code>负责，<code>kube-apiserver</code>的访问权限控制由身份验证(authentication)、授权(authorization)
+和准入控制（admission control）三步骤组成，这三步骤是按序进行的：
+<img src="/images/k8s-apiserver-access-control-overview.svg" alt="" /></p>
+
+<h4>身份验证（Authentication）</h4>
+
+<p>这个环节它面对的输入是整个<code>http request</code>，它负责对来自client的请求进行身份校验，支持的方法包括：client证书验证（https双向验证）、
+<code>basic auth</code>、普通token以及<code>jwt token</code>(用于serviceaccount)。</p>
+
+<p>APIServer启动时，可以指定一种Authentication方法，也可以指定多种方法。如果指定了多种方法，那么APIServer将会逐个使用这些方法对客户端请求进行验证，
+只要请求数据通过其中一种方法的验证，APIServer就会认为Authentication成功；</p>
+
+<p>在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，默认支持<code>client证书</code>验证和<code>serviceaccount</code>两种身份验证方式。
+证书认证通过设置<code>--client-ca-file</code>根证书以及<code>--tls-cert-file</code>和<code>--tls-private-key-file</code>来开启。</p>
+
+<p>在这个环节，apiserver会通过client证书或
+<code>http header</code>中的字段(比如serviceaccount的<code>jwt token</code>)来识别出请求的<code>用户身份</code>，包括”user”、”group”等，这些信息将在后面的<code>authorization</code>环节用到。</p>
+
+<h4>授权（Authorization）</h4>
+
+<p>这个环节面对的输入是<code>http request context</code>中的各种属性，包括：<code>user</code>、<code>group</code>、<code>request path</code>（比如：<code>/api/v1</code>、<code>/healthz</code>、<code>/version</code>等）、
+<code>request verb</code>(比如：<code>get</code>、<code>list</code>、<code>create</code>等)。</p>
+
+<p>APIServer会将这些属性值与事先配置好的访问策略(<code>access policy</code>）相比较。APIServer支持多种<code>authorization mode</code>，包括<code>Node、RBAC、Webhook</code>等。</p>
+
+<p>APIServer启动时，可以指定一种<code>authorization mode</code>，也可以指定多种<code>authorization mode</code>，如果是后者，只要Request通过了其中一种mode的授权，
+那么该环节的最终结果就是授权成功。在较新版本kubeadm引导启动的k8s集群的apiserver初始配置中，<code>authorization-mode</code>的默认配置是<code>”Node,RBAC”</code>。</p>
+
+<p>Node授权器主要用于各个node上的kubelet访问apiserver时使用的，其他一般均由RBAC授权器来授权。</p>
+
+
+		
+		<a href="/blog/2018/08/25/kuberneteszhong-de-ren-zheng-xiang-guan/" class="more-link">Read on &rarr;</a>
+	</div>
+
+</article>
 
 
     <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
@@ -234,276 +504,6 @@ chmod -R <span class="m">777</span> /opt/gp</code></pre></div>
 
 		
 		<a href="/blog/2018/05/15/greenplumjiao-ben-hua-an-zhuang/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-14T20:24:55+08:00" data-updated="true" itemprop="datePublished">2018-05-14 20:24:55 +0800</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/14/greenpluman-zhuang/" itemprop="url">GreenPlum安装</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>GP的部署相对来讲是比较麻烦的，主要是为了最大化的利益系统资源，需要对数据盘、系统参数、机器互信等方面进行调整，大致过程如下：</p>
-
-<h3>安装前准备</h3>
-
-<h4>网络规划</h4>
-
-<p>Greenplum数据库系统常见的拓扑图如上图所示，由Master主机和Segment主机组成。Master主机和Segment主机之间会组成一个内部网络（LAN）。
-为了充分发挥Greenplum数据库并行处理的性能，对网络带宽要求较高。服务器会配置多个网卡，内部网需要配置多个网段的IP。需要对外连接的服务器需配置外部IP。
-建议在Greenplum数据库系统安装之前，把网络配置规划好。
-<img src="/images/network.png" alt="" /></p>
-
-<h4>存储空间规划</h4>
-
-<p>首先，需要评估目标数据库数据所需要的空间容量。建议了解客户搭建Greenplum数据库的具体应用。举例：估计数据库所需空间为U，数据库需要启用Mirror，磁盘阵列总可用空间为D（Raid之后）。空间规划服务和如下公式：
-<code>2 * U + U / 3 = D * 70%</code>
-磁盘空间D平均分配到各个Segment服务器上。
-Master需要相应的空间。使用服务器内置硬盘的计算方式类似。</p>
-
-<h4>数据库实例规划</h4>
-
-<p>规划每个Segment服务器上建立的数据库实例的数量（instance数量），通常建议每2个CPU内核（core）对应一个数据库实例。
-如 ：<code>2*4</code>核CPU的服务器，可配置4个实例。</p>
-
-
-		
-		<a href="/blog/2018/05/14/greenpluman-zhuang/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-09T16:33:42+08:00" data-updated="true" itemprop="datePublished">2018-05-09 16:33:42 +0800</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/shell/'>shell</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/" itemprop="url">常用命令随手记</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<ul>
-<li><h4>统计系统各类连接数</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">netstat</span> <span class="o">-</span><span class="n">n</span> <span class="o">|</span> <span class="n">awk</span> <span class="s">&#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39;</span></code></pre></div>
-
-
-<p>结果类似如下格式：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">ESTABLISHED 23
-TIME_WAIT 707</code></pre></div>
-
-
-<ul>
-<li><h4>ab命令简单压力测试</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ab</span> <span class="o">-</span><span class="n">n</span> <span class="mi">50000000</span> <span class="o">-</span><span class="n">c</span> <span class="mi">10</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span><span class="p">:</span><span class="mi">8080</span><span class="o">/</span></code></pre></div>
-
-
-<ul>
-<li><h4>uwsgi reload</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="n">ps</span> <span class="n">afx</span><span class="p">;</span>
-<span class="n">kill</span> <span class="o">-</span><span class="n">HUP</span> <span class="err">$</span><span class="n">pid_of_uwsgi</span></code></pre></div>
-
-
-<ul>
-<li><h4>xargs相关</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">find . -type f -name <span class="s2">&quot;*.jpg&quot;</span> -print <span class="p">|</span> xargs tar -czvf images.tar.gz
-
-<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX
-name name name name
-
-<span class="nb">echo</span> <span class="s2">&quot;nameXnameXnameXname&quot;</span> <span class="p">|</span> xargs -dX -n2
-name name
-name name</code></pre></div>
-
-
-<ul>
-<li><h4>多行输入单行输出：</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">cat test.txt <span class="p">|</span> xargs
-
-a b c d e f g h i j k l m n o p q r s t u v w x y z</code></pre></div>
-
-
-<ul>
-<li><h4>压缩加速</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">tar --use-compress-program<span class="o">=</span>pigz -xvpf PKG-20180627.tar.gz</code></pre></div>
-
-
-<ul>
-<li><h4>curl发送get或者post请求</h4></li>
-</ul>
-
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">curl -H <span class="s2">&quot;Content-Type:application/json&quot;</span> -X POST -d <span class="s1">&#39;{&quot;user&quot;: &quot;admin&quot;, &quot;passwd&quot;:&quot;12345678&quot;}&#39;</span> http://127.0.0.1:8000/login
-curl -d <span class="s2">&quot;user=admin&amp;passwd=12345678&quot;</span> http://127.0.0.1:8080/login</code></pre></div>
-
-
-
-
-
-		
-		<a href="/blog/2018/05/09/chang-yong-ming-ling-sui-shou-ji/" class="more-link">Read on &rarr;</a>
-	</div>
-
-</article>
-
-
-    <article class="post" itemprop="blogPost" itemscope itemtype="http://schema.org/BlogPosting">
-	<div class="meta">
-		<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2018-05-03T14:08:00+08:00" data-updated="true" itemprop="datePublished">2018-05-03 14:08:00 +0800</time></div>
-		<div class="tags">
-
-
-	<a class='category' href='/blog/categories/greenplum/'>greenplum</a>
-
-
-</div>
-		
-	</div>
-	<h1 class="title" itemprop="name"><a href="/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/" itemprop="url">CentOS使用GreenPlum定时加载HDFS数据文件</a></h1>
-	<div class="entry-content" itemprop="articleBody">
-		<p>最近有个场景，数据会定时写入hdfs，需要GP从hdfs中将数据载入。网上关于gp连接hdfs的介绍不是很多，实现的过程中走了很多弯路。
-整个过程大概分为4步：</p>
-
-<ul>
-<li><strong>安装JDK</strong> ：java必备；</li>
-<li><strong>安装必要的PHD软件包</strong> ：安装phd中必要的组件，让GPDB主机作为Hadoop的client；</li>
-<li><strong>设置GPDB</strong> ：配置gpconfig；</li>
-<li><strong>定时任务</strong> ：利用cron任务实现定时加载数据文件；</li>
-</ul>
-
-
-<h3>安装JDK</h3>
-
-<p>推荐版本是1.7.x，注意需要在所有节点进行安装，安装完成后添加以下内容到<code>gpadmin</code>用户对应的<code>.bashrc</code>文件中</p>
-
-<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="n">export</span> <span class="no">JAVA_HOME</span><span class="o">=</span><span class="sr">/opt/</span><span class="n">jdk1</span><span class="o">.</span><span class="mi">7</span><span class="o">.</span><span class="mo">0_45</span></code></pre></div>
-
-
-<p>如果还会提示找不到<code>Error: JAVA_HOME is not set and could not be found.</code>尝试将上述命令添加到<code>/etc/environment中</code>.
-编辑<code>/etc/profile</code>文件，添加如下内容：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/opt/jdk1.7.0_45
-<span class="nb">export </span><span class="nv">CLASSPATH</span><span class="o">=</span>.:<span class="nv">$JAVA_HOME</span>/jre/lib/rt.jar:<span class="nv">$JAVA_HOME</span>/lib/dt.jar:<span class="nv">$JAVA_HOME</span>/lib/tools.jar
-<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$JAVA_HOME</span>/bin</code></pre></div>
-
-
-<p>最后执行如下命令验证安装是否成功：</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">source</span> /etc/profile
-java -version</code></pre></div>
-
-
-<h3>安装必要的PHD软件包</h3>
-
-<p>默认安装完GP后，无法直接ipc连接远程hdfs，官方推荐安装phd的一些软件，当然拷贝一份hadoop的包到本地也可以，目的都是让GPDB中的主机作为hadoop的客户端，能进行hdfs的访问。
-所有的软件均可在phd的安装包中获得，我下载的是PHD-2.0.1.0-148版本，整个安装包大概805MB，以下rpm是需要顺序安装的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">bigtop</span><span class="o">-</span><span class="nx">jsvc</span><span class="o">-</span><span class="mf">1.0.15</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">bigtop</span><span class="o">-</span><span class="nx">utils</span><span class="o">-</span><span class="mf">0.4.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">noarch</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">zookeeper</span><span class="o">-</span><span class="mf">3.4.5</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">noarch</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">yum</span> <span class="o">-</span><span class="nx">y</span> <span class="nx">install</span> <span class="nx">nc</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">yarn</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">mapreduce</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span><span class='line'><span class="nx">rpm</span> <span class="o">-</span><span class="nx">ivh</span> <span class="nx">hadoop</span><span class="o">-</span><span class="nx">hdfs</span><span class="o">-</span><span class="mf">2.2.0</span><span class="nx">_gphd_3_0_1_0</span><span class="o">-</span><span class="mf">148.</span><span class="nx">x86_64</span><span class="p">.</span><span class="nx">rpm</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>安装gphd的时候需要nc，所以先yum安装一下。</p>
-
-<blockquote><p><strong>注意：</strong>官方说所有的segment节点需要安装这些软件，实际过程中整个GPDB中的机器都需要安装才可以运行，否则会提示无法加载class的错误。</p></blockquote>
-
-<h3>设置GPDB</h3>
-
-<p>在gp中使用gpadmin用户进行设置以下两个配置项，具体的值需要根据官方的资料进行匹配</p>
-
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">gpconfig -c gp_hadoop_home -v <span class="s2">&quot;&#39;/usr/lib/gphd&#39;&quot;</span>
-gpconfig -c gp_hadoop_target_version -v <span class="s2">&quot;&#39;gphd-2.0&#39;&quot;</span></code></pre></div>
-
-
-
-
-
-		
-		<a href="/blog/2018/05/03/greenplumding-shi-jia-zai-hdfsshu-ju-wen-jian/" class="more-link">Read on &rarr;</a>
 	</div>
 
 </article>

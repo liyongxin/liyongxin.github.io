@@ -4,7 +4,7 @@
   <title><![CDATA[Category: kubernetes | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/kubernetes/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-04-03T17:36:26+08:00</updated>
+  <updated>2019-06-27T19:20:27+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -12,6 +12,677 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Kubernetes离线安装手册(非高可用版)]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/06/27/kuberneteschi-xian-an-zhuang-shou-ce-fei-gao-ke-yong-ban/"/>
+    <updated>2019-06-27T17:58:14+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/06/27/kuberneteschi-xian-an-zhuang-shou-ce-fei-gao-ke-yong-ban</id>
+    <content type="html"><![CDATA[<h2>集群信息</h2>
+
+<h3>1. 节点规划</h3>
+
+<p>部署k8s集群的节点按照用途可以划分为如下3类角色：</p>
+
+<ul>
+<li><strong>master</strong> ：集群的master节点，至少一台</li>
+<li><strong>slave</strong>：集群的slave节点，非必须存在</li>
+<li><strong>init</strong>：集群的初始化节点，提供集群初始化必要的镜像及软件源，可以与master节点使用同一台机器</li>
+</ul>
+
+
+<p>单个节点可以对应多个角色，比如master节点可以同时作为init节点。因为slave节点不是必须存在，因此部署非高可用集群最少仅需一台机器即可，基础配置不低于2C4G。</p>
+
+<p><strong>本例为了演示slave节点的添加，会部署一台master+1台slave，其中master和init共用一台机器</strong>，节点规划如下：</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;">主机名 </th>
+<th style="text-align:center;">  节点ip  </th>
+<th style="text-align:center;"> 角色 </th>
+<th style="text-align:center;"> 部署组件  </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">k8s-init  </td>
+<td style="text-align:center;"> 10.0.129.84  </td>
+<td style="text-align:center;">  init   </td>
+<td style="text-align:center;"> registry,  httpd  </td>
+</tr>
+<tr>
+<td style="text-align:center;">k8s-slave </td>
+<td style="text-align:center;"> 10.0.128.240 </td>
+<td style="text-align:center;"> slave </td>
+<td style="text-align:center;">  kubectl, kubeadm, kubelet, kube-proxy, flannel  </td>
+</tr>
+<tr>
+<td style="text-align:center;">k8s-master</td>
+<td style="text-align:center;"> 10.0.129.84  </td>
+<td style="text-align:center;"> master </td>
+<td style="text-align:center;">  etcd, kube-apiserver, kube-controller-manager, kubectl, kubeadm, kubelet, kube-proxy, flannel</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>2. 组件版本</h3>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;"> 组件      </th>
+<th style="text-align:center;">    版本 </th>
+<th style="text-align:left;"> 说明  </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;"> CentOS  </td>
+<td style="text-align:center;"> 7.5.1804 </td>
+<td style="text-align:left;">     </td>
+</tr>
+<tr>
+<td style="text-align:center;"> Kernel  </td>
+<td style="text-align:center;"> Linux 3.10.0-862.el7.x86_64 </td>
+<td style="text-align:left;">   </td>
+</tr>
+<tr>
+<td style="text-align:center;"> etcd    </td>
+<td style="text-align:center;"> 3.2.24 </td>
+<td style="text-align:left;"> 使用容器方式部署，默认数据挂载到本地路径 </td>
+</tr>
+<tr>
+<td style="text-align:center;"> coredns </td>
+<td style="text-align:center;"> 1.2.6 </td>
+<td style="text-align:left;">  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> kubeadm </td>
+<td style="text-align:center;"> v1.13.3 </td>
+<td style="text-align:left;">  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> kubectl </td>
+<td style="text-align:center;"> v1.13.3 </td>
+<td style="text-align:left;">  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> kubelet </td>
+<td style="text-align:center;"> v1.13.3 </td>
+<td style="text-align:left;">  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> kube-proxy </td>
+<td style="text-align:center;"> v1.13.3 </td>
+<td style="text-align:left;">  </td>
+</tr>
+<tr>
+<td style="text-align:center;"> flannel </td>
+<td style="text-align:center;"> v0.11.0 </td>
+<td style="text-align:left;"> 使用vxlan作为backend </td>
+</tr>
+<tr>
+<td style="text-align:center;"> httpd </td>
+<td style="text-align:center;"> v2.4.6 </td>
+<td style="text-align:left;"> 部署在init节点，默认使用80端口提供服务 </td>
+</tr>
+<tr>
+<td style="text-align:center;"> registry </td>
+<td style="text-align:center;"> v2.3.1 </td>
+<td style="text-align:left;"> 部署在init节点，默认使用60080端口提供服务 </td>
+</tr>
+</tbody>
+</table>
+
+
+<h2>安装前准备工作</h2>
+
+<h3>1. 设置hosts解析</h3>
+
+<p>操作节点：所有节点（<code>k8s-init，k8s-master，k8s-slave</code>）均需执行
+- <strong>修改hostname</strong>
+hostname必须只能包含小写字母、数字、",&ldquo;、&rdquo;-&ldquo;，且开头结尾必须是小写字母或数字
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;在master节点&lt;/h1&gt;
+
+&lt;p&gt;<span class="nv">$ </span>hostnamectl <span class="nb">set</span>-hostname k8s-master <span class="c">#设置master节点的hostname&lt;/p&gt;</span>
+
+&lt;h1&gt;在slave节点&lt;/h1&gt;
+
+&lt;p&gt;<span class="nv">$ </span>hostnamectl <span class="nb">set</span>-hostname k8s-slave <span class="c">#设置slave节点的hostname</span></code></pre></div>
+- <strong>添加hosts解析</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cat &gt;&gt;/etc/hosts<span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span>EOF
+10.0.129.84 k8s-master k8s-init
+10.0.128.240 k8s-slave
+EOF</code></pre></div></p>
+
+<h3>2. 调整系统配置</h3>
+
+<p>操作节点： 所有的master和slave节点（<code>k8s-master,k8s-slave</code>）需要执行</p>
+
+<blockquote><p>本章下述操作均以k8s-master为例，其他节点均是相同的操作（ip和hostname的值换成对应机器的真实值）</p></blockquote>
+
+<ul>
+<li><p><strong>设置安全组开放端口</strong>
+如果节点间无安全组限制（内网机器间可以任意访问），可以忽略，否则，至少保证如下端口可通：
+k8s-init节点：TCP：7443，60080，60081，UDP协议端口全部打开
+k8s-master节点：TCP：6443，2379，2380，UDP协议端口全部打开</p></li>
+<li><p><strong>设置iptables</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span> iptables -P FORWARD ACCEPT</code></pre></div></p></li>
+<li><p><strong>关闭swap</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>swapoff -a&lt;/p&gt;
+
+&lt;h1&gt;防止开机自动挂载 swap 分区&lt;/h1&gt;
+
+&lt;p&gt;<span class="nv">$ </span> sed -i <span class="p">&amp;</span>lsquo<span class="p">;</span>/ swap / s/^<span class="o">(</span>.*<span class="o">)</span><span class="nv">$/</span><span class="c">#\1/g&amp;rsquo; /etc/fstab</span></code></pre></div></p></li>
+<li><strong>关闭selinux和防火墙</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>sed -ri <span class="p">&amp;</span>rsquo<span class="p">;</span>s#<span class="o">(</span><span class="nv">SELINUX</span><span class="o">=)</span>.*#<span class="se">\1</span>disabled#<span class="p">&amp;</span>lsquo<span class="p">;</span> /etc/selinux/config
+<span class="nv">$ </span>setenforce 0
+<span class="nv">$ </span>systemctl disable firewalld <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> systemctl stop firewalld</code></pre></div></li>
+<li><strong>修改内核参数</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cat <span class="p">&amp;</span>lt<span class="p">;</span>&lt;EOF &gt;  /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables <span class="o">=</span> 1
+net.bridge.bridge-nf-call-iptables <span class="o">=</span> 1
+net.ipv4.ip_forward<span class="o">=</span>1
+EOF
+<span class="nv">$ </span>modprobe br_netfilter
+<span class="nv">$ </span>sysctl -p /etc/sysctl.d/k8s.conf</code></pre></div></li>
+<li><strong>加载ipvs模块</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cat &gt; /etc/sysconfig/modules/ipvs.modules <span class="p">&amp;</span>lt<span class="p">;&amp;</span>lt<span class="p">;</span>EOF
+
+&lt;h1&gt;!/bin/bash&lt;/h1&gt;
+
+&lt;p&gt;modprobe <span class="p">&amp;</span>ndash<span class="p">;</span> ip_vs
+modprobe <span class="p">&amp;</span>ndash<span class="p">;</span> ip_vs_rr
+modprobe <span class="p">&amp;</span>ndash<span class="p">;</span> ip_vs_wrr
+modprobe <span class="p">&amp;</span>ndash<span class="p">;</span> ip_vs_sh
+modprobe <span class="p">&amp;</span>ndash<span class="p">;</span> nf_conntrack_ipv4
+EOF
+<span class="nv">$ </span>chmod <span class="m">755</span> /etc/sysconfig/modules/ipvs.modules <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> bash /etc/sysconfig/modules/ipvs.modules <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> lsmod <span class="p">|</span> grep -e ip_vs -e nf_conntrack_ipv4</code></pre></div></p></li>
+</ul>
+
+
+<h3>3. 拷贝安装包</h3>
+
+<p>操作节点： <code>k8s-init</code>节点
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">&lt;/p&gt;
+
+&lt;h1&gt;安装包拷贝到k8s-init节点的/opt目录&lt;/h1&gt;
+
+&lt;p&gt;<span class="nv">$ </span>scp k8s-installer.tar.gz root@k8s-init:/opt&lt;/p&gt;
+
+&lt;h1&gt;解压并查看安装包&lt;/h1&gt;
+
+&lt;p&gt;<span class="nv">$ </span>tar -zxf /opt/k8s-installer.tar.gz -C /opt
+<span class="nv">$ </span>ls -lh /opt/k8s-installer  <span class="c"># 查看安装包，会包含如下4项</span>
+total 337M
+drwxr-xr-x <span class="m">3</span> root root 4.0K Jun <span class="m">16</span> 21:00 docker-ce
+-rw-r<span class="p">&amp;</span>ndash<span class="p">;</span>r<span class="p">&amp;</span>ndash<span class="p">;</span> <span class="m">1</span> root root  13K Jun <span class="m">16</span> 14:00 kube-flannel.yml
+drwxr-xr-x <span class="m">3</span> root root 4.0K Jun <span class="m">15</span> 15:19 registry
+-rw<span class="p">&amp;</span>mdash<span class="p">;&amp;</span>mdash<span class="p">;</span>- <span class="m">1</span> root root 337M Jun <span class="m">16</span> 10:24 registry-image.tar</code></pre></div></p>
+
+<h3>4. 部署yum仓库</h3>
+
+<p>操作节点： <code>k8s-init</code></p>
+
+<ul>
+<li><strong>配置本地repo文件</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cat <span class="p">&amp;</span>lt<span class="p">;</span>&lt;EOF &gt; /etc/yum.repos.d/local.repo
+<span class="o">[</span><span class="nb">local</span><span class="o">]</span>
+<span class="nv">name</span><span class="o">=</span><span class="nb">local</span>
+<span class="nv">baseurl</span><span class="o">=</span>file:///opt/k8s-installer/docker-ce
+<span class="nv">gpgcheck</span><span class="o">=</span>0
+<span class="nv">enabled</span><span class="o">=</span>1
+EOF
+<span class="nv">$ </span>yum clean all <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> yum makecache</code></pre></div></li>
+<li><strong>安装并配置httpd服务</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>yum install -y  httpd <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">disablerepo</span><span class="o">=</span>*  <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">enablerepo</span><span class="o">=</span><span class="nb">local</span></code></pre></div>
+httpd默认使用80端口，为避免端口冲突，默认修改为60081端口
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>sed -i <span class="p">&amp;</span>rsquo<span class="p">;</span>s/Listen 80/Listen 60081/g<span class="err">&#39;</span> /etc/httpd/conf/httpd.conf</code></pre></div>
+将安装包拷贝到服务目录中，服务目录默认使用<code>/var/www/html</code>，
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cp -r /opt/k8s-installer/docker-ce/ /var/www/html/
+<span class="nv">$ </span>systemctl <span class="nb">enable </span>httpd <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> systemctl start httpd</code></pre></div></li>
+</ul>
+
+
+<h3>5. 安装并配置docker</h3>
+
+<p>操作节点： 所有节点（<code>k8s-init，k8s-master，k8s-slave</code>）均需执行
+- <strong>配置yum repo</strong>
+其中60081端口若有修改，需要替换为httpd实际使用的端口
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cat <span class="p">&amp;</span>lt<span class="p">;</span>&lt;EOF &gt; /etc/yum.repos.d/local-http.repo
+<span class="o">[</span><span class="nb">local</span>-http<span class="o">]</span>
+<span class="nv">name</span><span class="o">=</span><span class="nb">local</span>-http
+<span class="nv">baseurl</span><span class="o">=</span>&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://10.0.129.84:60081/docker-ce&quot;</span>&gt;http://10.0.129.84:60081/docker-ce&lt;/a&gt;
+<span class="nv">gpgcheck</span><span class="o">=</span>0
+<span class="nv">enabled</span><span class="o">=</span>1
+EOF
+<span class="nv">$ </span>yum clean all <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> yum makecache</code></pre></div>
+- <strong>配置docker daemon文件</strong>
+其中60080端口为镜像仓库的端口，如使用其他端口，需在下章节中替换为实际使用的端口
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>mkdir /etc/docker
+<span class="nv">$ </span>cat <span class="p">&amp;</span>lt<span class="p">;</span>&lt;EOF &gt; /etc/docker/daemon.json
+<span class="o">{</span>
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>insecure-registries<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[</span>
+        <span class="p">&amp;</span>ldquo<span class="p">;</span>10.0.129.84:60080<span class="p">&amp;</span>rdquo<span class="p">;</span>
+    <span class="o">]</span>,
+    <span class="p">&amp;</span>ldquo<span class="p">;</span>storage-driver<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>overlay2<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="o">}</span>
+EOF</code></pre></div>
+- <strong>安装并启动docker</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>yum install -y docker-ce docker-ce-cli containerd.io  <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">disablerepo</span><span class="o">=</span>*  <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">enablerepo</span><span class="o">=</span><span class="nb">local</span>-http
+<span class="nv">$ </span>systemctl <span class="nb">enable </span>docker <span class="p">&amp;</span>amp<span class="p">;&amp;</span>amp<span class="p">;</span> systemctl start docker</code></pre></div></p>
+
+<h3>6. 配置镜像仓库</h3>
+
+<blockquote><p>该仓库存储k8s部署所需的<code>kube-apiserver</code>、<code>kube-controller-manager</code>、<code>kube-scheduler</code>、<code>etcd</code>、<code>flannel</code>、<code>coredns</code>等组件的镜像，使用docker run的方式部署，默认暴漏机器的<code>60080</code>端口提供服务。</p></blockquote>
+
+<p>操作节点： 只在<code>k8s-init</code>节点执行
+- <strong>加载镜像到本地</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>docker load -i /opt/k8s-installer/registry-image.tar
+<span class="nv">$ </span>docker images <span class="c"># 查看加载成功的registry镜像</span>
+REPOSITORY                               TAG                 IMAGE ID            CREATED             SIZE
+index.alauda.cn/alaudaorg/distribution   latest              2aee66f2203d        <span class="m">2</span> years ago         347MB</code></pre></div>
+- <strong>启动registry镜像仓库</strong>
+默认使用<code>60080</code>作为registry对外的服务端口，如需修改，需将各节点的<code>/etc/docker/daemon.json</code>中的<code>insecure-registries</code>中配置的端口一并改掉
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>docker run -d <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">restart</span><span class="o">=</span>always <span class="p">&amp;</span>ndash<span class="p">;</span>name pkg-registry -p 60080:5000 -v /opt/k8s-installer/registry/:/var/lib/registry index.alauda.cn/alaudaorg/distribution:latest</code></pre></div></p>
+
+<h2>部署kubernetes</h2>
+
+<h3>1. 安装 kubeadm, kubelet 和 kubectl</h3>
+
+<p>操作节点： 所有的master和slave节点(<code>k8s-master,k8s-slave</code>) 需要执行
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>yum install -y  kubeadm kubectl kubelet <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">disablerepo</span><span class="o">=</span>*  <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">enablerepo</span><span class="o">=</span><span class="nb">local</span>-http</code></pre></div></p>
+
+<h3>2. 配置kubelet</h3>
+
+<p>操作节点： 所有的master和slave节点(<code>k8s-master,k8s-slave</code>) 需要执行
+- <strong>设置kubelet开机启动</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>systemctl <span class="nb">enable </span>kubelet</code></pre></div>
+- <strong>配置kubelet</strong>
+配置文件<code>/etc/systemd/system/kubelet.service</code>，注意需要将&ndash;pod-infra-container-image地址设置为实际的镜像仓库地址（默认是k8s-init机器ip:60080）
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cat <span class="p">&amp;</span>lt<span class="p">;</span>&lt;EOF &gt; /etc/systemd/system/kubelet.service
+<span class="o">[</span>Unit<span class="o">]</span>
+<span class="nv">Description</span><span class="o">=</span>kubelet: The Kubernetes Node Agent
+<span class="nv">Documentation</span><span class="o">=</span>&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;https://kubernetes.io/docs/&quot;</span>&gt;https://kubernetes.io/docs/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;<span class="o">[</span>Service<span class="o">]</span>
+<span class="nv">Environment</span><span class="o">=</span><span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">KUBELET_SYSTEM_PODS_ARGS</span><span class="o">=</span><span class="p">&amp;</span>ndash<span class="p">;</span>pod-manifest-path<span class="o">=</span>/etc/kubernetes/manifests <span class="p">&amp;</span>ndash<span class="p">;</span>allow-privileged<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="nv">Environment</span><span class="o">=</span><span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">KUBELET_INFRA_CONTAINER_IMAGE</span><span class="o">=</span><span class="p">&amp;</span>ndash<span class="p">;</span>pod-infra-container-image<span class="o">=</span>10.0.129.84:60080/k8s/pause:3.1<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="nv">ExecStart</span><span class="o">=</span>/usr/bin/kubelet <span class="nv">$KUBELET_SYSTEM_PODS_ARGS</span> <span class="nv">$KUBELET_INFRA_CONTAINER_IMAGE</span>
+<span class="nv">Restart</span><span class="o">=</span>always
+<span class="nv">StartLimitInterval</span><span class="o">=</span>0
+<span class="nv">RestartSec</span><span class="o">=</span>10&lt;/p&gt;
+
+&lt;p&gt;<span class="o">[</span>Install<span class="o">]</span>
+<span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
+EOF</code></pre></div></p>
+
+<h3>3. 配置kubeadm初始化文件</h3>
+
+<p>操作节点：只在master节点（<code>k8s-master</code>）执行
+需要修改如下两处:
+- <strong>advertiseAddress：修改为<code>k8s-master</code>的内网ip地址</strong>
+-  <strong>imageRepository：修改为<code>k8s-init</code>的内网ip地址</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cat <span class="p">&amp;</span>lt<span class="p">;</span>&lt;EOF &gt; /opt/kubeadm.conf
+apiVersion: kubeadm.k8s.io/v1beta1
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 10.0.129.84&lt;/p&gt;
+
+&lt;h2&gt;  bindPort: 6443&lt;/h2&gt;
+
+&lt;p&gt;apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta1
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controlPlaneEndpoint: <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>rdquo<span class="p">;</span>
+controllerManager: <span class="o">{}</span>
+dns:
+  <span class="nb">type</span>: CoreDNS
+etcd:
+  <span class="nb">local</span>:
+    dataDir: /var/lib/etcd
+imageRepository: 10.0.129.84:60080/k8s
+kind: ClusterConfiguration
+kubernetesVersion: v1.13.3
+networking:
+  dnsDomain: cluster.local
+  podSubnet: <span class="p">&amp;</span>ldquo<span class="p">;</span>10.244.0.0/16<span class="p">&amp;</span>rdquo<span class="p">;</span>
+  serviceSubnet: 10.96.0.0/12
+scheduler: <span class="o">{}</span>
+EOF</code></pre></div></p>
+
+<h3>4. 提前下载镜像</h3>
+
+<p>操作节点：只在master节点（<code>k8s-master</code>）执行
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c"># 查看需要使用的镜像列表,若无问题，将得到如下列表</span>
+<span class="nv">$ </span>kubeadm config images list <span class="p">&amp;</span>ndash<span class="p">;</span>config /opt/kubeadm.conf
+10.0.129.84:60080/k8s/kube-apiserver:v1.13.3
+10.0.129.84:60080/k8s/kube-controller-manager:v1.13.3
+10.0.129.84:60080/k8s/kube-scheduler:v1.13.3
+10.0.129.84:60080/k8s/kube-proxy:v1.13.3
+10.0.129.84:60080/k8s/pause:3.1
+10.0.129.84:60080/k8s/etcd:3.2.24
+10.0.129.84:60080/k8s/coredns:1.2.6
+  <span class="c"># 提前下载镜像到本地</span>
+<span class="nv">$ </span>kubeadm config images pull <span class="p">&amp;</span>ndash<span class="p">;</span>config /opt/kubeadm.conf</code></pre></div></p>
+
+<h3>5. 初始化master节点</h3>
+
+<p>操作节点：只在master节点（<code>k8s-master</code>）执行
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">kubeadm init <span class="p">&amp;</span>ndash<span class="p">;</span>config /opt/kubeadm.conf</code></pre></div>
+若初始化成功后，最后会提示如下信息：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="p">&amp;</span>hellip<span class="p">;</span>
+Your Kubernetes master has initialized successfully!&lt;/p&gt;
+
+&lt;p&gt;To start using your cluster, you need to run the following as a regular user:&lt;/p&gt;
+
+&lt;p&gt;  mkdir -p <span class="nv">$HOME</span>/.kube
+  sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
+  sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config&lt;/p&gt;
+
+&lt;p&gt;You should now deploy a pod network to the cluster.
+Run <span class="p">&amp;</span>ldquo<span class="p">;</span>kubectl apply -f <span class="o">[</span>podnetwork<span class="o">]</span>.yaml<span class="p">&amp;</span>rdquo<span class="p">;</span> with one of the options listed at:
+  &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;https://kubernetes.io/docs/concepts/cluster-administration/addons/&quot;</span>&gt;https://kubernetes.io/docs/concepts/cluster-administration/addons/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;You can now join any number of machines by running the following on each node
+as root:&lt;/p&gt;
+
+&lt;p&gt;  kubeadm join 10.0.129.84:6443 <span class="p">&amp;</span>ndash<span class="p">;</span>token abcdef.0123456789abcdef <span class="p">&amp;</span>ndash<span class="p">;</span>discovery-token-ca-cert-hash sha256:6bb7e2646f1f846efddf2525c012505b76831ff9453329d0203d010814783a51</code></pre></div>
+接下来按照上述提示信息操作，配置kubectl客户端的认证
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>mkdir -p <span class="nv">$HOME</span>/.kube
+  <span class="nv">$ </span>sudo cp -i /etc/kubernetes/admin.conf <span class="nv">$HOME</span>/.kube/config
+  <span class="nv">$ </span>sudo chown <span class="k">$(</span>id -u<span class="k">)</span>:<span class="k">$(</span>id -g<span class="k">)</span> <span class="nv">$HOME</span>/.kube/config</code></pre></div></p>
+
+<blockquote><p>此时使用 kubectl get nodes查看节点应该处于notReady状态，因为还未配置网络插件</p>
+
+<h3>6. 添加slave节点到集群中</h3>
+
+<p>操作节点：所有的slave节点（<code>k8s-slave</code>）需要执行
+在每台slave节点，执行如下命令，该命令是在kubeadm init成功后提示信息中打印出来的，需要替换成实际init后打印出的命令。
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>kubeadm join 10.0.129.84:6443 <span class="p">&amp;</span>ndash<span class="p">;</span>token abcdef.0123456789abcdef <span class="p">&amp;</span>ndash<span class="p">;</span>discovery-token-ca-cert-hash sha256:6bb7e2646f1f846efddf2525c012505b76831ff9453329d0203d010814783a51</code></pre></div></p>
+
+<h3>7. 安装flannel插件</h3></blockquote>
+
+<p>操作节点：只在master节点（<code>k8s-master</code>）执行
+- <strong>拷贝kube-flannel.yml文件</strong>
+把kube-flannel.yml拷贝到master节点的/opt目录
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>cp /opt/k8s-installer/kube-flannel.yml /opt</code></pre></div></p>
+
+<blockquote><p><strong>⚠️注意：</strong>如果k8s-master和k8s-init节点不是同一台机器，需要把kube-flannel.yml从k8s-init节点远程拷贝到master节点的/opt目录
+$ scp root@k8s-init:/opt/k8s-installer/kube-flannel.yml /opt</p></blockquote>
+
+<ul>
+<li><strong>替换flannel镜像地址</strong>
+其中10.0.129.84:60080需要替换为实际的镜像仓库地址(k8s-init节点ip:60080)
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>sed  -i <span class="p">&amp;</span>ldquo<span class="p">;</span>s#quay.io/coreos#10.0.129.84:60080/k8s#g<span class="p">&amp;</span>rdquo<span class="p">;</span> /opt/kube-flannel.yml</code></pre></div>
+若配置kubeadm初始化文件章节中，podSubnet使用了非10.244.0.0/16的值，则需要对应的修改kube-flannel.yml文件中如下部分，保持一致即可，否则会造成flannel无法启动。
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="m">125</span>   net-conf.json: <span class="p">|</span>
+<span class="m">126</span>     <span class="o">{</span>
+<span class="m">127</span>       <span class="p">&amp;</span>ldquo<span class="p">;</span>Network<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>10.244.0.0/16<span class="p">&amp;</span>rdquo<span class="p">;</span>,
+<span class="m">128</span>       <span class="p">&amp;</span>ldquo<span class="p">;</span>Backend<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">{</span>
+<span class="m">129</span>         <span class="p">&amp;</span>ldquo<span class="p">;</span>Type<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>vxlan<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="m">130</span>       <span class="o">}</span>
+<span class="m">131</span>     <span class="o">}</span></code></pre></div></li>
+<li><strong>创建flannel相关资源</strong>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>kubectl create -f /opt/kube-flannel.yml</code></pre></div>
+
+<h3>8.  设置master节点是否可调度（可选）</h3>
+
+操作节点：<code>k8s-master</code>
+默认部署成功后，master节点无法调度业务pod，如需设置master节点也可以参与pod的调度，需执行：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>kubectl taint node k8s-master node-role.kubernetes.io/master:NoSchedule-</code></pre></div>
+
+<h3>9. 验证集群</h3>
+
+<p>操作节点： 在master节点（<code>k8s-master</code>）执行
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>kubectl get nodes  <span class="c">#观察集群节点是否全部Ready</span>
+NAME                STATUS   ROLES    AGE   VERSION
+k8s-master   Ready    master   22h   v1.13.3
+k8s-slave   Ready    &lt;none&gt;   22h   v1.13.3</code></pre></div>
+创建测试nginx服务，需要将10.0.129.84替换为实际k8s-init节点的ip地址
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>kubectl run  <span class="nb">test</span>-nginx <span class="p">&amp;</span>ndash<span class="p">;</span><span class="nv">image</span><span class="o">=</span>10.0.129.84:60080/k8s/nginx</code></pre></div>
+查看pod是否创建成功，并访问pod ip测试是否可用
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>kubectl get po -o wide <span class="p">|</span>grep <span class="nb">test</span>-nginx
+<span class="nb">test</span>-nginx-7d65ddddc9-lcg9z       1/1     Running            <span class="m">0</span>          12s     10.244.1.3   k8s-slave    &lt;none&gt;           &lt;none&gt;
+<span class="nv">$ </span>curl 10.244.1.3 <span class="c"># 验证是否服务可通</span>
+<span class="p">&amp;</span>hellip<span class="p">;</span>&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+
+&lt;h1&gt;Welcome to nginx!&lt;/h1&gt;
+
+
+&lt;p&gt;If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.&lt;/p&gt;
+
+
+
+
+&lt;p&gt;For online documentation and support please refer to
+&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://nginx.org/&quot;</span>&gt;nginx.org&lt;/a&gt;.&lt;br/&gt;
+Commercial support is available at
+&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://nginx.com/&quot;</span>&gt;nginx.com&lt;/a&gt;.&lt;/p&gt;
+
+
+
+
+&lt;p&gt;&lt;em&gt;Thank you <span class="k">for</span> using nginx.&lt;/em&gt;&lt;/p&gt;
+
+
+&lt;p&gt;<span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[记录一次高可用集群使用kubeadm v1.9.6升级v1.13 的问题]]></title>
+    <link href="http://liyongxin.github.io/blog/2019/04/22/ji-lu-yi-ci-kubeadm-v1-dot-12sheng-ji-v1-dot-13-de-wen-ti/"/>
+    <updated>2019-04-22T14:12:52+08:00</updated>
+    <id>http://liyongxin.github.io/blog/2019/04/22/ji-lu-yi-ci-kubeadm-v1-dot-12sheng-ji-v1-dot-13-de-wen-ti</id>
+    <content type="html"><![CDATA[<p>项目中使用kubeadm 将k8s版本从v1.9.6升级到1.13.4,由于无法跨版本升级，所以大致流程是</p>
+
+<ul>
+<li>v1.9.6 -> v1.10.8</li>
+<li>v1.10.8 -> v1.11.5</li>
+<li>v1.11.5 -> v1.12.4</li>
+<li>v1.12.4 -> v1.13.4</li>
+</ul>
+
+
+<p>其中操作集群A从<code>v1.9.6</code>到<code>v1.10.8</code>升级过程中，执行<code>upgrade</code>的时候出现了如下问题：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubeadm upgrade apply v1.10.8 -y</span>
+<span class="p">&amp;</span>hellip<span class="p">;</span>
+<span class="o">[</span>upgrade/prepull<span class="o">]</span> Successfully prepulled the images <span class="k">for</span> all the control plane components
+<span class="o">[</span>upgrade/apply<span class="o">]</span> Upgrading your Static Pod-hosted control plane to version <span class="p">&amp;</span>ldquo<span class="p">;</span>v1.10.8<span class="p">&amp;</span>rdquo<span class="p">;&amp;</span>hellip<span class="p">;</span>
+Static pod: kube-apiserver-rz-dev-master01 <span class="nb">hash</span>: a82830fd687fdabd030b65ee6c4b4fd4
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-scheduler-rz-dev-master01 <span class="nb">hash</span>: a0adc2bf23e7d5336ecd4677ce95938c
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> Writing new Static Pod manifests to <span class="p">&amp;</span>ldquo<span class="p">;</span>/etc/kubernetes/tmp/kubeadm-upgraded-manifests500670946<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="o">[</span>controlplane<span class="o">]</span> Adding extra host path mount <span class="p">&amp;</span>ldquo<span class="p">;</span>k8s<span class="p">&amp;</span>rdquo<span class="p">;</span> to <span class="p">&amp;</span>ldquo<span class="p">;</span>kube-controller-manager<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> current and new manifests of kube-apiserver are equal, skipping upgrade
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> Moved new manifest to <span class="p">&amp;</span>ldquo<span class="p">;</span>/etc/kubernetes/manifests/kube-controller-manager.yaml<span class="p">&amp;</span>rdquo<span class="p">;</span> and backed up old manifest to <span class="p">&amp;</span>ldquo<span class="p">;</span>/etc/kubernetes/tmp/kubeadm-backup-manifests-2019-04-22-13-04-58/kube-controller-manager.yaml<span class="p">&amp;</span>rdquo<span class="p">;</span>
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> Waiting <span class="k">for</span> the kubelet to restart the component
+<span class="o">[</span>upgrade/staticpods<span class="o">]</span> This might take a minute or longer depending on the component/version gap <span class="o">(</span>timeout 5m0s<span class="o">)</span>
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+Static pod: kube-controller-manager-rz-dev-master01 <span class="nb">hash</span>: 1a23c184fadb64c889a41831476c56e8
+<span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
+
+<!--more-->
+
+
+<p>升级过程中一直卡在校验<code>hash</code>这步，由于之前测试没有出现类似情况，而此次出问题和测试环境唯一的区别就是该环境升级过证书，
+默认证书有效期是1年，此环境更新成30年了，所以尝试先把证书还原后再次执行<code>upgrade</code>，升级成功，具体原因未排查。</p>
+
+<p>在另一个环境从<code>v1.12</code>升级到<code>v1.13.4</code>版本时候，出现了如下情况：
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubeadm upgrade apply v1.13.4 -y</span>
+<span class="o">[</span>preflight<span class="o">]</span> Running pre-flight checks.
+<span class="o">[</span>upgrade<span class="o">]</span> Making sure the cluster is healthy:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Making sure the configuration is correct:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Reading configuration from the cluster<span class="p">&amp;</span>hellip<span class="p">;</span>
+<span class="o">[</span>upgrade/config<span class="o">]</span> FYI: You can look at this config file with <span class="p">&amp;</span>lsquo<span class="p">;</span>kubectl -n kube-system get cm kubeadm-config -oyaml<span class="p">&amp;</span>rsquo<span class="p">;</span>
+FATAL: failed to get node registration: node doesn<span class="p">&amp;</span>rsquo<span class="p">;</span>t have kubeadm.alpha.kubernetes.io/cri-socket annotation</code></pre></div></p>
+
+<p>报错提示<code>node</code>缺少<code>annotation</code>，而查看操作<code>kubeadm</code>升级的<code>master node</code>，是存在<code>cri-socket</code>的<code>annotation</code>的，但是其他两台<code>master</code>
+不存在，于是尝试手动添加<code>annotation</code>，然后再次跑<code>upgrade</code>
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl annotate node &lt;nodename&gt; kubeadm.alpha.kubernetes.io/cri-socket=/var/run/dockershim.sock</span>
+<span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubeadm upgrade apply v1.13.4 -y</span>
+<span class="o">[</span>preflight<span class="o">]</span> Running pre-flight checks.
+<span class="o">[</span>upgrade<span class="o">]</span> Making sure the cluster is healthy:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Making sure the configuration is correct:
+<span class="o">[</span>upgrade/config<span class="o">]</span> Reading configuration from the cluster<span class="p">&amp;</span>hellip<span class="p">;</span>
+<span class="o">[</span>upgrade/config<span class="o">]</span> FYI: You can look at this config file with <span class="p">&amp;</span>lsquo<span class="p">;</span>kubectl -n kube-system get cm kubeadm-config -oyaml<span class="p">&amp;</span>rsquo<span class="p">;</span>
+<span class="o">[</span>upgrade/config<span class="o">]</span> FATAL: failed to getAPIEndpoint: failed to get APIEndpoint information <span class="k">for</span> this node</code></pre></div>
+又报错找不到<code>APIEndpoint</code>，尝试执行看下<code>kubeadm-config</code>的数据
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@cloud-cn-master-1 ~<span class="o">]</span><span class="c"># kubectl -n kube-system get cm kubeadm-config -oyaml|grep -A5 cloud-cn-master-1</span>
+  ClusterStatus: <span class="p">|</span>
+    apiEndpoints:
+      cloud-cn-master-1:
+        advertiseAddress: 10.0.128.251
+        bindPort: 6443
+    apiVersion: kubeadm.k8s.io/v1beta1
+    kind: ClusterStatus</code></pre></div></p>
+
+<p>发现该<code>apiEndpoints</code>是存在的，但是只存在这一个节点，于是尝试<code>edit cm</code>把另外两个节点的<code>apiEndpoint</code>也配置上，再次<code>upgrade</code>，
+发现又出现了校验<code>hash</code>不通过的错误，于是尝试去看下<code>kubeadm</code>的源码，理清楚这个<code>config</code>阶段的思路，
+源码可以参考<a href="https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/util/config/cluster.go">此处</a>,
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// if this isn&amp;rsquo;t a new controlplane instance (e.g. in case of kubeadm upgrades)</span>
+<span class="c1">// get nodes specific information as well</span>
+<span class="k">if</span> <span class="p">!</span><span class="nx">newControlPlane</span> <span class="p">{</span>
+    <span class="c1">// gets the nodeRegistration for the current from the node object</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">getNodeRegistration</span><span class="p">(</span><span class="nx">kubeconfigDir</span><span class="p">,</span> <span class="nx">client</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">amp</span><span class="p">;</span><span class="nx">initcfg</span><span class="p">.</span><span class="nx">NodeRegistration</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">failed</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">node</span> <span class="nx">registration</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;)</span>
+    <span class="p">}</span>
+    <span class="c1">// gets the APIEndpoint for the current node from then ClusterStatus in the kubeadm-config ConfigMap</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">getAPIEndpoint</span><span class="p">(</span><span class="nx">configMap</span><span class="p">.</span><span class="nx">Data</span><span class="p">,</span> <span class="nx">initcfg</span><span class="p">.</span><span class="nx">NodeRegistration</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">amp</span><span class="p">;</span><span class="nx">initcfg</span><span class="p">.</span><span class="nx">LocalAPIEndpoint</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">failed</span> <span class="nx">to</span> <span class="nx">getAPIEndpoint</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></div></p>
+
+<p>该部分即对应执行<code>upgrade</code>的逻辑，先去<code>getNodeRegistration</code>然后去<code>getAPIEndpoint</code>，看下getAPIEndpoint的逻辑
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// getAPIEndpoint returns the APIEndpoint for the current node</span>
+<span class="kd">func</span> <span class="nx">getAPIEndpoint</span><span class="p">(</span><span class="nx">data</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">,</span> <span class="nx">nodeName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">apiEndpoint</span> <span class="o">*</span><span class="nx">kubeadmapi</span><span class="p">.</span><span class="nx">APIEndpoint</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// gets the ClusterStatus from kubeadm-config</span>
+    <span class="nx">clusterStatus</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">UnmarshalClusterStatus</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">err</span>
+    <span class="p">}&lt;</span><span class="o">/</span><span class="nx">p</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">pre</span><span class="p">&gt;&lt;</span><span class="nx">code</span><span class="p">&gt;</span><span class="c1">// gets the APIEndpoint for the current machine from the ClusterStatus</span>
+<span class="nx">e</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">clusterStatus</span><span class="p">.</span><span class="nx">APIEndpoints</span><span class="p">[</span><span class="nx">nodeName</span><span class="p">]</span>
+<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;failed to get APIEndpoint information for this node&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">apiEndpoint</span><span class="p">.</span><span class="nx">AdvertiseAddress</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">AdvertiseAddress</span>
+<span class="nx">apiEndpoint</span><span class="p">.</span><span class="nx">BindPort</span> <span class="p">=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">BindPort</span>
+<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">&lt;</span><span class="o">/</span><span class="nx">code</span><span class="p">&gt;&lt;</span><span class="o">/</span><span class="nx">pre</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">p</span><span class="p">&gt;}</span></code></pre></div>
+会根据<code>nodeName</code>和<code>kubeadm-config</code>这个<code>configmap</code>的数据去拿<code>APIEndpoint</code>的<code>AdvertiseAddress</code>和<code>BindPort</code>信息，但是手动确认过确实是存在
+<code>APIEndpoint</code>的配置的，所以再次查看传过来的<code>nodeName</code>是否正确，由于<code>nodeName</code>是从<code>NodeRegistration</code>中获取的先看下<code>NodeRegistration</code>的获取逻辑:</p>
+
+<p><div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// getNodeRegistration returns the nodeRegistration for the current node</span>
+<span class="kd">func</span> <span class="nx">getNodeRegistration</span><span class="p">(</span><span class="nx">kubeconfigDir</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">client</span> <span class="nx">clientset</span><span class="p">.</span><span class="nx">Interface</span><span class="p">,</span> <span class="nx">nodeRegistration</span> <span class="o">*</span><span class="nx">kubeadmapi</span><span class="p">.</span><span class="nx">NodeRegistrationOptions</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+    <span class="c1">// gets the name of the current node</span>
+    <span class="nx">nodeName</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">getNodeNameFromKubeletConfig</span><span class="p">(</span><span class="nx">kubeconfigDir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="nx">failed</span> <span class="nx">to</span> <span class="nx">get</span> <span class="nx">node</span> <span class="nx">name</span> <span class="nx">from</span> <span class="nx">kubelet</span> <span class="nx">config</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;)</span>
+    <span class="p">}&lt;</span><span class="o">/</span><span class="nx">p</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">pre</span><span class="p">&gt;&lt;</span><span class="nx">code</span><span class="p">&gt;</span><span class="c1">// gets the corresponding node and retrieves attributes stored there.</span>
+<span class="nx">node</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">CoreV1</span><span class="p">().</span><span class="nx">Nodes</span><span class="p">().</span><span class="nx">Get</span><span class="p">(</span><span class="nx">nodeName</span><span class="p">,</span> <span class="nx">metav1</span><span class="p">.</span><span class="nx">GetOptions</span><span class="p">{})</span>
+<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Wrap</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="s">&quot;failed to get corresponding node&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">criSocket</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">ObjectMeta</span><span class="p">.</span><span class="nx">Annotations</span><span class="p">[</span><span class="nx">constants</span><span class="p">.</span><span class="nx">AnnotationKubeadmCRISocket</span><span class="p">]</span>
+<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;node %s doesn&#39;t have %s annotation&quot;</span><span class="p">,</span> <span class="nx">nodeName</span><span class="p">,</span> <span class="nx">constants</span><span class="p">.</span><span class="nx">AnnotationKubeadmCRISocket</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// returns the nodeRegistration attributes</span>
+<span class="nx">nodeRegistration</span><span class="p">.</span><span class="nx">Name</span> <span class="p">=</span> <span class="nx">nodeName</span>
+<span class="nx">nodeRegistration</span><span class="p">.</span><span class="nx">CRISocket</span> <span class="p">=</span> <span class="nx">criSocket</span>
+<span class="nx">nodeRegistration</span><span class="p">.</span><span class="nx">Taints</span> <span class="p">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Taints</span>
+<span class="c1">// NB. currently nodeRegistration.KubeletExtraArgs isn&#39;t stored at node level but only in the kubeadm-flags.env</span>
+<span class="c1">//     that isn&#39;t modified during upgrades</span>
+<span class="c1">//     in future we might reconsider this thus enabling changes to the kubeadm-flags.env during upgrades as well</span>
+<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">&lt;</span><span class="o">/</span><span class="nx">code</span><span class="p">&gt;&lt;</span><span class="o">/</span><span class="nx">pre</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">p</span><span class="p">&gt;}</span></code></pre></div>
+发现<code>nodeName</code>是通过<code>getNodeNameFromKubeletConfig</code>获取的，也就是说读取的是<code>kubelet.conf</code>配置，看下<code>getNodeNameFromKubeletConfig</code>逻辑：
+<div class="highlight"><pre><code class="language-go" data-lang="go"><span class="c1">// getNodeNameFromConfig gets the node name from a kubelet config file</span>
+<span class="c1">// TODO: in future we want to switch to a more canonical way for doing this e.g. by having this</span>
+<span class="c1">//       information in the local kubelet config.yaml</span>
+<span class="kd">func</span> <span class="nx">getNodeNameFromKubeletConfig</span><span class="p">(</span><span class="nx">kubeconfigDir</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// loads the kubelet.conf file</span>
+    <span class="nx">fileName</span> <span class="o">:=</span> <span class="nx">filepath</span><span class="p">.</span><span class="nx">Join</span><span class="p">(</span><span class="nx">kubeconfigDir</span><span class="p">,</span> <span class="nx">constants</span><span class="p">.</span><span class="nx">KubeletKubeConfigFileName</span><span class="p">)</span>
+    <span class="nx">config</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">clientcmd</span><span class="p">.</span><span class="nx">LoadFromFile</span><span class="p">(</span><span class="nx">fileName</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="o">&amp;</span><span class="nx">ldquo</span><span class="p">;</span><span class="o">&amp;</span><span class="nx">rdquo</span><span class="p">;,</span> <span class="nx">err</span>
+    <span class="p">}&lt;</span><span class="o">/</span><span class="nx">p</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">pre</span><span class="p">&gt;&lt;</span><span class="nx">code</span><span class="p">&gt;</span><span class="c1">// gets the info about the current user</span>
+<span class="nx">authInfo</span> <span class="o">:=</span> <span class="nx">config</span><span class="p">.</span><span class="nx">AuthInfos</span><span class="p">[</span><span class="nx">config</span><span class="p">.</span><span class="nx">Contexts</span><span class="p">[</span><span class="nx">config</span><span class="p">.</span><span class="nx">CurrentContext</span><span class="p">].</span><span class="nx">AuthInfo</span><span class="p">]</span>
+
+<span class="c1">// gets the X509 certificate with current user credentials</span>
+<span class="kd">var</span> <span class="nx">certs</span> <span class="p">[]</span><span class="o">*</span><span class="nx">x509</span><span class="p">.</span><span class="nx">Certificate</span>
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificateData</span><span class="p">)</span> <span class="o">&amp;</span><span class="nx">gt</span><span class="p">;</span> <span class="mi">0</span> <span class="p">{</span>
+    <span class="c1">// if the config file uses an embedded x509 certificate (e.g. kubelet.conf created by kubeadm), parse it</span>
+    <span class="k">if</span> <span class="nx">certs</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">certutil</span><span class="p">.</span><span class="nx">ParseCertsPEM</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificateData</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nx">err</span>
+    <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificate</span><span class="p">)</span> <span class="o">&amp;</span><span class="nx">gt</span><span class="p">;</span> <span class="mi">0</span> <span class="p">{</span>
+    <span class="c1">// if the config file links an external x509 certificate (e.g. kubelet.conf created by TLS bootstrap), load it</span>
+    <span class="k">if</span> <span class="nx">certs</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">certutil</span><span class="p">.</span><span class="nx">CertsFromFile</span><span class="p">(</span><span class="nx">authInfo</span><span class="p">.</span><span class="nx">ClientCertificate</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nx">err</span>
+    <span class="p">}</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">New</span><span class="p">(</span><span class="s">&quot;invalid kubelet.conf. X509 certificate expected&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// We are only putting one certificate in the certificate pem file, so it&#39;s safe to just pick the first one</span>
+<span class="c1">// TODO: Support multiple certs here in order to be able to rotate certs</span>
+<span class="nx">cert</span> <span class="o">:=</span> <span class="nx">certs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1">// gets the node name from the certificate common name</span>
+<span class="k">return</span> <span class="nx">strings</span><span class="p">.</span><span class="nx">TrimPrefix</span><span class="p">(</span><span class="nx">cert</span><span class="p">.</span><span class="nx">Subject</span><span class="p">.</span><span class="nx">CommonName</span><span class="p">,</span> <span class="nx">constants</span><span class="p">.</span><span class="nx">NodesUserPrefix</span><span class="p">),</span> <span class="kc">nil</span>
+<span class="p">&lt;</span><span class="o">/</span><span class="nx">code</span><span class="p">&gt;&lt;</span><span class="o">/</span><span class="nx">pre</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nx">p</span><span class="p">&gt;}</span></code></pre></div>
+发现kubeadm先加载本机的<code>kubelet.conf</code>文件，然后尝试去找当前context中配置的用户的client-certificate-data数据，然后解析cert
+的信息，找到subject的CommanName,来当作NodeName然后去kubeadm-config中找对应的apiEndpoint,所以尝试解析下当前的证书数据，看下CN的值：
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">h1</span><span class="o">&gt;</span><span class="err">先获取</span><span class="n">client</span><span class="o">-</span><span class="n">certificate</span><span class="o">-</span><span class="n">data</span><span class="err">并做</span><span class="n">base64</span><span class="err">解密得到</span><span class="n">cert</span><span class="err">信息</span><span class="p">,</span><span class="err">$</span><span class="n">client</span><span class="o">-</span><span class="n">certificate</span><span class="o">-</span><span class="n">data</span><span class="err">为</span><span class="n">kubelet</span><span class="o">.</span><span class="n">conf</span><span class="err">中</span><span class="n">client</span><span class="o">-</span><span class="n">certificate</span><span class="o">-</span><span class="n">data</span><span class="err">对应的内容</span><span class="o">&lt;/</span><span class="n">h1</span><span class="o">&gt;</span>
+
+<span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># echo $client-certificate-data |base64 -d &gt; kubelet.crt</span>
+<span class="p">[</span><span class="n">root</span><span class="nd">@cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">1</span> <span class="o">~</span><span class="p">]</span><span class="c"># openssl x509 -in kubelet.crt -text |grep -i Subject</span>
+        <span class="n">Subject</span><span class="p">:</span> <span class="n">O</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">nodes</span><span class="p">,</span> <span class="n">CN</span><span class="o">=</span><span class="n">system</span><span class="p">:</span><span class="n">node</span><span class="p">:</span><span class="n">cloud</span><span class="o">-</span><span class="n">cn</span><span class="o">-</span><span class="n">master</span><span class="o">-</span><span class="mi">2</span>
+        <span class="n">Subject</span> <span class="n">Public</span> <span class="n">Key</span> <span class="n">Info</span><span class="p">:</span></code></pre></div>
+👆，好吧原因定位到了，是因为获取到的<code>CommanName</code>与本机不匹配，于是在<code>cloud-cn-master-1</code>上获取到的是<code>cloud-cn-master-2</code>的<code>nodeName</code>，
+然后去获取<code>annotation</code>自然也就拿不到了，然后即使手动<code>annotate</code>了，也是临时过了一步，到<code>configmap</code>中取<code>apiEndpoint</code>自然也获取不到，
+哪怕再手动维护<code>apiEndpoint</code>，那么后续到校验hash也是无法通过，所以根本原因在于升级证书的时候没有<code>kubelet</code>证书被覆盖了，导致一系列的问题</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[kubernetes的service cluster ip]]></title>
@@ -539,188 +1210,6 @@ REVISION  CHANGE-CAUSE
 0-7</code></pre></div></li>
 </ul>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[kubernetes 问题整理]]></title>
-    <link href="http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li/"/>
-    <updated>2018-08-31T10:36:27+08:00</updated>
-    <id>http://liyongxin.github.io/blog/2018/08/31/kubernetes-wen-ti-zheng-li</id>
-    <content type="html"><![CDATA[<p>本文用以kubernetes 运维过程中遇到问题汇总，方便日后回顾～</p>
-
-<h2>kubernetes多网卡导致的问题</h2>
-
-<p>部署机器是阿里云，有两块网卡，<code>eth0</code>外网，<code>eth1 vpc</code>内网，集群的路由信息如下
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 src<span class="o">]</span><span class="c"># route</span>
-Kernel IP routing table
-Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-default         gateway         0.0.0.0         UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
-10.0.0.0        10.81.35.247    255.0.0.0       UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
-10.81.32.0      0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
-39.107.40.0     0.0.0.0         255.255.252.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth1
-100.64.0.0      10.81.35.247    255.192.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
-link-local      0.0.0.0         255.255.0.0     U     <span class="m">1002</span>   <span class="m">0</span>        <span class="m">0</span> eth0
-link-local      0.0.0.0         255.255.0.0     U     <span class="m">1003</span>   <span class="m">0</span>        <span class="m">0</span> eth1
-172.16.0.0      10.81.35.247    255.240.0.0     UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> eth0
-192.168.0.0     0.0.0.0         255.255.255.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> cni0
-192.168.0.0     0.0.0.0         255.255.240.0   U     <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> docker0
-192.168.1.0     192.168.1.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1
-192.168.2.0     192.168.2.0     255.255.255.0   UG    <span class="m">0</span>      <span class="m">0</span>        <span class="m">0</span> flannel.1</code></pre></div></p>
-
-<ul>
-<li><h4>docker0网段与cni0网段冲突问题</h4></li>
-</ul>
-
-
-<p>docker启动时没有指定bip，从上述路由规则发现，docker0使用了192.168的段,刚好给flannel设置的cidr段冲突，
-所以需要给docker修改默认的网段，解决方法是给docker配置bip网段,然后重启docker，观察docker0的route规则</p>
-
-<p><div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@10 ~<span class="o">]</span><span class="c"># cat /etc/docker/daemon.json</span>
-<span class="o">{</span>
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>insecure-registries<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[]</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>graph<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>/var/lib/docker<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>bip<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>172.17.0.1/16<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>registry-mirrors<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[</span><span class="p">&amp;</span>ldquo<span class="p">;</span>&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;https://registry.docker-cn.com&quot;</span>&gt;https://registry.docker-cn.com&lt;/a&gt;<span class="p">&amp;</span>rdquo<span class="p">;</span><span class="o">]</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>storage-driver<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>devicemapper<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>storage-opts<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[</span><span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_removal<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_deletion<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span><span class="o">]</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>storage-opts<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="o">[</span>
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.thinpooldev<span class="o">=</span>/dev/mapper/docker-thinpool<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.min_free_space<span class="o">=</span>0%<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_deletion<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>,
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.use_deferred_removal<span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>,
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>dm.fs<span class="o">=</span>ext4<span class="p">&amp;</span>rdquo<span class="p">;</span>
-    <span class="o">]</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>log-driver<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>fluentd<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-    <span class="p">&amp;</span>ldquo<span class="p">;</span>log-opts<span class="p">&amp;</span>rdquo<span class="p">;</span>:
-    <span class="o">{</span>
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>fluentd-address<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>localhost:24224<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>tag<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span>docker.<span class="p">&amp;</span>rdquo<span class="p">;</span>,
-        <span class="p">&amp;</span>ldquo<span class="p">;</span>fluentd-async-connect<span class="p">&amp;</span>rdquo<span class="p">;</span>: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
-    <span class="o">}</span>
-<span class="o">}</span></code></pre></div></p>
-
-<ul>
-<li><h4>集群初始化问题</h4></li>
-</ul>
-
-
-<p>使用<code>kubeadm</code>搭建，若未指定&ndash;advertise-address地址则k8s默认拿default网卡，
-而机器的default网卡刚好是外网eth0，所以初始化集群使用的地址是外网地址，导致一堆端口需要开，然后Node加入集群失败，解决办法是kubeadm初始化的
-时候指定&ndash;advertise-address为内网地址,下面为kubeadm init使用的conf文件</p>
-
-<!--more-->
-
-
-<p><div class="highlight"><pre><code class="language-bash" data-lang="bash">apiVersion: kubeadm.k8s.io/v1alpha1
-kind: MasterConfiguration
-api:
-  bindPort: 6443
-etcd:
-  endpoints:
-  <span class="c">#sed -i &amp;ldquo;/#ETCD_ENDPOINTS/a\  - &lt;a href=&quot;http://123.456:2379/g&quot;&gt;http://123.456:2379/g&lt;/a&gt;&amp;rdquo; ./abc.yml</span>
-  <span class="c">#ETCD ENDPOINTS</span>
-  - &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://10.81.32.150:2379&quot;</span>&gt;http://10.81.32.150:2379&lt;/a&gt;
-apiServerExtraArgs:
-  apiserver-count: <span class="p">&amp;</span>ldquo<span class="p">;</span>1<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  insecure-port: <span class="p">&amp;</span>ldquo<span class="p">;</span>8080<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  advertise-address<span class="o">=</span>10.81.32.150
-  service-node-port-range: <span class="p">&amp;</span>ldquo<span class="p">;</span>30000-32000<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  admission-control: <span class="p">&amp;</span>ldquo<span class="p">;</span>Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,DefaultTolerationSeconds,ResourceQuota<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  feature-gates: <span class="p">&amp;</span>ldquo<span class="p">;</span><span class="nv">MountPropagation</span><span class="o">=</span><span class="nb">true</span><span class="p">&amp;</span>rdquo<span class="p">;</span>
-  endpoint-reconciler-type: <span class="p">&amp;</span>ldquo<span class="p">;</span>lease<span class="p">&amp;</span>rdquo<span class="p">;</span>
-controllerManagerExtraArgs:
-  pod-eviction-timeout: <span class="p">&amp;</span>ldquo<span class="p">;</span>30s<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  node-monitor-period: <span class="p">&amp;</span>ldquo<span class="p">;</span>2s<span class="p">&amp;</span>rdquo<span class="p">;</span>
-  node-monitor-grace-period: <span class="p">&amp;</span>ldquo<span class="p">;</span>16s<span class="p">&amp;</span>rdquo<span class="p">;</span>
-controllerManagerExtraVolumes:
-- name: k8s
-  hostPath: /etc/kubernetes
-  mountPath: /etc/kubernetes
-imageRepository: index.docker.cn/claas
-networking:
-  podSubnet: 192.168.0.0/16
-kubernetesVersion: v1.9.6
-token: 8d775a.8f70da6999842a27
-tokenTTL: <span class="p">&amp;</span>ldquo<span class="p">;</span>0<span class="p">&amp;</span>rdquo<span class="p">;</span>
-apiServerCertSANs:
-- 127.0.0.1
-- amazonaws.com.cn
-- amazonaws.com
-- 10.81.32.150
-- 10.81.32.150</code></pre></div>
-- ####flannel网络问题
-多网卡导致flannel网络选择网卡错误,flannel在初始化的时候会默认找defalut网卡，如果需要指定，则在flannel的
-初始化yaml文件中通过&ndash;iface指定网卡，
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span>
-      containers:
-      - name: kube-flannel
-        image: index.alauda.cn/claas/flannel:v0.9.1
-        <span class="nb">command</span>: <span class="o">[</span> <span class="p">&amp;</span>ldquo<span class="p">;</span>/opt/bin/flanneld<span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>ndash<span class="p">;</span>ip-masq<span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>ndash<span class="p">;</span>kube-subnet-mgr<span class="p">&amp;</span>rdquo<span class="p">;</span>, <span class="p">&amp;</span>ldquo<span class="p">;&amp;</span>ndash<span class="p">;</span><span class="nv">iface</span><span class="o">=</span>eth0<span class="p">&amp;</span>rdquo<span class="p">;</span><span class="o">]</span>
-        securityContext:
-          privileged: <span class="nb">true</span>
-<span class="nb">        </span>env:
-  <span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[kubelet的认证]]></title>
-    <link href="http://liyongxin.github.io/blog/2018/08/25/kubeletde-ren-zheng/"/>
-    <updated>2018-08-25T18:17:17+08:00</updated>
-    <id>http://liyongxin.github.io/blog/2018/08/25/kubeletde-ren-zheng</id>
-    <content type="html"><![CDATA[<p>研究完<a href="../kuberneteszhong-de-ren-zheng-xiang-guan">kubectl的认证与授权</a>，使用相同的方式去找kubelet的访问，
-首先定位配置文件<code>/etc/kubernetes/kubelet.conf</code>，然后用相同的方式对<code>client-key-data</code>做base64解码，保存为kubelet.crt文件。</p>
-
-<p>openssl查看crt证书，
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># openssl x509 -text -in kubelet.crt -noout</span>
-Certificate:
-    Data:
-        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
-        Serial Number: <span class="m">8126553944389053218</span> <span class="o">(</span>0x70c751c18f5beb22<span class="o">)</span>
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: <span class="nv">CN</span><span class="o">=</span>kubernetes
-        Validity
-            Not Before: Aug <span class="m">20</span> 05:50:39 <span class="m">2018</span> GMT
-            Not After : Aug <span class="m">20</span> 05:50:42 <span class="m">2019</span> GMT
-        Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master
-        Subject Public Key Info:
-            Public Key Algorithm: rsaEncryption
-                Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
-                Modulus:
-                    00:9f:92:83:49:aa:cc:52:0e:de:bd:af:a6:fd:ef:
-    <span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
-
-<p>得到我们期望的内容：
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">Subject: <span class="nv">O</span><span class="o">=</span>system:nodes, <span class="nv">CN</span><span class="o">=</span>system:node:k8s-master</code></pre></div></p>
-
-<blockquote><p>关于Subject，在k8s中可以理解为角色绑定主体，RoleBinding或者ClusterRoleBinding可以将角色绑定到角色绑定主体（Subject）。
-角色绑定主体可以是用户组（Group）、用户（User）或者服务账户（Service Accounts）</p></blockquote>
-
-<p>然后我尝试去k8s中找到一些关于<code>system:nodes</code>的RoleBindings或者ClusterRoleBindings,
-<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="o">[</span>root@k8s-master kubernetes<span class="o">]</span><span class="c"># for bd in &lt;code&gt;kubectl get clusterrolebindings |awk &#39;{print $1}&#39;&lt;/code&gt;; do echo $bd;kubectl get clusterrolebindings $bd -o yaml|grep &amp;lsquo;system:nodes&amp;rsquo;;done</span>
-NAME
-Error from server <span class="o">(</span>NotFound<span class="o">)</span>: clusterrolebindings.rbac.authorization.k8s.io <span class="p">&amp;</span>ldquo<span class="p">;</span>NAME<span class="p">&amp;</span>rdquo<span class="p">;</span> not found
-cluster-admin
-flannel
-kubeadm:kubelet-bootstrap
-kubeadm:node-autoapprove-bootstrap
-kubeadm:node-autoapprove-certificate-rotation
-  name: system:nodes
-kubeadm:node-proxier
-system:aws-cloud-provider
-system:basic-user
-<span class="p">&amp;</span>hellip<span class="p">;</span> <span class="p">&amp;</span>hellip<span class="p">;</span></code></pre></div></p>
-
-<p>结局有点意外，除了<code>kubeadm:node-autoapprove-certificate-rotation</code>外，没有找到system相关的rolebindings，显然和我们的理解不一样。
-尝试去找<a href="https://github.com/rootsongjc/kubernetes-handbook/blob/master/guide/rbac.md">资料</a>，发现了这么一段</p>
-
-<p><img src="/images/rbac.png" alt="" /></p>
-
-<p>Kubernetes 1.7开始, apiserver的启动中默认增加了<code>--authorization-mode=Node,RBAC</code>,也就是说，除了RBAC外，还有Node这种特殊的授权方式，</p>
-
-<p>继续查找<a href="https://kubernetes.io/docs/reference/access-authn-authz/node/">kubernetes官方的信息</a>,得知
-<div class="highlight"><pre><code class="language-bash" data-lang="bash">Node authorization is a special-purpose authorization mode that specifically authorizes API requests made by kubelets.</code></pre></div></p>
 ]]></content>
   </entry>
   

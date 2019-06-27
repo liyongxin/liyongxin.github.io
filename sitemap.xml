@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>http://liyongxin.github.io/blog/2019/06/27/kuberneteschi-xian-an-zhuang-shou-ce-fei-gao-ke-yong-ban/</loc>
+<lastmod>2019-06-27T17:58:14+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2019/04/22/ji-lu-yi-ci-kubeadm-v1-dot-12sheng-ji-v1-dot-13-de-wen-ti/</loc>
+<lastmod>2019-04-22T14:12:52+08:00</lastmod>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/2019/04/11/questions-and-answers/</loc>
+<lastmod>2019-04-11T10:42:05+08:00</lastmod>
+</url>
+<url>
 <loc>http://liyongxin.github.io/blog/2019/04/03/kubernetesde-service-cluster-ip/</loc>
 <lastmod>2019-04-03T17:17:23+08:00</lastmod>
 </url>
@@ -123,5 +135,8 @@
 </url>
 <url>
 <loc>http://liyongxin.github.io/blog/categories/clusterip/</loc>
+</url>
+<url>
+<loc>http://liyongxin.github.io/blog/categories/kubeadm/</loc>
 </url>
 </urlset>
