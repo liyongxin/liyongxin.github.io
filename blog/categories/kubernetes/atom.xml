@@ -4,7 +4,7 @@
   <title><![CDATA[Category: kubernetes | Earlene]]></title>
   <link href="http://liyongxin.github.io/blog/categories/kubernetes/atom.xml" rel="self"/>
   <link href="http://liyongxin.github.io/"/>
-  <updated>2019-06-27T19:20:27+08:00</updated>
+  <updated>2019-06-27T19:27:31+08:00</updated>
   <id>http://liyongxin.github.io/</id>
   <author>
     <name><![CDATA[yxli@alauda.io]]></name>
@@ -164,6 +164,9 @@ EOF</code></pre></div></p>
 <p>操作节点： 所有的master和slave节点（<code>k8s-master,k8s-slave</code>）需要执行</p>
 
 <blockquote><p>本章下述操作均以k8s-master为例，其他节点均是相同的操作（ip和hostname的值换成对应机器的真实值）</p></blockquote>
+
+<!--more-->
+
 
 <ul>
 <li><p><strong>设置安全组开放端口</strong>
